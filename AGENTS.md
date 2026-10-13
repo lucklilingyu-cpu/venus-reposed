@@ -45,15 +45,15 @@ js/               the app code, joined in PARTS order into one module:
   07-inputs.js    text diary → poses (keyword rules), camera + MediaPipe classifier, video/photo analysis, palette extraction
   08-sound.js     generative WebAudio placeholder per pose class + uploaded class sounds
   09-export.js    export zip (skin OBJ + sequence JSON + Blender prompt), saveFile
-  09c-walk.js     walk mode: W A S D / arrows, Shift to run, mouse look (pointer lock or drag), touch pad, collisions with WALK
   09b-group.js    group works ("小组 GROUP"): Supabase adapter, login with edit code, member identity, gallery, detail view,
                   add/edit form (uploads, 3D model reading + simplification), day sequences, default sequence
+  09c-walk.js     walk mode: W A S D / arrows, Shift to run, mouse look (pointer lock or drag), touch pad, collisions with WALK
   10-main.js      event wiring, tour, picking, resize, render loop, boot. Everything after the `/* DEBUG */` marker is test-only.
 config.js         Supabase URL + publishable key (public by design) + optional editCode. Never put a service_role/secret key here.
 data/atlas.json   105 atlas records (see "Atlas data")
 m/<id>.js         atlas display meshes, base64 in a tiny script wrapper (generated — don't hand-edit)
 t/<id>.webp       atlas thumbnails (generated)
-img/sketch.jpg    the group's concept sketch (hung on the hall's north wall)
+img/sketch.jpg    the group's concept sketch (not hung in the hall at the moment)
 supabase/setup.sql   database schema, row-level security, RPC functions, storage bucket + policies, edit code
 tools/check.mjs      node tools/check.mjs — every js/*.js is in PARTS, and the joined code parses as a module
 tools/build_atlas.py regenerates data/, m/, t/ from the Goddess Atlas website build

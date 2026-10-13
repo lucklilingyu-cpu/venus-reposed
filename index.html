@@ -317,9 +317,16 @@
   const debug = /[?&]debug\b/.test(location.search); // 网址后加 ?debug 会保留测试用的 window.__vr
   const t = document.getElementById('loadingText');
   try {
+    const get = async (p) => { // retry a few times: right after an update the server can answer 503 for a moment
+      for (let i = 0; ; i++) {
+        const r = await fetch('js/' + p, { cache: 'no-cache' }).catch(() => null);
+        if (r && r.ok) return r;
+        if (i >= 4 || (r && r.status === 404)) throw new Error('找不到 js/' + p + '（' + (r ? r.status : '网络错误') + '）');
+        await new Promise((ok) => setTimeout(ok, 600 * 2 ** i));
+      }
+    };
     const texts = await Promise.all(PARTS.map(async (p) => {
-      const r = await fetch('js/' + p, { cache: 'no-cache' });
-      if (!r.ok) throw new Error('找不到 js/' + p + '（' + r.status + '）');
+      const r = await get(p);
       const s = await r.text();
       return '/* ===== js/' + p + ' ===== */\n' + (debug ? s : s.split('/* DEBUG */')[0]);
     }));
