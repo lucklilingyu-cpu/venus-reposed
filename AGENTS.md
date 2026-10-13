@@ -32,7 +32,9 @@ js/               the app code, joined in PARTS order into one module:
   01-data.js      imports; pose classes (CLS, CLASS), gestures, default palettes; loads data/atlas.json (top-level await) → ATLAS, REC, FIGS; EXISTING hall sequence; sample diaries
   02-pose.js      procedural stick poses (icons, camera demo, canonical poses)
   03-sdf.js       SDF primitives, surface nets, the skin builder; SDF_WORKER_SRC runs in a Web Worker pool (Geo)
-  04-scene.js     renderer, lights, materials (M), the Cast Courts hall geometry, Trajan column / Pórtico halves, the concept-sketch painting
+  04-scene.js     renderer, lights, materials (M, colours in COL), the hall: red lower walls + colonnade, entablature, gallery balcony,
+                  upper arcade with green niches, red chevron floor, pool + water, glazed barrel vault with iron ribs/trusses,
+                  end lunettes; the sun (SUN_DIR) and its shadow fit; sunbeams; the concept-sketch painting
   05-seq.js       atlas mesh loading (fetchMesh, meshOf, figureGeometry), white ceramic material, skeleton overlay, state S,
                   plinths/positions (V), replacement logic (chooseWork, computeSequence, applyDay), skin build, views, camera moves
   06-ui.js        DOM helpers ($, $$, esc, toast), sequence strip, data panel (renderData), bars, gesture chips, 3D labels
@@ -108,6 +110,15 @@ This is the `works.data` jsonb, the same object the UI reads.
 
 - **Uploaded models**: shown in the hall as `REC['w-<work id>']` (see `registerModels`).
 - **Mesh files**: the `mesh` file is JSON `{format:'ggp1', vc, ic, b64}`. The base64 holds the same binary layout as the atlas meshes: uint32 magic `0x31504747`, vertex count, index count, then Float32 positions (centered, max extent 1) and Uint32 indices.
+
+## The hall (js/04-scene.js)
+
+- Modelled on the V&A Cast Courts: Pompeian-red lower walls, cream columns with a red lower third and gilded capitals, a gallery balcony on consoles, an upper arcade with sage-green niches, a red chevron mosaic floor and a glazed barrel vault.
+- **No sculptures or reliefs on the walls or in the space** apart from the sequence on the water axis. The concept sketch on the north wall is the only artwork. Keep it that way unless the user asks.
+- Walls are built per elevation (`WALLS`, local frame u/y/w) and merged per material (`BUCKET` → one mesh per material, instanced balusters and dentils). Add new parts through `put()` / `putInst()` so they stay merged.
+- **Sunlight**: `SUN_DIR` points towards the sun. Its shadow camera is fitted to the hall in `fitSunShadow()`; the vault glass never casts shadows, the iron ribs, trusses and purlins do — that is what draws the grid on the walls and floor. Keep the glazing bars ≥ 0.1 m thick or the pattern disappears on phones (2048 shadow map).
+- three r160 ignores `scene.environmentIntensity`; architecture materials set `envMapIntensity` themselves (keep it low, or the sun pattern washes out).
+- Camera limits (`LIM` in `10-main.js`) keep the camera inside the colonnade and under the vault.
 
 ## Atlas data
 

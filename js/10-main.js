@@ -52,9 +52,9 @@ $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
 $('#cutBtn').addEventListener('click', () => { S.cut = !S.cut; applyView(); menu.hidden = true; toast(S.cut ? '剖开前侧，看见表皮里的姿势' : '完整包裹'); if (S.view === 'sculpture' || S.view === 'color') setView('both'); });
 $('#bonesBtn').addEventListener('click', () => { S.bones = !S.bones; applyView(); menu.hidden = true; toast(S.bones ? '显示骨架火柴人' : '隐藏骨架'); });
 const CAMS = {
-  painting: [[0, 10.4, 2.2], [0, 12.1, -8.4]],
-  portico: [[-8.5, 4.6, 4.2], [-23, 5.6, 0]],
-  trajan: [[7.5, 3.2, 6.4], [19, 8.5, 0]],
+  painting: [[0, 10.6, 2.0], [0, 12.6, -8.6]],
+  vault: [[-7, 1.9, 4.2], [1.5, 17, -3.5]],
+  axis: [[-21.5, 3.4, 0.6], [8, 2.6, -0.4]],
 };
 $$('#moreMenu [data-cam]').forEach(b => b.addEventListener('click', () => {
   menu.hidden = true; const k = b.dataset.cam;
@@ -128,7 +128,7 @@ window.addEventListener('resize', onResize);
 /* loop */
 const clock = new THREE.Clock();
 const dust = hall.getObjectByName('dust');
-const LIM = { x: [-22.8, 22.8], y: [0.4, 25], z: [-8.2, 8.2] };
+const LIM = { x: [-22.6, 22.6], y: [0.4, 21.5], z: [-7.1, 7.1] }; // stay inside the colonnade and under the vault
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
