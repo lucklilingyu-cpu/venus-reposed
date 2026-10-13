@@ -79,7 +79,7 @@ $$('#sheetTabs button').forEach(b => b.addEventListener('click', () => {
 }));
 $('#strip').classList.add('m-on');
 document.addEventListener('keydown', (e) => {
-  if (e.target.closest('textarea,input,select')) return;
+  if (e.target.closest && e.target.closest('textarea,input,select')) return; // keys sent to the document itself have no closest()
   if (e.key === 'Escape') { $('#about').hidden = true; menu.hidden = true; stopTour(); if (Group.formOpen) { Group.closeModals(); return; } if (Atlas.isOpen) Atlas.close(); if (Group.isOpen) Group.close(); }
   if (e.key === 'ArrowRight') select(Math.min(S.pos.length - 1, S.sel + 1), { fly: true });
   if (e.key === 'ArrowLeft') select(Math.max(0, S.sel - 1), { fly: true });
