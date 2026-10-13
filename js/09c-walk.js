@@ -30,9 +30,9 @@ const Walk = (() => {
     return [0, 6];
   }
   function label() {
-    barText.textContent = isSmall() || matchMedia('(pointer: coarse)').matches ? '拖动画面环顾，用右下角的方向键行走'
-      : st.locked ? 'W A S D 行走 · Shift 跑 · 移动鼠标环顾 · 单击选中准星对着的雕塑 · Esc 松开鼠标'
-      : 'W A S D 行走 · Shift 跑 · 拖动画面环顾，单击画面用鼠标转向 · Esc 退出步行';
+    barText.textContent = matchMedia('(pointer: coarse)').matches ? '拖动画面环顾，用右下角的方向键行走'
+      : st.locked ? (isSmall() ? 'W A S D 行走 · 移动鼠标环顾 · Esc 松开' : 'W A S D 行走 · Shift 跑 · 移动鼠标环顾 · 单击选中准星对着的雕塑 · Esc 松开鼠标')
+      : (isSmall() ? 'W A S D 行走 · 拖动环顾 · Esc 退出' : 'W A S D 行走 · Shift 跑 · 拖动画面环顾，单击画面用鼠标转向 · Esc 退出步行');
   }
   const apply = () => camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ');
   function enter() {
