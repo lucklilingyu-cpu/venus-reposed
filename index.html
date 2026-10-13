@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Venus, Re-posed</title>
+<meta name="description" content="Venus, Re-posed · Bartlett Workshop 7：日常姿势在 V&amp;A Cast Courts 里替换女神雕塑，并长出连续表皮；组员作品汇总平台。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@500;600&amp;display=swap">
+<link rel="stylesheet" href="style.css">
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<!-- ===== 页面结构：面板、浮层、弹窗都在这里。样式在 style.css，功能在 js/ ===== -->
+<div id="app">
+  <canvas id="scene" aria-label="V&amp;A Cast Courts 虚拟展厅三维视图"></canvas>
+  <div id="labels"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">VENUS, RE-POSED</span>
+      <span class="sub" id="brandSub">V&amp;A Cast Courts × Goddess Atlas</span>
+    </div>
+    <nav class="seg" role="tablist" aria-label="视图" id="views">
+      <button role="tab" data-view="sculpture" aria-selected="true">雕塑序列</button>
+      <button role="tab" data-view="skin" aria-selected="false">表皮序列</button>
+      <button role="tab" data-view="both" aria-selected="false">叠加</button>
+      <button role="tab" data-view="color" aria-selected="false">色彩与声音</button>
+    </nav>
+    <div class="tools">
+      <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 105 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
+      <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
+      <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="显示 / 隐藏骨骼"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">骨架</span></button>
+      <button class="iconbtn" id="tourBtn" title="沿展厅轴线漫游"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl">漫游</span></button>
+      <button class="iconbtn" id="soundBtn" aria-pressed="false" title="声音"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.2a4 4 0 0 1 0 5.6M12.8 3.5a6.4 6.4 0 0 1 0 9"/></svg><span class="lbl">声音</span></button>
+      <div class="rel">
+        <button class="iconbtn" id="moreBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span class="lbl">表皮与导出</span></button>
+        <div class="menu" id="moreMenu" hidden>
+          <div class="hint">表皮样式</div>
+          <button data-skin="smooth">光滑曲面</button>
+          <button data-skin="ribs">肋片（等高线）</button>
+          <button data-skin="fold">折叠面</button>
+          <button id="cutBtn">切换：剖开前侧 / 完整包裹</button>
+          <button id="bonesBtn">切换：显示骨架火柴人</button>
+          <hr class="soft">
+          <div class="hint">视角</div>
+          <button data-cam="home">总览：沿轴线的序列</button>
+          <button data-cam="painting">北墙：概念草图</button>
+          <button data-cam="portico">西端：荣耀门廊复制品</button>
+          <button data-cam="trajan">东端：图拉真柱复制品</button>
+          <hr class="soft">
+          <div class="hint">给 Blender 与组员</div>
+          <button id="exportZip">导出表皮与序列（.zip：OBJ + JSON + 提示词）</button>
+          <button id="copyPrompt">复制 Blender MCP 提示词</button>
+        </div>
+      </div>
+      <button class="iconbtn" id="dataToggle" aria-pressed="false">数据</button>
+      <button class="iconbtn" id="aboutBtn" aria-label="说明"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.2"/></svg></button>
+    </div>
+  </header>
+
+  <aside class="panel left" id="inputPanel" aria-label="输入">
+    <div class="tabs" role="tablist" id="modeTabs">
+      <button role="tab" data-mode="text" aria-selected="true">文字日记</button>
+      <button role="tab" data-mode="camera" aria-selected="false">摄像头</button>
+      <button role="tab" data-mode="video" aria-selected="false">视频 / 照片</button>
+    </div>
+    <div class="scroll">
+      <section id="mode-text" class="dcard">
+        <div class="eyebrow">A day in my life</div>
+        <h2 class="ph">写下你的一天，生成一串姿势</h2>
+        <textarea id="journal" aria-label="日记"></textarea>
+        <div class="row">
+          <button class="btn primary" id="parseBtn">生成姿势序列</button>
+          <select id="samples" class="btn" aria-label="示例日记">
+            <option value="">换一个示例…</option>
+            <option value="group">示例 · 组内样例日记</option>
+            <option value="tutor">示例 · 老师的例子</option>
+            <option value="london">示例 · London weekend</option>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" id="mergeChk" checked> 合并相邻的相同姿势，时长相加</label>
+        <div class="status" id="textStatus"></div>
+        <p class="small muted" style="margin:0">可以写虚构的一天。平台只使用解析出的姿势序列，不保存日记原文。</p>
+      </section>
+
+      <section id="mode-camera" class="dcard" hidden>
+        <div class="eyebrow">Live body language</div>
+        <h2 class="ph">在镜头前做一个动作，保持 2 秒加入序列</h2>
+        <div class="cam"><video id="camVideo" playsinline muted></video><canvas id="camCanvas"></canvas><div class="msg" id="camMsg">摄像头未开启</div></div>
+        <div class="hold" aria-hidden="true"><i id="holdBar"></i></div>
+        <div class="row">
+          <button class="btn primary" id="camStart">打开摄像头</button>
+          <button class="btn" id="camDemo">模拟演示</button>
+          <button class="btn" id="camAdd" disabled>加入当前姿势</button>
+        </div>
+        <div class="status" id="camStatus"></div>
+      </section>
+
+      <section id="mode-video" class="dcard" hidden>
+        <div class="eyebrow">Third input · video</div>
+        <h2 class="ph">上传一段视频或几张照片，读出动作序列</h2>
+        <label class="drop" id="drop" for="videoFile">把视频或照片拖到这里，或点击选择<br><span class="small">手机上可以直接拍摄</span></label>
+        <input type="file" id="videoFile" accept="video/*,image/*" multiple hidden>
+        <div class="frames" id="frames"></div>
+        <div class="row">
+          <button class="btn primary" id="videoGo" disabled>分析并生成序列</button>
+        </div>
+        <div class="status" id="videoStatus"></div>
+        <p class="small muted" style="margin:0">只读取身体姿势，不识别人脸；画面不会保存。每段的主色调会传给对应位置的表皮。</p>
+      </section>
+
+      <section class="dcard">
+        <div class="row" style="justify-content:space-between"><h3 class="ph" id="barsTitle" style="font-size:13px">这一天的姿势构成（按时长）</h3></div>
+        <div class="bars" id="bars"></div>
+      </section>
+
+      <section class="dcard">
+        <h3 class="ph" style="font-size:13px">复杂姿势</h3>
+        <p class="small muted" style="margin:0">作用于选中的序列卡片，替换时优先选择同样动作的女神。</p>
+        <div class="chips" id="gestures"></div>
+      </section>
+    </div>
+  </aside>
+
+  <section class="strip" id="strip" aria-label="姿势序列">
+    <div class="strip-head">
+      <h2 class="ph">Cast Courts 序列 × 你的一天</h2>
+      <span class="summary" id="summary"></span>
+      <span style="margin-left:auto" class="row">
+        <button class="btn" id="saveDayBtn" style="padding:4px 10px" hidden>保存到小组</button>
+        <button class="btn ghost" id="resetBtn" style="padding:4px 10px">展厅原状</button>
+      </span>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <aside class="panel right" id="dataPanel" aria-label="数据">
+    <div class="scroll" id="dataScroll"></div>
+  </aside>
+
+  <nav class="sheet-tabs" id="sheetTabs" role="tablist">
+    <button role="tab" data-sheet="inputPanel" aria-selected="false">输入</button>
+    <button role="tab" data-sheet="strip" aria-selected="true">序列</button>
+    <button role="tab" data-sheet="dataPanel" aria-selected="false">数据</button>
+    <button role="tab" data-sheet="" aria-selected="false">只看展厅</button>
+  </nav>
+
+  <div class="loading" id="loading"><i></i><span id="loadingText">正在铸造雕塑…</span></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="tourbar" id="tourbar" hidden><span id="tourText"></span><button id="tourStop">停止</button></div>
+  <input type="file" id="paletteFile" accept="image/*" hidden>
+  <input type="file" id="soundFile" accept="audio/*" hidden>
+
+  <div class="atlas" id="atlas" hidden>
+    <div class="atlas-head">
+      <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub">105 件模型 · 组内研究网站的数据与网格</span></div>
+      <div class="atlas-filters" id="atlasFilters"></div>
+      <input id="atlasSearch" type="search" placeholder="搜索标题、作者、收藏地" aria-label="搜索图谱">
+      <button class="iconbtn" id="atlasClose">关闭</button>
+    </div>
+    <div class="atlas-body">
+      <div class="atlas-grid" id="atlasGrid"></div>
+      <div class="spec" id="spec" hidden>
+        <div class="spec-view"><canvas id="specCanvas" aria-label="模型陶瓷渲染"></canvas>
+          <div class="spec-tools"><button class="chip" id="specBones" aria-pressed="true">骨架</button><button class="chip" id="specSpin" aria-pressed="true">自动旋转</button></div></div>
+        <div class="spec-info" id="specInfo"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="atlas group" id="group" hidden>
+    <div class="atlas-head">
+      <div class="atlas-title"><span class="mark">GROUP WORKS</span><span class="sub" id="groupSub">组员的作品</span></div>
+      <div class="atlas-filters" id="groupFilters"></div>
+      <select id="groupWho" class="btn" aria-label="按组员筛选" hidden></select>
+      <input id="groupSearch" type="search" placeholder="搜索标题、说明、署名" aria-label="搜索小组作品">
+      <a class="btn ghost" id="groupPublicLink" target="_blank" rel="noopener" hidden>公开展厅 ↗</a>
+      <button class="btn" id="groupLogin" hidden>组员登录</button>
+      <button class="btn" id="groupMe" hidden>我的署名</button>
+      <button class="btn primary" id="groupAdd" hidden>+ 添加作品</button>
+      <button class="iconbtn" id="groupClose">关闭</button>
+    </div>
+    <div class="atlas-body">
+      <div class="gbanner" id="groupBanner" hidden></div>
+      <div class="atlas-grid ggrid" id="groupGrid"></div>
+      <div class="spec gdetail" id="gdetail" hidden>
+        <div class="spec-view gview"><canvas id="gCanvas" aria-label="模型陶瓷渲染" hidden></canvas><div class="gmedia" id="gmedia"></div>
+          <div class="spec-tools" id="gtools" hidden><button class="chip" id="gSpin" aria-pressed="true">自动旋转</button></div></div>
+        <div class="spec-info" id="ginfo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="gform" hidden>
+    <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="gformTitle">
+      <h2 id="gformTitle">添加作品</h2>
+      <div class="gform-grid">
+        <div class="gform-left">
+          <label class="drop" id="gdrop" for="gfile"><span id="gdropTxt">把文件拖到这里，或点击选择</span><br><span class="small">图片、视频（MP4）、PDF、3D 模型（OBJ / STL / PLY / GLB）、声音或其他文件；也可以不传文件，只写文字或链接</span></label>
+          <input type="file" id="gfile" hidden>
+          <div class="gkind small muted" id="gfKind"></div>
+          <div class="gprev"><canvas id="gformCanvas" hidden></canvas><div id="gprevMedia"></div></div>
+          <div class="status" id="gfileStatus"></div>
+          <div id="gfModel" hidden>
+            <div class="row" id="gfOrient"><select id="gfUp" class="btn" aria-label="哪个轴朝上"></select><button class="btn" id="gfYaw" type="button">绕竖轴转 90°</button></div>
+            <label class="field">姿势类别（决定在展厅里的尺寸）<select id="gfCls" class="btn"></select></label>
+          </div>
+          <div id="gfSound" hidden><label class="field">在展厅里<select id="gfSnd" class="btn"></select></label></div>
+        </div>
+        <div class="gform-right">
+          <label class="field">标题<input id="gfTitle" maxlength="120" autocomplete="off"></label>
+          <label class="field">类别<select id="gfCat" class="btn"></select></label>
+          <label class="field">说明<textarea id="gfNote" maxlength="4000" placeholder="做了什么、怎么做的、下一步"></textarea></label>
+          <label class="field">链接（可选）<input id="gfLink" type="url" placeholder="https://" autocomplete="off"></label>
+          <div class="row2">
+            <label class="field">关联展厅位置<select id="gfPos" class="btn"></select></label>
+            <label class="field">关联图谱编号<input id="gfAtlas" inputmode="numeric" placeholder="如 7" autocomplete="off"></label>
+          </div>
+          <label class="check" id="gfDayRow" hidden><input type="checkbox" id="gfText"> 附上日记原文（默认只保存解析出的姿势序列）</label>
+          <label class="check"><input type="checkbox" id="gfPub" checked> <span id="gfPubLabel">公开：同步时放到公开展厅（取消则只在小组内可见）</span></label>
+        </div>
+      </div>
+      <div class="status" id="gfStatus"></div>
+      <div class="row end"><button class="btn ghost" id="gfCancel" type="button">取消</button><button class="btn primary" id="gfSave" type="button">保存到工作台</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="gloginBox" hidden>
+    <div class="box narrow" role="dialog" aria-modal="true" aria-labelledby="gloginTitle">
+      <h2 id="gloginTitle">组员登录</h2>
+      <p class="small muted">输入小组编辑码就能添加、修改和删除作品，不需要注册账号。编辑码请向组长要，不要公开发布。</p>
+      <label class="field">编辑码<input id="gcode" type="password" autocomplete="off"></label>
+      <div class="status" id="gloginStatus"></div>
+      <div class="row end"><button class="btn ghost" id="gloginCancel" type="button">取消</button><button class="btn primary" id="gloginGo" type="button">解锁编辑</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="gmeBox" hidden>
+    <div class="box narrow" role="dialog" aria-modal="true" aria-labelledby="gmeTitle">
+      <h2 id="gmeTitle">我的署名</h2>
+      <p class="small muted" id="gmeWho"></p>
+      <select id="gmeSel" class="btn" aria-label="选择你是谁" hidden></select>
+      <label class="field">署名（公开展厅上显示）<input id="gnick" maxlength="30" autocomplete="off"></label>
+      <label class="field">分工（可选）<input id="grole" maxlength="40" placeholder="如：扫描与建模" autocomplete="off"></label>
+      <div class="status" id="gmeStatus"></div>
+      <div class="row end"><button class="btn ghost" id="gmeCancel" type="button">取消</button><button class="btn primary" id="gmeSave" type="button">保存</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="about" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle">VENUS, RE-POSED</h2>
+      <p>Bartlett B-Pro Architectural Design · Workshop 7 · V&amp;A Cast Courts。观众用一段日常叙事生成一串姿势，平台拿这串姿势沿 Cast Courts 的轴线逐个比对：姿势相同的雕塑保留，不同的就从女神数据集里换一尊同类姿势的进来，再在每个姿势周围长出一片容纳它的表皮，相邻表皮连成一条连续的建筑曲面。</p>
+      <h3>怎么用</h3>
+      <ul>
+        <li><b>文字日记</b>：写下“我的一天”，点“生成姿势序列”，按关键词规则拆分活动并标注姿势。</li>
+        <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则算出百分比，保持 2 秒加入序列。</li>
+        <li><b>图谱</b>：浏览 105 件模型，打开任一件看陶瓷渲染和骨骼，可以把它放到展厅里选中的位置。</li>
+        <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
+        <li><b>视图</b>：雕塑序列、表皮序列、两者叠加，以及按姿势显示色板与声音。</li>
+        <li><b>修改</b>：序列卡片可以拖动排序、改类别、删除；复杂姿势按钮作用于选中的卡片。</li>
+        <li><b>小组</b>：组员的作品汇总——图片、视频、PDF、扫描与建模的 3D 模型、声音、笔记和链接，以及每个人保存的“一天”。模型可以放到展厅的任一位置，“一天”可以在展厅中载入。</li>
+      </ul>
+      <div id="aboutLinks">
+      <h3>访客与组员</h3>
+      <ul>
+        <li><b>访客</b>：打开网址就能浏览展厅和组员作品，不用登录。</li>
+        <li><b>组员</b>：在“小组”里点“组员登录”，输入小组编辑码，就能上传、修改和删除作品，并把一天的序列设为展厅默认序列。标为“仅组内”的作品访客看不到。</li>
+        <li>数据和文件存放在小组自己的 Supabase 项目里。</li>
+      </ul>
+      </div>
+      <h3>说明</h3>
+      <ul>
+        <li>雕塑来自组内的 Goddess Sculpture Atlas：105 条记录、网页展示用的网格、姿势标注和骨骼候选（RTMPose 多视角、UniRig、人工标注）。其中 57 件独立雕像进入替换序列，浮雕与建筑类只在图谱里浏览。</li>
+        <li>所有模型统一用白色陶瓷材质渲染；地面上的金色、青色细环分别表示“保留”和“替换”。骨骼都是候选结果，只做显示，不评判身体。</li>
+        <li>展厅的“现有序列”是从图谱里挑的示意，可以在图谱里为任何位置手动指定。图谱里水平类只有 1 件、行走类 6 件，替换时会重复使用。</li>
+        <li>声音是按姿势合成的占位音色，可以在数据栏为每一类上传组员录制的声音；色板可以从图片中提取。</li>
+        <li>空间参考 V&amp;A 西侧 Cast Court（46a 室）：玻璃拱顶、两半截的图拉真柱复制品、圣地亚哥的“荣耀门廊”复制品；概念草图以“画作复制品”的方式挂在北墙上。</li>
+      </ul>
+      <div class="row"><button class="btn primary" id="aboutClose">进入展厅</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 下面是启动部分，一般不用改 ===== -->
+<script src="config.js"></script>
+<script>
+  // 启动失败时，在加载提示里显示原因
+  (function () {
+    var MSG = '请通过网址或本地服务器打开（在文件夹里运行 python -m http.server 8000），不要直接双击 index.html。';
+    var t = document.getElementById('loadingText');
+    if (location.protocol === 'file:' && t) t.textContent = MSG;
+    window.addEventListener('unhandledrejection', function (e) {
+      if (t && String(e.reason).indexOf('atlas') >= 0) t.textContent = '图谱数据没有加载成功：' + MSG;
+    });
+  })();
+</script>
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+  // 网页功能的代码在 js/ 文件夹里，按下面的顺序拼成一个模块运行（不需要构建步骤）。
+  // 新建 js 文件时，要把文件名加进这个列表。
+  const PARTS = [
+    '01-data.js', '02-pose.js', '03-sdf.js', '04-scene.js',
+    '05-seq.js', '06-ui.js', '06b-atlas.js', '07-inputs.js',
+    '08-sound.js', '09-export.js', '09b-group.js', '10-main.js',
+  ];
+  const debug = /[?&]debug\b/.test(location.search); // 网址后加 ?debug 会保留测试用的 window.__vr
+  const t = document.getElementById('loadingText');
+  try {
+    const texts = await Promise.all(PARTS.map(async (p) => {
+      const r = await fetch('js/' + p, { cache: 'no-cache' });
+      if (!r.ok) throw new Error('找不到 js/' + p + '（' + r.status + '）');
+      const s = await r.text();
+      return '/* ===== js/' + p + ' ===== */\n' + (debug ? s : s.split('/* DEBUG */')[0]);
+    }));
+    const url = URL.createObjectURL(new Blob([texts.join('\n') + '\n//# sourceURL=venus-app.js\n'], { type: 'text/javascript' }));
+    await import(url);
+  } catch (e) {
+    console.error(e);
+    const m = e && e.message ? e.message : String(e);
+    if (t && location.protocol !== 'file:') t.textContent = m.indexOf('atlas') >= 0 ? '图谱数据（data/atlas.json）没有加载成功，请刷新再试。'
+      : '网页代码出错，没能启动：' + m + '。如果刚改过代码，请检查最近的修改（按 F12 打开 Console 看详细错误）。';
+  }
+</script>
+</body>
+</html>
