@@ -6,6 +6,8 @@ Bartlett B-Pro Architectural Design · Workshop 7（V&A Cast Courts）小组项�
   - 旧网址 venus-reposed.netlify.app 会自动跳转到这里。
 - **代码仓库**：https://github.com/lucklilingyu-cpu/venus-reposed
 
+在网站里点“步行”或直接按 W A S D，可以像游戏一样在展厅里走动、抬头看穹顶。
+
 这个仓库就是网站本身。提交到 `main` 分支的修改，大约 1 分钟后自动上线。不需要构建，也不需要 Netlify 或 Claude 账号。
 
 ---
@@ -104,7 +106,8 @@ Codex 会自动读仓库里的 `AGENTS.md`，里面写清楚了这个项目的�
 | `js/01-data.js` | 姿势分类、示例日记、图谱数据载入 |
 | `js/02-pose.js` | 火柴人姿势图标 |
 | `js/03-sdf.js` | 表皮（连续曲面）的生成算法 |
-| `js/04-scene.js` | 三维场景：灯光、材质、Cast Courts 展厅建筑、草图挂画 |
+| `js/04-scene.js` | 三维场景：灯光、材质、Cast Courts 展厅建筑（红墙、柱廊、回廊、玻璃拱顶、日光） |
+| `js/04b-casts.js` | 图拉真柱（两半、浮雕基座）和荣耀门廊复制品 |
 | `js/05-seq.js` | 雕塑模型、白色陶瓷材质、展厅位置、替换规则、表皮、镜头 |
 | `js/06-ui.js` | 序列卡片、右侧资料面板、提示信息 |
 | `js/06b-atlas.js` | “图谱 ATLAS” 浮层 |
@@ -112,10 +115,11 @@ Codex 会自动读仓库里的 `AGENTS.md`，里面写清楚了这个项目的�
 | `js/08-sound.js` | 声音 |
 | `js/09-export.js` | 导出 |
 | `js/09b-group.js` | “小组 GROUP”：数据库连接、作品列表、上传和编辑 |
+| `js/09c-walk.js` | 步行模式：W A S D 行走、鼠标环顾、碰撞 |
 | `js/10-main.js` | 按钮事件、漫游、启动 |
 | `config.js` | 数据库地址和编辑码 |
 | `data/`、`m/`、`t/` | 图谱的 105 件雕塑：数据、模型、缩略图 |
-| `img/sketch.jpg` | 概念草图（挂在展厅北墙） |
+| `img/sketch.jpg` | 概念草图（目前没有挂在展厅里） |
 | `supabase/setup.sql` | 数据库脚本（已经运行过，不用再运行） |
 | `tools/` | 检查语法 `check.mjs`；重新生成图谱数据 `build_atlas.py` |
 | `AGENTS.md` | 写给 Codex 等 AI 工具的项目说明 |

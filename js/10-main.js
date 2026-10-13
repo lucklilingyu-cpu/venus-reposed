@@ -52,12 +52,13 @@ $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
 $('#cutBtn').addEventListener('click', () => { S.cut = !S.cut; applyView(); menu.hidden = true; toast(S.cut ? '剖开前侧，看见表皮里的姿势' : '完整包裹'); if (S.view === 'sculpture' || S.view === 'color') setView('both'); });
 $('#bonesBtn').addEventListener('click', () => { S.bones = !S.bones; applyView(); menu.hidden = true; toast(S.bones ? '显示骨架火柴人' : '隐藏骨架'); });
 const CAMS = {
-  painting: [[0, 10.6, 2.0], [0, 12.6, -8.6]],
-  vault: [[-7, 1.9, 4.2], [1.5, 17, -3.5]],
-  axis: [[-21.5, 3.4, 0.6], [8, 2.6, -0.4]],
+  vault: [[-8, 14.2, 5.4], [6, 15.2, -2.2]],
+  portico: [[-10.5, 3.6, 5.2], [-24, 4.5, -0.6]],
+  trajan: [[3.5, 6.2, 3.0], [19.6, 7.4, -0.5]],
+  axis: [[-20.4, 3.4, 0.6], [8, 2.6, -0.4]],
 };
 $$('#moreMenu [data-cam]').forEach(b => b.addEventListener('click', () => {
-  menu.hidden = true; const k = b.dataset.cam;
+  menu.hidden = true; const k = b.dataset.cam; Walk.exit();
   if (k === 'home') flyHome(); else flyTo(new THREE.Vector3(...CAMS[k][0]), new THREE.Vector3(...CAMS[k][1]), 1.8);
 }));
 $('#exportZip').addEventListener('click', () => { menu.hidden = true; exportZip(); });
@@ -82,7 +83,7 @@ document.addEventListener('keydown', (e) => {
 
 /* tour along the axis */
 let tour = null;
-function stopTour() { if (!tour) return; clearTimeout(tour.timer); tour = null; $('#tourbar').hidden = true; $('#tourBtn').setAttribute('aria-pressed', 'false'); flyHome(); }
+function stopTour(opts = {}) { if (!tour) return; clearTimeout(tour.timer); tour = null; $('#tourbar').hidden = true; $('#tourBtn').setAttribute('aria-pressed', 'false'); if (!opts.stay) flyHome(); }
 function tourStep() {
   if (!tour) return;
   const i = tour.i;
@@ -94,6 +95,7 @@ function tourStep() {
 }
 $('#tourBtn').addEventListener('click', () => {
   if (tour) { stopTour(); return; }
+  Walk.exit();
   tour = { i: 0, timer: 0 }; $('#tourbar').hidden = false; $('#tourBtn').setAttribute('aria-pressed', 'true'); tourStep();
 });
 $('#tourStop').addEventListener('click', stopTour);
@@ -104,8 +106,8 @@ let downXY = null;
 canvas.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointerup', (e) => {
   if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
-  const r = canvas.getBoundingClientRect();
-  ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  if (Walk.active) { if (!Walk.locked) return; ndc.set(0, 0); } // walking: pick what the crosshair points at
+  else { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
   ray.setFromCamera(ndc, camera);
   const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
@@ -128,15 +130,21 @@ window.addEventListener('resize', onResize);
 /* loop */
 const clock = new THREE.Clock();
 const dust = hall.getObjectByName('dust');
-const LIM = { x: [-22.6, 22.6], y: [0.4, 21.5], z: [-7.1, 7.1] }; // stay inside the colonnade and under the vault
+let shadowTick = 0; // the hall is static: shadows are redrawn while something moves, and twice a second otherwise
+const LIM = { x: [-21.4, 22.6], y: [0.4, 21.5], z: [-7.1, 7.1] }; // stay inside the colonnade and under the vault
 function frame() {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+  const raw = clock.getDelta(), dt = Math.min(0.05, raw), t = clock.elapsedTime;
   runTweens(performance.now());
-  controls.update();
-  camera.position.x = THREE.MathUtils.clamp(camera.position.x, LIM.x[0], LIM.x[1]);
-  camera.position.y = THREE.MathUtils.clamp(camera.position.y, LIM.y[0], LIM.y[1]);
-  camera.position.z = THREE.MathUtils.clamp(camera.position.z, LIM.z[0], LIM.z[1]);
+  renderer.shadowMap.needsUpdate = tweens.length > 0 || shadowTick === 0;
+  shadowTick = (shadowTick + 1) % 30;
+  if (Walk.active) Walk.update(Math.min(0.1, raw)); // walking keeps its pace on slower devices
+  else {
+    controls.update();
+    camera.position.x = THREE.MathUtils.clamp(camera.position.x, LIM.x[0], LIM.x[1]);
+    camera.position.y = THREE.MathUtils.clamp(camera.position.y, LIM.y[0], LIM.y[1]);
+    camera.position.z = THREE.MathUtils.clamp(camera.position.z, LIM.z[0], LIM.z[1]);
+  }
   if (!reduceMotion) {
     floaters.forEach(f => { f.m.position.y = f.y0 + Math.sin(t * 0.5 + f.ph) * 0.25; });
     if (dust) dust.rotation.y = t * 0.01;
@@ -183,4 +191,4 @@ window.__vr.showWorks = async (ids) => {
   await Promise.all(S.pos.map(p => meshOf(p.work)));
   S.pos.forEach((p, i) => setFigure(i, p, false));
 };
-window.__vr.Atlas = Atlas; window.__vr.Group = Group; window.__vr.REC = REC; window.__vr.meshOf = meshOf; window.__vr.ceramic = ceramic;
+window.__vr.Walk = Walk; window.__vr.Atlas = Atlas; window.__vr.Group = Group; window.__vr.REC = REC; window.__vr.meshOf = meshOf; window.__vr.ceramic = ceramic;

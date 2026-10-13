@@ -286,3 +286,17 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:2px 0}
   #groupBtn .cnt{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* walk mode (js/09c-walk.js) */
+body.walking .panel,body.walking .strip,body.walking .sheet-tabs,body.walking #views{display:none!important}
+.walkbar{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(30,28,27,.84);color:#fff;padding:6px 8px 6px 14px;border-radius:var(--r);font-size:12.5px;z-index:25;max-width:calc(100vw - 32px)}
+.walkbar button{border:0;border-radius:2px;padding:4px 10px;background:#fff;color:var(--ink);white-space:nowrap}
+.walkcross{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;pointer-events:none;z-index:24}
+.walkcross::before,.walkcross::after{content:"";position:absolute;background:rgba(255,255,255,.92);box-shadow:0 0 2px rgba(0,0,0,.55)}
+.walkcross::before{left:7px;top:0;width:2px;height:16px}
+.walkcross::after{top:7px;left:0;width:16px;height:2px}
+.walkpad{position:absolute;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:none;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,54px);gap:6px;z-index:25;touch-action:none;user-select:none;-webkit-user-select:none}
+.walkpad button{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:12px;font-size:18px;color:var(--ink);touch-action:none}
+.walkpad button.on{background:var(--ink);color:#fff}
+@media (pointer:coarse){body.walking .walkpad{display:grid}}
+@media (max-width:760px){.walkbar{top:calc(100px + env(safe-area-inset-top,0px));font-size:11.5px}}

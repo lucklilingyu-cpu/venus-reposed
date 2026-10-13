@@ -16,6 +16,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false; // see frame() in 10-main.js
 renderer.localClippingEnabled = true;
 
 const scene = new THREE.Scene();
@@ -51,7 +52,7 @@ scene.fog = new THREE.Fog(0xefe7de, 40, 120);
 const HALL = { x0: -24, x1: 24, z: 9, wallH: 18, galleryY: 8.4, vaultR: 9, vaultRise: 6.4 };
 
 /* ---------- light: sky, a low red bounce from the floor, and the sun through the vault ---------- */
-const hemi = new THREE.HemisphereLight(0xf6f3ee, 0x8e4a3f, 0.75);
+const hemi = new THREE.HemisphereLight(0xf6f3ee, 0x9a6a5e, 0.75);
 scene.add(hemi);
 const SUN_DIR = new THREE.Vector3(-0.32, 0.86, 0.4).normalize(); // points towards the sun: high (about 60°), from the south-west, so the light falls on the north wall and the water axis
 const sun = new THREE.DirectionalLight(0xffefd6, 4.4);
@@ -76,7 +77,7 @@ sun.shadow.normalBias = 0.03;
 })();
 scene.add(sun);
 const fillL = new THREE.DirectionalLight(0xe9eef6, 0.35); fillL.position.set(10, 8, 12); scene.add(fillL);
-const bounce = new THREE.DirectionalLight(0xffdcc8, 0.55); bounce.position.set(-4, 5, -12); scene.add(bounce); // sunlit north side bouncing onto the shaded south wall
+const bounce = new THREE.DirectionalLight(0xffe6d8, 0.55); bounce.position.set(-4, 5, -12); scene.add(bounce); // sunlit north side bouncing onto the shaded south wall
 
 
 /* composer */
@@ -236,10 +237,12 @@ scene.add(water);
    Lower storey: red wall, dark skirting, striped dado, detached columns (red lower third, cream shaft, gilded capital).
    Entablature with a painted frieze, consoles, the gallery balcony and its balustrade.
    Upper storey: cream arcade with green niches, top cornice with dentils. */
+const PORT_D = 2.3; // depth kept free in front of the west wall for the Pórtico de la Gloria (js/04b-casts.js)
+const COLS_LONG = [-19.2, -14.4, -9.6, -4.8, 0, 4.8, 9.6, 14.4, 19.2];
 const WALLS = [
-  { L: 48, bays: 10, cols: [-19.2, -14.4, -9.6, -4.8, 0, 4.8, 9.6, 14.4, 19.2], m: new THREE.Matrix4().makeTranslation(0, 0, -HALL.z), painting: true }, // north
-  { L: 48, bays: 10, cols: [-19.2, -14.4, -9.6, -4.8, 0, 4.8, 9.6, 14.4, 19.2], m: new THREE.Matrix4().makeTranslation(0, 0, HALL.z).multiply(new THREE.Matrix4().makeRotationY(Math.PI)) }, // south
-  { L: 18, bays: 4, cols: [-4.5, 0, 4.5], m: new THREE.Matrix4().makeTranslation(HALL.x0, 0, 0).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2)) }, // west
+  { L: 48, bays: 10, cols: COLS_LONG, span: [HALL.x0 + PORT_D, HALL.x1], m: new THREE.Matrix4().makeTranslation(0, 0, -HALL.z) }, // north (u = x)
+  { L: 48, bays: 10, cols: COLS_LONG, span: [-HALL.x1, -(HALL.x0 + PORT_D)], m: new THREE.Matrix4().makeTranslation(0, 0, HALL.z).multiply(new THREE.Matrix4().makeRotationY(Math.PI)) }, // south (u = -x)
+  { L: 18, bays: 4, cols: [], portico: true, m: new THREE.Matrix4().makeTranslation(HALL.x0, 0, 0).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2)) }, // west: the Pórtico stands here
   { L: 18, bays: 4, cols: [-4.5, 0, 4.5], m: new THREE.Matrix4().makeTranslation(HALL.x1, 0, 0).multiply(new THREE.Matrix4().makeRotationY(-Math.PI / 2)) }, // east
 ];
 const G = HALL.galleryY, UP = 17.07; // gallery floor, top of the upper storey
@@ -269,61 +272,67 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     const cyl = (k, rt, rb, h, u, y, w, seg = 28) => P(k, new THREE.CylinderGeometry(rt, rb, h, seg).translate(u, y, w));
     const ring = (k, R, t, u, y, w) => P(k, new THREE.TorusGeometry(R, t, 8, 40).rotateX(Math.PI / 2).translate(u, y, w));
     const inst = (k, u, y, w) => putInst(k, W.m.clone().multiply(m4.makeTranslation(u, y, w)));
-    const L = W.L, bayW = L / W.bays;
-    // back walls: red below the gallery, green above (a little longer than the wall so the corners close)
-    box('red', L + 0.8, G, 0.4, 0, G / 2, -0.2);
-    box('green', L + 0.8, HALL.wallH - G, 0.4, 0, G + (HALL.wallH - G) / 2, -0.2);
+    const L = W.L, bayW = L / W.bays, half = L / 2;
+    const lowTop = W.portico ? 11.6 : G; // the west wall stays red up to above the Pórtico
+    // back walls: red below, green above (a little longer than the wall so the corners close)
+    box('red', L + 0.8, lowTop, 0.4, 0, lowTop / 2, -0.2);
+    box('green', L + 0.8, HALL.wallH - lowTop, 0.4, 0, lowTop + (HALL.wallH - lowTop) / 2, -0.2);
     // skirting and painted dado
     box('dark', L, 0.55, 0.08, 0, 0.275, 0.04);
     box('dado', L, 0.28, 0.05, 0, 0.69, 0.025);
-    // detached columns
-    const cw = 0.56;
-    for (const u of W.cols) {
-      box('dark', 1.0, 0.42, 1.0, u, 0.21, cw);
-      ring('gold', 0.46, 0.055, u, 0.47, cw);
-      cyl('red', 0.42, 0.44, 2.05, u, 0.52 + 1.025, cw);
-      ring('gold', 0.43, 0.035, u, 2.6, cw);
-      cyl('stone', 0.37, 0.42, 4.1, u, 2.62 + 2.05, cw);
-      ring('gold', 0.385, 0.04, u, 6.62, cw);
-      cyl('gold', 0.56, 0.38, 0.2, u, 6.8, cw);
-      box('gold', 1.16, 0.1, 1.16, u, 6.95, cw);
+    if (!W.portico) {
+      // detached columns
+      const cw = 0.56;
+      for (const u of W.cols) {
+        box('dark', 1.0, 0.42, 1.0, u, 0.21, cw);
+        ring('gold', 0.46, 0.055, u, 0.47, cw);
+        cyl('red', 0.42, 0.44, 2.05, u, 0.52 + 1.025, cw);
+        ring('gold', 0.43, 0.035, u, 2.6, cw);
+        cyl('stone', 0.37, 0.42, 4.1, u, 2.62 + 2.05, cw);
+        ring('gold', 0.385, 0.04, u, 6.62, cw);
+        cyl('gold', 0.56, 0.38, 0.2, u, 6.8, cw);
+        box('gold', 1.16, 0.1, 1.16, u, 6.95, cw);
+      }
+      // entablature: architrave, painted frieze, consoles, gallery slab (the long walls stop short of the Pórtico)
+      const [lo, hi] = W.span || [-half, half], sl = hi - lo, sc = (lo + hi) / 2;
+      box('stone', sl, 0.32, 1.2, sc, 7.16, 0.6);
+      box('frieze', sl, 0.4, 1.08, sc, 7.52, 0.54);
+      for (let u = lo + 0.6; u <= hi - 0.55; u += 1.2) P('stone', consoleGeo.clone().translate(u, 7.72, 1.08));
+      box('stone', sl, 0.3, 2.06, sc, 8.26, 1.03);
+      box('gold', sl, 0.035, 0.02, sc, 8.13, 2.07);
+      // balustrade: meets the balustrade of the next wall, or turns back to the wall where the gallery stops
+      const bl = half - BAL_W;
+      const b0 = lo > -half ? lo + 0.18 : -bl, b1 = hi < half ? hi - 0.18 : bl;
+      box('stone', b1 - b0 + 0.36, 0.14, 0.36, (b0 + b1) / 2, 8.48, BAL_W);
+      box('stone', b1 - b0 + 0.36, 0.12, 0.38, (b0 + b1) / 2, 9.3, BAL_W);
+      const posts = [b0, b1];
+      for (let b = 1; b < W.bays; b++) { const u = -half + b * bayW; if (u > b0 + 0.3 && u < b1 - 0.3) posts.push(u); }
+      for (const u of posts) box('stone', 0.36, 0.86, 0.4, u, 8.85, BAL_W);
+      for (let u = b0 + 0.3; u <= b1 - 0.25; u += 0.3) if (!posts.some(q => Math.abs(q - u) < 0.3)) inst('baluster', u, 8.55, BAL_W);
+      if (lo > -half) box('stone', 0.3, 0.98, BAL_W, b0, 8.9, BAL_W / 2);
+      if (hi < half) box('stone', 0.3, 0.98, BAL_W, b1, 8.9, BAL_W / 2);
+    } else {
+      // west wall: a cornice just above the Pórtico
+      box('stone', L, 0.5, 0.7, 0, lowTop - 0.25, 0.35);
+      box('gold', L, 0.035, 0.02, 0, lowTop - 0.52, 0.71);
     }
-    // entablature: architrave, painted frieze, consoles, gallery slab
-    box('stone', L, 0.32, 1.2, 0, 7.16, 0.6);
-    box('frieze', L, 0.4, 1.08, 0, 7.52, 0.54);
-    for (let u = -L / 2 + 0.6; u <= L / 2 - 0.55; u += 1.2) P('stone', consoleGeo.clone().translate(u, 7.72, 1.08));
-    box('stone', L, 0.3, 2.06, 0, 8.26, 1.03);
-    box('gold', L, 0.035, 0.02, 0, 8.13, 2.07);
-    // balustrade (stops where it meets the balustrade of the next wall)
-    const bl = L / 2 - BAL_W;
-    box('stone', bl * 2 + 0.36, 0.14, 0.36, 0, 8.48, BAL_W);
-    box('stone', bl * 2 + 0.36, 0.12, 0.38, 0, 9.3, BAL_W);
-    const posts = [-bl, bl];
-    for (let b = 1; b < W.bays; b++) { const u = -L / 2 + b * bayW; if (Math.abs(u) < bl - 0.3) posts.push(u); }
-    for (const u of posts) box('stone', 0.36, 0.86, 0.4, u, 8.85, BAL_W);
-    for (let u = -bl + 0.3; u <= bl - 0.25; u += 0.3) if (!posts.some(q => Math.abs(q - u) < 0.3)) inst('baluster', u, 8.55, BAL_W);
     // upper arcade
-    const openW = bayW * 0.6, spring = 4.9, archTop = G + spring + openW / 2;
+    const upH = UP - lowTop, openW = bayW * (W.portico ? 0.55 : 0.6), spring = W.portico ? 2.5 : 4.9, archTop = lowTop + spring + openW / 2;
     for (let b = 0; b < W.bays; b++) {
-      const u = -L / 2 + bayW * (b + 0.5);
-      if (W.painting && Math.abs(u) < bayW) continue; // the two middle bays of the north wall hold the concept sketch
-      P('stone', archFrame(bayW, UP - G, openW, spring).translate(u, G, 0));
-      P('stone', new THREE.TorusGeometry(openW / 2 + 0.13, 0.085, 6, 28, Math.PI).translate(u, G + spring, 0.43));
+      const u = -half + bayW * (b + 0.5);
+      P('stone', archFrame(bayW, upH, openW, spring).translate(u, lowTop, 0));
+      P('stone', new THREE.TorusGeometry(openW / 2 + 0.13, 0.085, 6, 28, Math.PI).translate(u, lowTop + spring, 0.43));
       box('stone', 0.42, 0.72, 0.24, u, archTop + 0.14, 0.5);
-      for (const s of [-1, 1]) box('stone', 0.42, 0.16, 0.14, u + s * (openW / 2 + 0.22), G + spring, 0.47);
-      box('stone', openW + 0.1, 0.12, 0.3, u, G + 0.06, 0.15); // sill
+      for (const s of [-1, 1]) box('stone', 0.42, 0.16, 0.14, u + s * (openW / 2 + 0.22), lowTop + spring, 0.47);
+      box('stone', openW + 0.1, 0.12, 0.3, u, lowTop + 0.06, 0.15); // sill
     }
     for (let b = 0; b <= W.bays; b++) { // pilaster strips between the bays
-      const u = -L / 2 + b * bayW; if (W.painting && Math.abs(u) < bayW - 0.1) continue;
-      box('stone', 0.5, UP - G, 0.12, u, G + (UP - G) / 2, 0.48);
-    }
-    if (W.painting) { // a plain green field with a cream moulding for the sketch
-      const fw = bayW * 2 - 0.9, fh = UP - G - 1.0, fy = G + 0.5 + fh / 2;
-      for (const [u, y, sx, sy] of [[0, fy + fh / 2, fw + 0.2, 0.2], [0, fy - fh / 2, fw + 0.2, 0.2], [-fw / 2, fy, 0.2, fh], [fw / 2, fy, 0.2, fh]]) box('stone', sx, sy, 0.16, u, y, 0.08);
+      const u = -half + b * bayW;
+      box('stone', 0.5, upH, 0.12, u, lowTop + upH / 2, 0.48);
     }
     // top cornice: frieze band, dentils, crown
     box('stone', L, 0.55, 0.5, 0, UP + 0.275, 0.25);
-    for (let u = -L / 2 + 0.16; u <= L / 2 - 0.16; u += 0.32) inst('dentil', u, UP + 0.66, 0.6);
+    for (let u = -half + 0.16; u <= half - 0.16; u += 0.32) inst('dentil', u, UP + 0.66, 0.6);
     box('stone', L, 0.34, 0.98, 0, UP + 0.93, 0.49);
   }
   // merge everything that was collected above
@@ -368,7 +377,7 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     const c = ell(Math.PI * i / S, 0.1);
     iron.push(new THREE.BoxGeometry(Lx, 0.08, 0.1).translate(0, c.y, c.z));
   }
-  iron.push(new THREE.BoxGeometry(Lx, 0.16, 0.3).translate(0, Y + H - 0.05, 0)); // ridge
+  iron.push(new THREE.BoxGeometry(Lx, 0.14, 0.12).translate(0, Y + H - 0.05, 0)); // ridge
   addMesh(mergeGeometries(iron.map(g => g.index ? g.toNonIndexed() : g)), M.iron, hall, { cast: true, receive: false });
 
   // the two end lunettes: cream frame, fan window with radiating iron bars
@@ -418,31 +427,6 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     p.renderOrder = 2;
     hall.add(p);
   }
-})();
-
-/* ---------- the concept sketch, hung like the courts' painted copies ---------- */
-const sketchImg = new Image();
-const sketchTex = new THREE.Texture(sketchImg);
-sketchTex.colorSpace = THREE.SRGBColorSpace;
-sketchImg.onload = () => { sketchTex.needsUpdate = true; };
-sketchImg.src = SKETCH_SRC;
-(function painting() {
-  const w = 7.8, h = w * 941 / 1672, y = G + (UP - G) / 2 + 0.15, z = -HALL.z + 0.34;
-  const mat = new THREE.MeshStandardMaterial({ map: sketchTex, roughness: 0.85, emissive: 0xffffff, emissiveMap: sketchTex, emissiveIntensity: 0.1 });
-  const p = addMesh(new THREE.PlaneGeometry(w, h), mat);
-  p.position.set(0, y, z);
-  const fr = [];
-  for (const [fx, fy, fw, fh] of [[0, h / 2 + 0.13, w + 0.52, 0.26], [0, -h / 2 - 0.13, w + 0.52, 0.26], [-w / 2 - 0.13, 0, 0.26, h], [w / 2 + 0.13, 0, 0.26, h]]) {
-    fr.push(new THREE.BoxGeometry(fw, fh, 0.16).translate(fx, y + fy, z - 0.02));
-  }
-  addMesh(mergeGeometries(fr), M.gold, hall, { cast: true });
-  const lab = tex(1024, 96, (g, W, H) => {
-    g.fillStyle = '#f3ede2'; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#232323'; g.font = '600 40px "Cormorant Garamond", Georgia, serif'; g.textAlign = 'center'; g.fillText('VENUS, RE-POSED', W / 2, 46);
-    g.fillStyle = '#6f6f6f'; g.font = '26px "Noto Sans SC", sans-serif'; g.fillText('概念草图 · 组内绘制 · 以“画作复制品”的方式挂在北墙', W / 2, 82);
-  });
-  const lp = addMesh(new THREE.PlaneGeometry(3.2, 0.3), new THREE.MeshBasicMaterial({ map: lab }), hall, { receive: false });
-  lp.position.set(0, y - h / 2 - 0.42, z + 0.02);
 })();
 
 /* pose glyphs (used by the interface icons) */

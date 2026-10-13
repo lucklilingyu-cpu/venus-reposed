@@ -492,6 +492,7 @@ function updateColorView() {
 /* ---------- camera moves ---------- */
 let camTween = null;
 function flyTo(pos, target, dur = 1.4) {
+  if (Walk.active) return; // walk mode steers the camera itself
   if (camTween) { const k = tweens.indexOf(camTween); if (k >= 0) tweens.splice(k, 1); }
   const p0 = camera.position.clone(), t0 = controls.target.clone();
   camTween = tween(dur, (e) => { camera.position.lerpVectors(p0, pos, e); controls.target.lerpVectors(t0, target, e); });

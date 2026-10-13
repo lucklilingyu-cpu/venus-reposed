@@ -43,7 +43,7 @@ const DEFAULT_PALETTES = {
    meshes are m/<id>.js, thumbnails t/<id>.webp.
    Regenerate them with tools/build_atlas.py.
 ---------------------------------------------------------------- */
-const SKETCH_SRC = 'img/sketch.jpg'; // concept sketch hung on the north wall
+const SKETCH_SRC = 'img/sketch.jpg'; // the group's concept sketch (not hung in the hall at the moment)
 const ATLAS = await fetch('data/atlas.json').then(r => { if (!r.ok) throw new Error('atlas data ' + r.status); return r.json(); });
 const REC = {}; ATLAS.records.forEach(r => { REC[r.id] = r; });
 const FIGS = ATLAS.records.filter(r => r.kind === 'figure' && r.cls);

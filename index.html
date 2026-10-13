@@ -33,6 +33,7 @@
       <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
       <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="显示 / 隐藏骨骼"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">骨架</span></button>
       <button class="iconbtn" id="tourBtn" title="沿展厅轴线漫游"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl">漫游</span></button>
+      <button class="iconbtn" id="walkBtn" aria-pressed="false" title="像游戏一样在展厅里步行：W A S D 行走，鼠标环顾"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="2.4" r="1.4"/><path d="M8.6 4.6 7.2 8.6l2.4 1.8.5 3.8M7.2 8.6l-1.7 5.2M8.6 4.8l2.4 2.1 1.9.3M8.4 4.9 5.9 6.2l-1 2"/></svg><span class="lbl">步行</span></button>
       <button class="iconbtn" id="soundBtn" aria-pressed="false" title="声音"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.2a4 4 0 0 1 0 5.6M12.8 3.5a6.4 6.4 0 0 1 0 9"/></svg><span class="lbl">声音</span></button>
       <div class="rel">
         <button class="iconbtn" id="moreBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span class="lbl">表皮与导出</span></button>
@@ -46,8 +47,9 @@
           <hr class="soft">
           <div class="hint">视角</div>
           <button data-cam="home">总览：沿轴线的序列</button>
-          <button data-cam="painting">北墙：概念草图</button>
           <button data-cam="vault">仰望：玻璃拱顶与日光</button>
+          <button data-cam="portico">西端：荣耀门廊复制品</button>
+          <button data-cam="trajan">东端：图拉真柱复制品</button>
           <button data-cam="axis">轴线：从西端看水景</button>
           <hr class="soft">
           <div class="hint">给 Blender 与组员</div>
@@ -150,6 +152,9 @@
   <div class="loading" id="loading"><i></i><span id="loadingText">正在铸造雕塑…</span></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="tourbar" id="tourbar" hidden><span id="tourText"></span><button id="tourStop">停止</button></div>
+  <div class="walkbar" id="walkbar" hidden><span id="walkText"></span><button id="walkExit">退出步行</button></div>
+  <div class="walkcross" id="walkCross" hidden></div>
+  <div class="walkpad" id="walkPad" aria-label="行走方向键"><span></span><button data-pad="f" aria-label="前进">▲</button><span></span><button data-pad="l" aria-label="向左">◀</button><button data-pad="b" aria-label="后退">▼</button><button data-pad="r" aria-label="向右">▶</button></div>
   <input type="file" id="paletteFile" accept="image/*" hidden>
   <input type="file" id="soundFile" accept="audio/*" hidden>
 
@@ -278,7 +283,8 @@
         <li>所有模型统一用白色陶瓷材质渲染；地面上的金色、青色细环分别表示“保留”和“替换”。骨骼都是候选结果，只做显示，不评判身体。</li>
         <li>展厅的“现有序列”是从图谱里挑的示意，可以在图谱里为任何位置手动指定。图谱里水平类只有 1 件、行走类 6 件，替换时会重复使用。</li>
         <li>声音是按姿势合成的占位音色，可以在数据栏为每一类上传组员录制的声音；色板可以从图片中提取。</li>
-        <li>空间参考 V&amp;A Cast Courts：红色墙面、下段红色并镀金柱头的奶油色柱子、托架承托的回廊与栏杆、上层绿色拱龛、红色人字纹地面、铁格栅玻璃筒拱。阳光从拱顶照进来，把格栅的影子投在墙面和地面上。概念草图以“画作复制品”的方式挂在北墙上。</li>
+        <li>空间参考 V&amp;A Cast Courts：红色墙面、下段红色并镀金柱头的奶油色柱子、托架承托的回廊与栏杆、上层绿色拱龛、红色人字纹地面、铁格栅玻璃筒拱。阳光从拱顶照进来，把格栅的影子投在墙面和地面上。东端是分成两半的图拉真柱复制品（带浮雕基座），西墙是圣地亚哥“荣耀门廊”复制品。</li>
+        <li>点顶部的“步行”或直接按 W A S D，就能像游戏一样在展厅里走：Shift 跑步，拖动或单击画面后用鼠标环顾，可以抬头看穹顶；Esc 退出。手机上用右下角的方向键。</li>
       </ul>
       <div class="row"><button class="btn primary" id="aboutClose">进入展厅</button></div>
     </div>
@@ -304,8 +310,9 @@
   // 新建 js 文件时，要把文件名加进这个列表。
   const PARTS = [
     '01-data.js', '02-pose.js', '03-sdf.js', '04-scene.js',
-    '05-seq.js', '06-ui.js', '06b-atlas.js', '07-inputs.js',
-    '08-sound.js', '09-export.js', '09b-group.js', '10-main.js',
+    '04b-casts.js', '05-seq.js', '06-ui.js', '06b-atlas.js',
+    '07-inputs.js', '08-sound.js', '09-export.js', '09b-group.js',
+    '09c-walk.js', '10-main.js',
   ];
   const debug = /[?&]debug\b/.test(location.search); // 网址后加 ?debug 会保留测试用的 window.__vr
   const t = document.getElementById('loadingText');

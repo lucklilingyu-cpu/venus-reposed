@@ -34,7 +34,10 @@ js/               the app code, joined in PARTS order into one module:
   03-sdf.js       SDF primitives, surface nets, the skin builder; SDF_WORKER_SRC runs in a Web Worker pool (Geo)
   04-scene.js     renderer, lights, materials (M, colours in COL), the hall: red lower walls + colonnade, entablature, gallery balcony,
                   upper arcade with green niches, red chevron floor, pool + water, glazed barrel vault with iron ribs/trusses,
-                  end lunettes; the sun (SUN_DIR) and its shadow fit; sunbeams; the concept-sketch painting
+                  end lunettes; the sun (SUN_DIR) and its shadow fit; sunbeams
+  04b-casts.js    the casts: Trajan's Column in two halves (spiral frieze texture, pedestal with arms, eagles, garlands,
+                  dedication, door, laurel torus, capital) and the Pórtico de la Gloria (procedural figures, archivolts,
+                  tympanum, trumeau, jamb statues, its own spot light); WALK = floor plan for walk mode
   05-seq.js       atlas mesh loading (fetchMesh, meshOf, figureGeometry), white ceramic material, skeleton overlay, state S,
                   plinths/positions (V), replacement logic (chooseWork, computeSequence, applyDay), skin build, views, camera moves
   06-ui.js        DOM helpers ($, $$, esc, toast), sequence strip, data panel (renderData), bars, gesture chips, 3D labels
@@ -42,6 +45,7 @@ js/               the app code, joined in PARTS order into one module:
   07-inputs.js    text diary → poses (keyword rules), camera + MediaPipe classifier, video/photo analysis, palette extraction
   08-sound.js     generative WebAudio placeholder per pose class + uploaded class sounds
   09-export.js    export zip (skin OBJ + sequence JSON + Blender prompt), saveFile
+  09c-walk.js     walk mode: W A S D / arrows, Shift to run, mouse look (pointer lock or drag), touch pad, collisions with WALK
   09b-group.js    group works ("小组 GROUP"): Supabase adapter, login with edit code, member identity, gallery, detail view,
                   add/edit form (uploads, 3D model reading + simplification), day sequences, default sequence
   10-main.js      event wiring, tour, picking, resize, render loop, boot. Everything after the `/* DEBUG */` marker is test-only.
@@ -114,11 +118,14 @@ This is the `works.data` jsonb, the same object the UI reads.
 ## The hall (js/04-scene.js)
 
 - Modelled on the V&A Cast Courts: Pompeian-red lower walls, cream columns with a red lower third and gilded capitals, a gallery balcony on consoles, an upper arcade with sage-green niches, a red chevron mosaic floor and a glazed barrel vault.
-- **No sculptures or reliefs on the walls or in the space** apart from the sequence on the water axis. The concept sketch on the north wall is the only artwork. Keep it that way unless the user asks.
+- **Exhibits**: the sculpture sequence on the water axis, the two halves of Trajan's Column at the east end and the Pórtico de la Gloria on the west wall (js/04b-casts.js). The group asked for **no other sculptures, reliefs or pictures on the walls** (the concept sketch was taken down). Keep it that way unless the user asks.
+- **Casts**: modelled after the V&A originals — the Pórtico cast is 17.85 × 10.57 m (Brucciani, 1866); the column stands in two halves, the lower one on the pedestal. Carving is procedural: canvas textures drawn with `Carve` (colour + bump) and simple figure builders (`standing`, `seated`). If you add an obstacle on the floor, add its rectangle to `WALK.rects`.
 - Walls are built per elevation (`WALLS`, local frame u/y/w) and merged per material (`BUCKET` → one mesh per material, instanced balusters and dentils). Add new parts through `put()` / `putInst()` so they stay merged.
 - **Sunlight**: `SUN_DIR` points towards the sun. Its shadow camera is fitted to the hall in `fitSunShadow()`; the vault glass never casts shadows, the iron ribs, trusses and purlins do — that is what draws the grid on the walls and floor. Keep the glazing bars ≥ 0.1 m thick or the pattern disappears on phones (2048 shadow map).
 - three r160 ignores `scene.environmentIntensity`; architecture materials set `envMapIntensity` themselves (keep it low, or the sun pattern washes out).
-- Camera limits (`LIM` in `10-main.js`) keep the camera inside the colonnade and under the vault.
+- Camera limits (`LIM` in `10-main.js`) keep the camera inside the colonnade and under the vault. OrbitControls cannot look up much (`maxPolarAngle`), so preset views (`CAMS`) keep the target only a little above the camera; walk mode is the way to look up at the vault.
+- **Shadows** are redrawn only while tweens run and twice a second otherwise (`renderer.shadowMap.autoUpdate = false`, see `frame()`), because the hall is static and the sun shadow map is large.
+- **Walk mode** (`Walk` in 09c-walk.js) takes over the camera: `flyTo()` does nothing while walking, the orbit controls are disabled, and `Walk.exit()` hands the camera back. Picking while walking uses the screen centre (crosshair).
 
 ## Atlas data
 
