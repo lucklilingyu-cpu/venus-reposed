@@ -32,14 +32,16 @@ js/               the app code, joined in PARTS order into one module:
   01-data.js      imports; pose classes (CLS, CLASS), gestures, default palettes; loads data/atlas.json (top-level await) → ATLAS, REC, FIGS; EXISTING hall sequence; sample diaries
   02-pose.js      procedural stick poses (icons, camera demo, canonical poses)
   03-sdf.js       SDF primitives, surface nets, the skin builder; SDF_WORKER_SRC runs in a Web Worker pool (Geo)
-  04-scene.js     renderer, lights, materials (M, colours in COL), the hall: red lower walls + colonnade, entablature, gallery balcony,
+  04-scene.js     renderer, lights, materials (M, colours in COL), the hall: sage-green walls + colonnade, entablature, gallery balcony,
                   upper arcade with green niches, red chevron floor, pool + water, glazed barrel vault with iron ribs/trusses,
                   end lunettes; the sun (SUN_DIR) and its shadow fit; sunbeams
   04b-casts.js    the casts: Trajan's Column in two halves (spiral frieze texture, pedestal with arms, eagles, garlands,
                   dedication, door, laurel torus, capital) and the Pórtico de la Gloria (procedural figures, archivolts,
                   tympanum, trumeau, jamb statues, its own spot light); WALK = floor plan for walk mode
   05-seq.js       atlas mesh loading (fetchMesh, meshOf, figureGeometry), white ceramic material, skeleton overlay, state S,
-                  plinths/positions (V), replacement logic (chooseWork, computeSequence, applyDay), skin build, views, camera moves
+                  the chessboard (BOARD, CELLS, MAX_POS) and tracks (skeletonSegments, trackPoints, planLayout), plinths/positions (V)
+                  with chess moves (ensurePositions, relayout), replacement logic (chooseWork, computeSequence, applyDay), skin build,
+                  views, camera moves
   06-ui.js        DOM helpers ($, $$, esc, toast), sequence strip, data panel (renderData), bars, gesture chips, 3D labels
   06b-atlas.js    Atlas overlay: gallery, filters, search, white "specimen" viewer, "放到展厅第 NN 位"
   07-inputs.js    text diary → poses (keyword rules), camera + MediaPipe classifier, video/photo analysis, palette extraction
@@ -77,7 +79,7 @@ python tools/build_atlas.py "<path to goddess_web/dist>"   # refresh atlas data 
 
 There is no automated test suite. After a change, open the preview (and `http://localhost:8000/?debug` if you need `window.__vr`), then check:
 
-1. The hall loads, with 7 white ceramic sculptures on plinths and labels above them.
+1. The hall loads, with 16 white ceramic sculptures on plinths, staggered on the chessboard over the pool, and labels above them.
 2. "生成姿势序列" with a sample diary changes the sequence; the skin view ("表皮序列") builds.
 3. "图谱 ATLAS" opens; a model rotates in the specimen viewer.
 4. "小组 GROUP" opens and lists the works from the live database. Don't create test works on the live database unless the user asks; if you do, delete them afterwards.
@@ -106,7 +108,7 @@ This is the `works.data` jsonb, the same object the UI reads.
 ```js
 { kind: 'image'|'video'|'pdf'|'model'|'sound'|'file'|'note'|'link'|'day',
   title, note, cat: 'research'|'concept'|'scan'|'model'|'pose'|'colour'|'sound'|'skin'|'render'|'other',
-  link, pub: true|false, pos: 0..9|null (hall position), atlas: '<atlas id>'|null, cls: pose class|null,
+  link, pub: true|false, pos: 0..23|null (hall position, < MAX_POS), atlas: '<atlas id>'|null, cls: pose class|null,
   rot: 3×3 rows (models), files: [{ role: 'main'|'thumb'|'mesh'|'orig', aid: '<storage object name>', ct, name, size }],
   day: { seq: [{cls, g, label, time, hours}], override: {'<pos>': '<work id>'}, palettes, source, text },  // kind 'day'
   createdAt, updatedAt, by: '<member id>' }
@@ -117,8 +119,8 @@ This is the `works.data` jsonb, the same object the UI reads.
 
 ## The hall (js/04-scene.js)
 
-- Modelled on the V&A Cast Courts: Pompeian-red lower walls, cream columns with a red lower third and gilded capitals, a gallery balcony on consoles, an upper arcade with sage-green niches, a red chevron mosaic floor and a glazed barrel vault.
-- **Exhibits**: the sculpture sequence on the water axis, the two halves of Trajan's Column at the east end and the Pórtico de la Gloria on the west wall (js/04b-casts.js). The group asked for **no other sculptures, reliefs or pictures on the walls** (the concept sketch was taken down). Keep it that way unless the user asks.
+- Modelled on the V&A Cast Courts: sage-green walls on both storeys (the group asked for green instead of red; the Pórtico's openings show the same green), cream columns with a red lower third and gilded capitals, a gallery balcony on consoles, an upper arcade with sage-green niches, a red chevron mosaic floor and a glazed barrel vault.
+- **Exhibits**: the sculpture sequence on a chessboard over the pool (see "The sequence board"), the two halves of Trajan's Column at the east end and the Pórtico de la Gloria on the west wall (js/04b-casts.js). The group asked for **no other sculptures, reliefs or pictures on the walls** (the concept sketch was taken down). Keep it that way unless the user asks.
 - **Casts**: modelled after the V&A originals — the Pórtico cast is 17.85 × 10.57 m (Brucciani, 1866); the column stands in two halves, the lower one on the pedestal. Carving is procedural: canvas textures drawn with `Carve` (colour + bump) and simple figure builders (`standing`, `seated`). If you add an obstacle on the floor, add its rectangle to `WALK.rects`.
 - Walls are built per elevation (`WALLS`, local frame u/y/w) and merged per material (`BUCKET` → one mesh per material, instanced balusters and dentils). Add new parts through `put()` / `putInst()` so they stay merged.
 - **Sunlight**: `SUN_DIR` points towards the sun. Its shadow camera is fitted to the hall in `fitSunShadow()`; the vault glass never casts shadows, the iron ribs, trusses and purlins do — that is what draws the grid on the walls and floor. Keep the glazing bars ≥ 0.1 m thick or the pattern disappears on phones (2048 shadow map).
@@ -126,6 +128,17 @@ This is the `works.data` jsonb, the same object the UI reads.
 - Camera limits (`LIM` in `10-main.js`) keep the camera inside the colonnade and under the vault. OrbitControls cannot look up much (`maxPolarAngle`), so preset views (`CAMS`) keep the target only a little above the camera; walk mode is the way to look up at the vault.
 - **Shadows** are redrawn only while tweens run and twice a second otherwise (`renderer.shadowMap.autoUpdate = false`, see `frame()`), because the hall is static and the sun shadow map is large.
 - **Walk mode** (`Walk` in 09c-walk.js) takes over the camera: `flyTo()` does nothing while walking, the orbit controls are disabled, and `Walk.exit()` hands the camera back. Picking while walking uses the screen centre (crosshair).
+
+## The sequence board (js/05-seq.js)
+
+- **Board**: `BOARD` is 13 files × 5 ranks over the pool (x = -13.2 + 2.3k, z = -4.9 + 2.45r). Only the "dark squares" (`(k + r) % 2 === 0`) are used: 33 `CELLS`. The two outer ranks (z = ±4.9) stand just beyond the water. The hall shows up to `MAX_POS` = 24 positions; `EXISTING` (01-data.js) holds the 16 default sculptures.
+- **Tracks** (`S.layout`, the select `#layoutSel` in the sequence strip):
+  - `'skeleton'` (default): the bones of the day's first pose (`CANON[cls]` + gesture tweaks, walked from the head), laid along the pool with the head to the east.
+  - `'s'`: one S-shaped sine wave along the pool.
+  - `planLayout(n)` samples n points along the track and snaps each to the nearest free cell. The day's poses are spread evenly along the track; the other sculptures fill the remaining points.
+- **Chess moves**: `ensurePositions(n, animate, delay)` slides existing plinths along one board axis, then the other (with a small lift), raises new plinths out of the water and sinks removed ones. It returns the arrival time of each plinth; `applyDay` waits for it before `setFigure` builds the sculpture with the shard burst. Keep that effect. `relayout()` re-plans after the track changes.
+- Each `V[i]` has `x`, `z`; anything that places things at a position (labels, picking, camera moves, export, walk collisions) must use both.
+- **Skin**: grows only through the day's positions (in track order), bridges stretched along the track tangent. The cut view (`S.cut`) is a horizontal plane at `PT + 1.1`, so you look down into the poses.
 
 ## Atlas data
 

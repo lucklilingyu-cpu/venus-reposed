@@ -50,7 +50,14 @@ const FIGS = ATLAS.records.filter(r => r.kind === 'figure' && r.cls);
 const recTitle = (r) => (r && r.t) ? r.t : `未识别作品 #${r ? r.id : '?'}`;
 const recMeta = (r) => [r.a, r.d].filter(Boolean).join(' · ') || '作者与年代待考';
 /* the sequence that already stands along the court's axis (illustrative, chosen from the atlas) */
-const EXISTING = [{ id: '3' }, { id: '7' }, { id: '1' }, { id: '24' }, { id: '63' }, { id: '32' }, { id: '49' }];
+// the hall's own sequence: the first seven, then nine more from the atlas, mixing the pose classes
+const EXISTING = (() => {
+  const ids = ['3', '7', '1', '24', '63', '32', '49'];
+  for (const cls of ['standing', 'seated', 'walking', 'crouching', 'reclining', 'standing', 'seated', 'walking', 'standing']) {
+    const r = FIGS.find(f => f.cls === cls && f.t && !ids.includes(f.id)); if (r) ids.push(r.id);
+  }
+  return ids.map(id => ({ id }));
+})();
 const ZH = {
   pose: { standing: '站立', seated: '坐', reclining: '斜倚 / 卧', crouching: '蹲', kneeling: '跪', upright_unspecified: '直立（未细分）', seated_or_reclining_uncertain: '坐或卧（不确定）', undetermined: '未定' },
   gest: { arm_bent: '手臂弯曲', arm_extended: '手臂伸展', arm_raised: '手臂上举', arm_lowered: '手臂下垂', arms_crossed: '双臂交叉', hand_at_head: '手在头部', hand_at_torso: '手在胸腹', hand_at_hip_or_thigh: '手在髋部或大腿', hand_at_lap_or_knee: '手在膝上', hand_on_support: '手扶支撑', hand_open: '手张开', hand_clenched: '握拳', supporting_head: '托头', supporting_body: '撑起身体', holding_object: '持物', holding_object_uncertain: '持物（不确定）', holding_fabric: '手持衣褶', supporting_other_figure: '托着另一人物', interaction_with_figure: '与人物互动', interaction_with_animal: '与动物互动', interaction_uncertain: '互动不确定', gesture_uncertain: '手势不确定', no_gesture_visible: '无可见手势', limbs_not_visible: '肢体不可见', limb_visibility_uncertain: '肢体可见性不确定', limbs_missing_or_truncated: '肢体残缺' },

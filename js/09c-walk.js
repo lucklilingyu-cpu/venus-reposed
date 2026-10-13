@@ -17,6 +17,7 @@ const Walk = (() => {
     const b = WALK.bounds;
     if (x < b.x0 + R || x > b.x1 - R || z < b.z0 + R || z > b.z1 - R) return false;
     for (const [x0, z0, x1, z1] of WALK.rects) if (x > x0 - R && x < x1 + R && z > z0 - R && z < z1 + R) return false;
+    for (const vp of V) { const r = Math.max(vp.scaleX, vp.scaleZ) * 1.32 * vp.g.scale.x + R; if ((x - vp.g.position.x) ** 2 + (z - vp.g.position.z) ** 2 < r * r) return false; } // plinths beside the pool
     return true;
   };
   function nearestFree(x, z) {

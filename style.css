@@ -27,11 +27,14 @@ button{cursor:pointer}
 #app{position:fixed;inset:0;overflow:hidden}
 #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
-#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;isolation:isolate}  /* label z-index stays under the panels */
 .tag{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:6px;padding:2px 9px 2px 3px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid var(--line);font-size:11.5px;white-space:nowrap;pointer-events:auto;cursor:pointer;transition:opacity .3s}
 .tag .n{font-family:var(--font-mono);font-size:10px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--ink)}
-.tag.sel{border-color:var(--ink)}
+.tag.sel{border-color:var(--ink);z-index:3}
 .tag .st{font-size:10.5px;color:var(--ink-soft)}
+.tag{z-index:2}
+.tag.quiet{z-index:1;opacity:.82;padding-right:7px}  /* sculptures outside the day: number + class only, under the day's labels */
+.tag.quiet .st{display:none}
 .tag.hidden{opacity:0;pointer-events:none}
 
 .topbar{position:absolute;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;pointer-events:none}
@@ -300,3 +303,16 @@ body.walking .panel,body.walking .strip,body.walking .sheet-tabs,body.walking #v
 .walkpad button.on{background:var(--ink);color:#fff}
 @media (pointer:coarse){body.walking .walkpad{display:grid}}
 @media (max-width:760px){.walkbar{top:calc(100px + env(safe-area-inset-top,0px));font-size:11.5px}}
+
+/* track selector in the sequence strip */
+.strip-head select.mini{font:inherit;font-size:11.5px;padding:3px 6px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);max-width:170px}
+@media (max-width:760px){.strip-head select.mini{max-width:120px}}
+.strip-head{flex-wrap:nowrap}
+.strip-head .ph{white-space:nowrap;flex:none}
+.strip-head .summary{min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip-head .row{flex:none;flex-wrap:nowrap;gap:6px}
+@media (max-width:760px){  /* phones: the track select and the buttons get their own line */
+  .strip-head{flex-wrap:wrap;row-gap:7px}
+  .strip-head .row{flex:1 1 100%;margin-left:0!important}
+  .strip-head select.mini{flex:1 1 auto;min-width:0;max-width:none}
+}

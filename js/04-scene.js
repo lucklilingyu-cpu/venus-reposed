@@ -21,8 +21,8 @@ renderer.localClippingEnabled = true;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 220);
-const HOME = { pos: new THREE.Vector3(9.4, 3.7, 7.0), target: new THREE.Vector3(-2.8, 1.5, -0.5) };
-const HOME_M = { pos: new THREE.Vector3(13.6, 6.4, 7.0), target: new THREE.Vector3(-2, 1.4, -0.6) };
+const HOME = { pos: new THREE.Vector3(15.2, 7.6, 6.9), target: new THREE.Vector3(-2.5, 0.4, -0.8) }; // high enough to read the chessboard of plinths
+const HOME_M = { pos: new THREE.Vector3(17.5, 10.5, 6.9), target: new THREE.Vector3(-2, 0.3, -0.8) };
 camera.position.copy(isSmall() ? HOME_M.pos : HOME.pos);
 const controls = new OrbitControls(camera, canvas);
 controls.target.copy(isSmall() ? HOME_M.target : HOME.target);
@@ -273,9 +273,9 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     const ring = (k, R, t, u, y, w) => P(k, new THREE.TorusGeometry(R, t, 8, 40).rotateX(Math.PI / 2).translate(u, y, w));
     const inst = (k, u, y, w) => putInst(k, W.m.clone().multiply(m4.makeTranslation(u, y, w)));
     const L = W.L, bayW = L / W.bays, half = L / 2;
-    const lowTop = W.portico ? 11.6 : G; // the west wall stays red up to above the Pórtico
-    // back walls: red below, green above (a little longer than the wall so the corners close)
-    box('red', L + 0.8, lowTop, 0.4, 0, lowTop / 2, -0.2);
+    const lowTop = W.portico ? 11.6 : G;
+    // back walls: green all the way up, like the upper storey (a little longer than the wall so the corners close)
+    box('green', L + 0.8, lowTop, 0.4, 0, lowTop / 2, -0.2);
     box('green', L + 0.8, HALL.wallH - lowTop, 0.4, 0, lowTop + (HALL.wallH - lowTop) / 2, -0.2);
     // skirting and painted dado
     box('dark', L, 0.55, 0.08, 0, 0.275, 0.04);

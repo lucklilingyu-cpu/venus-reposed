@@ -206,7 +206,7 @@ function updateLabels() {
   V.forEach((vp, i) => {
     const p = S.pos[i]; if (!p) return;
     const top = S.view === 'color' ? PT + 2.6 : PT + (vp.bounds ? vp.bounds.max.y : 1.6) + 0.3;
-    _v.set(vp.g.position.x, top, 0).project(camera);
+    _v.set(vp.g.position.x, top + vp.g.position.y, vp.g.position.z).project(camera);
     const vis = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1;
     const tag = vp.tag;
     tag.classList.toggle('hidden', !vis);
@@ -223,6 +223,7 @@ function updateLabels() {
       tag.querySelector('.st').textContent = statusText(p);
       const gw = Group.countAt(i); tag.querySelector('.gw').textContent = gw ? '＋' + gw : '';
       tag.classList.toggle('sel', i === S.sel);
+      tag.classList.toggle('quiet', p.status === 'beyond' && S.day.length > 0 && i !== S.sel);
     }
   });
 }

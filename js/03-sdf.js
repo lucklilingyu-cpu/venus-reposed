@@ -165,10 +165,12 @@ function sdBuildSkin(msg) {
     let D = 1e9, first = true;
     for (let f = 0; f < figs.length; f++) {
       const g = figs[f];
-      if (x < g.xmin || x > g.xmax) { if (out) out[f] = 1e9; continue; }
-      const xs = (x - g.cx) / g.s + g.cx;
-      let d = g.prims && g.prims.length ? sdPrimSet(g.prims, xs, y, z, kB) : 1e9;
-      if (g._pp) { const dp = sdPtsDist(g, xs, y, z); d = d === 1e9 ? dp : sdSmin(d, dp, kB); }
+      if (x < g.xmin || x > g.xmax || (g.zmin !== undefined && (z < g.zmin || z > g.zmax))) { if (out) out[f] = 1e9; continue; }
+      // longer activities stretch their envelope along the direction of the sequence (tx, tz)
+      let xs = x, zs = z;
+      if (g.s !== 1) { const tx = g.tx === undefined ? 1 : g.tx, tz = g.tz || 0, a = (x - g.cx) * tx + (z - (g.cz || 0)) * tz, k = 1 / g.s - 1; xs = x + tx * a * k; zs = z + tz * a * k; }
+      let d = g.prims && g.prims.length ? sdPrimSet(g.prims, xs, y, zs, kB) : 1e9;
+      if (g._pp) { const dp = sdPtsDist(g, xs, y, zs); d = d === 1e9 ? dp : sdSmin(d, dp, kB); }
       d -= g.c;
       if (out) out[f] = d;
       D = first ? d : sdSmin(D, d, kS); first = false;

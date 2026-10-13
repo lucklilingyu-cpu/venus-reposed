@@ -42,7 +42,7 @@
           <button data-skin="smooth">光滑曲面</button>
           <button data-skin="ribs">肋片（等高线）</button>
           <button data-skin="fold">折叠面</button>
-          <button id="cutBtn">切换：剖开前侧 / 完整包裹</button>
+          <button id="cutBtn">切换：剖开上半部 / 完整包裹</button>
           <button id="bonesBtn">切换：显示骨架火柴人</button>
           <hr class="soft">
           <div class="hint">视角</div>
@@ -131,6 +131,10 @@
       <h2 class="ph">Cast Courts 序列 × 你的一天</h2>
       <span class="summary" id="summary"></span>
       <span style="margin-left:auto" class="row">
+        <select id="layoutSel" class="mini" aria-label="雕塑在水面上的排布轨迹" title="序列沿着哪条轨迹排在棋盘格上">
+          <option value="skeleton">轨迹：第一个动作的骨架</option>
+          <option value="s">轨迹：S 形</option>
+        </select>
         <button class="btn" id="saveDayBtn" style="padding:4px 10px" hidden>保存到小组</button>
         <button class="btn ghost" id="resetBtn" style="padding:4px 10px">展厅原状</button>
       </span>
@@ -283,7 +287,8 @@
         <li>所有模型统一用白色陶瓷材质渲染；地面上的金色、青色细环分别表示“保留”和“替换”。骨骼都是候选结果，只做显示，不评判身体。</li>
         <li>展厅的“现有序列”是从图谱里挑的示意，可以在图谱里为任何位置手动指定。图谱里水平类只有 1 件、行走类 6 件，替换时会重复使用。</li>
         <li>声音是按姿势合成的占位音色，可以在数据栏为每一类上传组员录制的声音；色板可以从图片中提取。</li>
-        <li>空间参考 V&amp;A Cast Courts：红色墙面、下段红色并镀金柱头的奶油色柱子、托架承托的回廊与栏杆、上层绿色拱龛、红色人字纹地面、铁格栅玻璃筒拱。阳光从拱顶照进来，把格栅的影子投在墙面和地面上。东端是分成两半的图拉真柱复制品（带浮雕基座），西墙是圣地亚哥“荣耀门廊”复制品。</li>
+        <li>雕塑像国际象棋一样，交错站在水池上方的棋盘格里（只用“黑格”），最外两排稍微超出水面。生成新的一天时，底座像棋子一样沿格线滑到新的格子，雕塑再在底座上碎片化生成。排布轨迹可以在序列栏右上角切换：沿第一个动作的骨架，或沿 S 形。</li>
+        <li>空间参考 V&amp;A Cast Courts：上下层统一的灰绿色墙面（荣耀门廊的门洞里也是绿色）、下段红色并镀金柱头的奶油色柱子、托架承托的回廊与栏杆、上层绿色拱龛、红色人字纹地面、铁格栅玻璃筒拱。阳光从拱顶照进来，把格栅的影子投在墙面和地面上。东端是分成两半的图拉真柱复制品（带浮雕基座），西墙是圣地亚哥“荣耀门廊”复制品。</li>
         <li>点顶部的“步行”或直接按 W A S D，就能像游戏一样在展厅里走：Shift 跑步，拖动或单击画面后用鼠标环顾，可以抬头看穹顶；Esc 退出。手机上用右下角的方向键。</li>
       </ul>
       <div class="row"><button class="btn primary" id="aboutClose">进入展厅</button></div>

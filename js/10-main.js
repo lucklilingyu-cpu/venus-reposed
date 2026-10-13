@@ -22,6 +22,10 @@ vf.addEventListener('change', () => { if (vf.files.length) loadMedia(Array.from(
 ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => { const f = Array.from(e.dataTransfer.files || []).filter(x => /^(image|video)\//.test(x.type)); if (f.length) loadMedia(f).catch(er => { $('#videoStatus').textContent = '读取失败：' + er.message; }); });
 $('#videoGo').addEventListener('click', analyzeMedia);
+$('#layoutSel').addEventListener('change', (e) => {
+  S.layout = e.target.value; relayout();
+  toast(S.layout === 's' ? '雕塑沿 S 形轨迹排在棋盘格上' : '雕塑沿第一个动作的骨架排在棋盘格上');
+});
 $('#resetBtn').addEventListener('click', () => { S.posPal = {}; applyDay([], { source: '', fresh: true }); $('#textStatus').textContent = ''; });
 $('#paletteFile').addEventListener('change', async (e) => {
   const f = e.target.files[0]; e.target.value = ''; if (!f || !paletteTarget) return;
@@ -49,7 +53,7 @@ $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
   if (S.view === 'sculpture' || S.view === 'color') setView('skin');
   scheduleSkin(0); toast({ smooth: '表皮：光滑曲面', ribs: '表皮：肋片（等高线）', fold: '表皮：折叠面' }[S.skinStyle]);
 }));
-$('#cutBtn').addEventListener('click', () => { S.cut = !S.cut; applyView(); menu.hidden = true; toast(S.cut ? '剖开前侧，看见表皮里的姿势' : '完整包裹'); if (S.view === 'sculpture' || S.view === 'color') setView('both'); });
+$('#cutBtn').addEventListener('click', () => { S.cut = !S.cut; applyView(); menu.hidden = true; toast(S.cut ? '剖开表皮上半部，从上面看见里面的姿势' : '完整包裹'); if (S.view === 'sculpture' || S.view === 'color') setView('both'); });
 $('#bonesBtn').addEventListener('click', () => { S.bones = !S.bones; applyView(); menu.hidden = true; toast(S.bones ? '显示骨架火柴人' : '隐藏骨架'); });
 const CAMS = {
   vault: [[-8, 14.2, 5.4], [6, 15.2, -2.2]],
@@ -114,7 +118,7 @@ canvas.addEventListener('pointerup', (e) => {
   const hit = ray.intersectObjects(targets, false)[0];
   if (!hit) return;
   let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object);
-  if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.abs(vp.x - hit.point.x); if (d < best) { best = d; i = k; } }); }
+  if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.hypot(vp.x - hit.point.x, vp.z - hit.point.z); if (d < best) { best = d; i = k; } }); }
   if (i >= 0) select(i, { fly: false });
 });
 

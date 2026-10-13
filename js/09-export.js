@@ -14,7 +14,7 @@ function sequenceData() {
     positions: S.pos.map((p, i) => {
       const r = REC[p.work];
       return {
-        index: i + 1, x: +layoutX(S.pos.length, i).toFixed(3), status: p.status,
+        index: i + 1, x: +(V[i] ? V[i].x : 0).toFixed(3), z: +(V[i] ? V[i].z : 0).toFixed(3), status: p.status,
         pose_class: r.cls, gesture: p.act ? p.act.g : null,
         activity: p.act ? { label: p.act.label, time: p.act.time, hours: p.act.hours } : null,
         sculpture: { atlas_id: r.id, title: recTitle(r), artist: r.a, date: r.d, museum: r.m, atlas_pose: r.pose, skeleton_source: r.sk ? r.sk.src : null, source_url: r.src },
@@ -36,20 +36,20 @@ async function skinOBJ() {
   else for (let i = 0; i < P.count; i += 3) tri(i, i + 1, i + 2);
   let base = P.count;
   for (let i = 0; i < S.pos.length; i++) {
-    const p = S.pos[i], x = layoutX(S.pos.length, i);
+    const p = S.pos[i], x = V[i] ? V[i].x : 0, z = V[i] ? V[i].z : 0;
     let mesh; try { mesh = await meshOf(p.work); } catch (e) { continue; }
     if (!mesh.skel.length) continue;
     lines.push(`o skeleton_${pad2(i + 1)}_atlas${p.work}`);
     for (const f of mesh.skel) for (let k = 0; k < f.segs.length; k += 2) {
       const A = f.segs[k], B = f.segs[k + 1];
-      lines.push(`v ${(A[0] + x).toFixed(4)} ${(A[1] + PT).toFixed(4)} ${A[2].toFixed(4)}`, `v ${(B[0] + x).toFixed(4)} ${(B[1] + PT).toFixed(4)} ${B[2].toFixed(4)}`);
+      lines.push(`v ${(A[0] + x).toFixed(4)} ${(A[1] + PT).toFixed(4)} ${(A[2] + z).toFixed(4)}`, `v ${(B[0] + x).toFixed(4)} ${(B[1] + PT).toFixed(4)} ${(B[2] + z).toFixed(4)}`);
       lines.push(`l ${base + 1} ${base + 2}`); base += 2;
     }
   }
   return lines.join('\n') + '\n';
 }
 function blenderPrompt() {
-  const seq = S.pos.map((p, i) => `${i + 1}. x = ${layoutX(S.pos.length, i).toFixed(2)} m · ${REC[p.work].cls}${p.act && p.act.g ? ' (' + p.act.g + ')' : ''} · ${p.act ? p.act.label + (p.act.hours ? ', ' + p.act.hours + ' h' : '') : 'no activity'} · atlas #${p.work} ${recTitle(REC[p.work])} · ${p.status}`).join('\n');
+  const seq = S.pos.map((p, i) => `${i + 1}. x = ${(V[i] ? V[i].x : 0).toFixed(2)} m, z = ${(V[i] ? V[i].z : 0).toFixed(2)} m · ${REC[p.work].cls}${p.act && p.act.g ? ' (' + p.act.g + ')' : ''} · ${p.act ? p.act.label + (p.act.hours ? ', ' + p.act.hours + ' h' : '') : 'no activity'} · atlas #${p.work} ${recTitle(REC[p.work])} · ${p.status}`).join('\n');
   return `In the open Blender scene, import skin.obj (Forward -Z, Up Y) and read sequence.json from the same folder.
 The sequence runs along the X axis of the Cast Court model; each position names a Goddess Atlas model (atlas_id), its pose_class and a duration in hours.
 For each position, import that atlas model's original OBJ from the research folder, scale it to the same height, and place it on a plinth whose top is at y = ${PT}.

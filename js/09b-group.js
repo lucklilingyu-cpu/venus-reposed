@@ -215,7 +215,7 @@ const Group = (() => {
       key: owner + '/' + id, owner, id, kind, day, files, atlas,
       title: String(d.title || '').slice(0, 120), note: String(d.note || '').slice(0, 4000),
       cat: CATS[d.cat] ? d.cat : 'other', link: /^https?:\/\/\S+$/i.test(d.link || '') ? String(d.link).slice(0, 500) : '',
-      pos: Number.isInteger(d.pos) && d.pos >= 0 && d.pos < 10 ? d.pos : null,
+      pos: Number.isInteger(d.pos) && d.pos >= 0 && d.pos < MAX_POS ? d.pos : null,
       cls: CLS.includes(d.cls) ? d.cls : null, rot: validRot(d.rot) ? d.rot : I3,
       pub: d.pub !== false, createdAt: String(d.createdAt || ''), updatedAt: String(d.updatedAt || d.createdAt || ''),
       credit: d.credit ? String(d.credit).slice(0, 40) : '', role: d.role ? String(d.role).slice(0, 40) : '',
@@ -804,7 +804,7 @@ const Group = (() => {
     let editing = null, file = null, kind = 'note', model = null, up = '+Y', yaw = 0, busy = false;
     function fillSelects() {
       $('#gfCat').innerHTML = Object.entries(CATS).map(([k, t]) => `<option value="${k}">${t}</option>`).join('');
-      $('#gfPos').innerHTML = '<option value="">不关联</option>' + Array.from({ length: Math.max(S.pos.length, 7) }, (_, i) => `<option value="${i}">第 ${pad2(i + 1)} 位${S.pos[i] ? ' · ' + esc(recTitle(REC[S.pos[i].work]).slice(0, 18)) : ''}</option>`).join('');
+      $('#gfPos').innerHTML = '<option value="">不关联</option>' + Array.from({ length: Math.max(S.pos.length, EXISTING.length) }, (_, i) => `<option value="${i}">第 ${pad2(i + 1)} 位${S.pos[i] ? ' · ' + esc(recTitle(REC[S.pos[i].work]).slice(0, 18)) : ''}</option>`).join('');
       $('#gfCls').innerHTML = CLS.map(c => `<option value="${c}">${CLASS[c].zh}</option>`).join('');
       $('#gfSnd').innerHTML = '<option value="">不用作展厅声音</option>' + CLS.map(c => `<option value="${c}">用作「${CLASS[c].zh}」类的声音</option>`).join('');
       $('#gfUp').innerHTML = Object.entries(UP_NAMES).map(([k, t]) => `<option value="${k}">${t}</option>`).join('');

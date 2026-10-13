@@ -286,7 +286,6 @@ const PORTICO = { w: 17.4, h: 10.57 };
     }
   });
   const orn = mat(ornT, 1, 1, 3);
-  const deep = new THREE.MeshStandardMaterial({ color: 0x2b2522, roughness: 1, envMapIntensity: 0.1 });
   // local frame: u across the façade (= -z), y up, w out from the west wall (= x + 24)
   const F = new THREE.Matrix4().makeTranslation(HALL.x0, 0, 0).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2));
   const S = [], O = [], FG = [], D = [];
@@ -455,7 +454,7 @@ const PORTICO = { w: 17.4, h: 10.57 };
   addMesh(mergeGeometries(S), stone, hall, { cast: true });
   addMesh(mergeGeometries(O), orn, hall, { cast: true });
   addMesh(mergeGeometries(FG), figMat, hall, { cast: true });
-  addMesh(mergeGeometries(D), deep, hall, { receive: false });
+  addMesh(mergeGeometries(D), M.green, hall); // the openings show the green wall behind
   // museum light on the Pórtico: the sun comes from behind this wall, so a raking spot brings out the carving
   const spot = new THREE.SpotLight(0xfff0dc, 640, 0, 0.66, 0.7, 2);
   spot.position.set(HALL.x0 + 8.5, 14, 7.2); spot.target.position.set(HALL.x0 + 0.6, 5.0, -0.6);

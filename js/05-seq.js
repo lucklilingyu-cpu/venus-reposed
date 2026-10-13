@@ -152,7 +152,7 @@ function skeletonObject(skel, rad = 0.0075) {
 
 /* state */
 const S = {
-  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'ribs', cut: true, bones: false, merge: true,
+  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'ribs', cut: true, bones: false, merge: true, layout: 'skeleton',
   palettes: JSON.parse(JSON.stringify(DEFAULT_PALETTES)), posPal: {}, barsMode: 'day', source: '', override: {},
 };
 
@@ -235,19 +235,116 @@ function makePosition() {
   tag.innerHTML = '<span class="n"></span><span class="t"></span><span class="st"></span><span class="gw"></span>';
   tag.addEventListener('click', () => select(V.indexOf(vp), { fly: true }));
   labelsEl.appendChild(tag);
-  const vp = { g, plinth, tiers, drum, trim, ring, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, scaleX: 1, scaleZ: 1, bounds: null };
+  const vp = { g, plinth, tiers, drum, trim, ring, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
 }
-function layoutX(n, i) { const sp = n <= 7 ? 3.6 : Math.min(3.6, 25.5 / (n - 1)); return (i - (n - 1) / 2) * sp; }
-function ensurePositions(n, animate) {
-  while (V.length < n) { const vp = makePosition(); vp.g.position.x = 13; vp.g.scale.setScalar(0.001); V.push(vp); }
-  while (V.length > n) { const vp = V.pop(); disposeFigure(vp, animate); scene.remove(vp.g); vp.tag.remove(); }
-  V.forEach((vp, i) => {
-    const x1 = layoutX(n, i), x0 = vp.g.position.x, s0 = vp.g.scale.x;
-    vp.x = x1;
-    if (animate) tween(1.0, (e) => { vp.g.position.x = x0 + (x1 - x0) * e; vp.g.scale.setScalar(s0 + (1 - s0) * e); });
-    else { vp.g.position.x = x1; vp.g.scale.setScalar(1); }
+/* ---------- the board: plinths stand on a staggered chessboard over the water ----------
+   13 files × 5 ranks; only the "dark squares" are used, so neighbours are always offset.
+   The outer ranks stand just beyond the pool's edge. The sequence follows a track over the
+   board — the skeleton of the day's first pose, or an S — and snaps to the nearest free squares.
+   The day's sculptures are spread from one end of the track to the other; the sculptures outside
+   the day's story fill the squares in between, so together they draw the track. */
+const BOARD = { x0: -13.2, dx: 2.3, cols: 13, z0: -4.9, dz: 2.45, rows: 5 };
+const CELLS = [];
+for (let r = 0; r < BOARD.rows; r++) for (let k = 0; k < BOARD.cols; k++) if ((k + r) % 2 === 0) CELLS.push({ k, r, x: BOARD.x0 + k * BOARD.dx, z: BOARD.z0 + r * BOARD.dz });
+const MAX_POS = 24;
+function skeletonSegments(act) { // the first pose as 2D bones, walked depth-first from the head
+  const pose = buildPose(CANON[act.cls]);
+  const J = {}; for (const k in pose.joints) J[k] = pose.joints[k].clone();
+  const side = act.cls === 'walking' || act.cls === 'seated' || act.cls === 'crouching';
+  for (const [k, sd] of [['L', 1], ['R', -1]]) { // gestures move the arms of the track too
+    const sh = J['sh' + k], v = (x, y) => new THREE.Vector3(side ? 0 : x * sd, y, side ? x * sd : 0);
+    if (act.g === 'arm_raised') { J['elbow' + k] = sh.clone().add(v(0.06, 0.27)); J['wrist' + k] = J['elbow' + k].clone().add(v(0.03, 0.25)); }
+    if (act.g === 'arm_extended') { J['elbow' + k] = sh.clone().add(v(0.28, 0)); J['wrist' + k] = J['elbow' + k].clone().add(v(0.25, 0.02)); }
+    if (act.g === 'hand_at_head' || act.g === 'supporting_head') { J['elbow' + k] = sh.clone().add(v(0.2, 0.12)); J['wrist' + k] = J.head.clone().add(v(0.1, 0)); }
+  }
+  const P = (k) => [side ? J[k].z : J[k].x, J[k].y];
+  const adj = {}; for (const [a, b] of pose.bones) { (adj[a] = adj[a] || []).push(b); (adj[b] = adj[b] || []).push(a); }
+  const segs = [], seen = new Set(['head']);
+  (function dfs(a) { for (const b of adj[a] || []) if (!seen.has(b)) { seen.add(b); segs.push([P(a), P(b)]); dfs(b); } })('head');
+  return segs;
+}
+function trackPoints(m) {
+  if (!m) return [];
+  const X0 = BOARD.x0, X1 = BOARD.x0 + (BOARD.cols - 1) * BOARD.dx, ZW = -BOARD.z0;
+  const first = S.day[0];
+  if (S.layout === 'skeleton' && first && CANON[first.cls]) {
+    const segs = skeletonSegments(first);
+    let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+    for (const sg of segs) for (const [u, v] of sg) { u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+    const tall = v1 - v0 >= u1 - u0, along = tall ? v1 - v0 : u1 - u0, across = tall ? u1 - u0 : v1 - v0;
+    const sc = Math.min((X1 - X0) / Math.max(along, 1e-3), (2 * ZW) / Math.max(across, 1e-3)) * 0.94;
+    const cx = (X0 + X1) / 2, um = (u0 + u1) / 2, vm = (v0 + v1) / 2;
+    const map = ([u, v]) => tall ? { x: cx + (v - vm) * sc, z: (u - um) * sc } : { x: cx + (u - um) * sc, z: -(v - vm) * sc }; // the head lies to the east
+    const lens = segs.map(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1])), total = lens.reduce((x, y) => x + y, 0);
+    const out = [];
+    for (let j = 0; j < m; j++) {
+      let d = m === 1 ? 0 : total * j / (m - 1), i = 0;
+      while (i < segs.length - 1 && d > lens[i]) { d -= lens[i]; i++; }
+      const [a, b] = segs[i], t = lens[i] ? Math.min(1, d / lens[i]) : 0;
+      out.push(map([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]));
+    }
+    return out;
+  }
+  // an S across the whole pool
+  return Array.from({ length: m }, (_, j) => { const t = m === 1 ? 0.5 : j / (m - 1); return { x: X0 + (X1 - X0) * t, z: ZW * 0.92 * Math.sin(Math.PI * 2 * t) }; });
+}
+function planLayout(n) {
+  // n points along the whole track, snapped in order to the nearest free dark square
+  const used = new Set(), cellOf = [];
+  for (const p of trackPoints(n)) {
+    let best = -1, bd = 1e9;
+    CELLS.forEach((c, i) => { if (used.has(i)) return; const d = (c.x - p.x) ** 2 + (c.z - p.z) ** 2; if (d < bd) { bd = d; best = i; } });
+    used.add(best); cellOf.push(CELLS[best]);
+  }
+  // the day's sculptures are spread from the start to the end of the track; the others fill the squares between
+  const m = S.day.length ? Math.min(n, S.day.length) : n;
+  const dayIdx = Array.from({ length: m }, (_, k) => (m === 1 ? 0 : Math.round(k * (n - 1) / (m - 1))));
+  const rest = cellOf.map((_, i) => i).filter(i => !dayIdx.includes(i));
+  return [...dayIdx, ...rest].map(i => cellOf[i]);
+}
+/* move every plinth to its square like a chess piece: lift, slide along one line, then the other, set down.
+   Returns, for each position, the time (ms from now) when its plinth has landed. */
+function ensurePositions(n, animate, delay = 0) {
+  const cells = planLayout(n);
+  while (V.length < n) { const vp = makePosition(), c = cells[V.length]; vp.g.position.set(c.x, -0.7, c.z); vp.g.scale.setScalar(0.001); vp.fresh = true; V.push(vp); }
+  while (V.length > n) {
+    const vp = V.pop(); clearTimeout(vp.moveTimer); disposeFigure(vp, animate); vp.tag.remove();
+    if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.7, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }
+    else scene.remove(vp.g);
+  }
+  return V.map((vp, i) => {
+    const c = cells[i], g = vp.g, x1 = c.x, z1 = c.z;
+    vp.x = x1; vp.z = z1;
+    clearTimeout(vp.moveTimer);
+    if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; }
+    if (!animate) { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.fresh = false; return 0; }
+    const wait = delay + i * 70;
+    if (vp.fresh) { // a new plinth rises out of the water on its square
+      vp.fresh = false;
+      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(0.8, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }); }, wait);
+      return wait + 800;
+    }
+    const x0 = g.position.x, z0 = g.position.z, y0 = g.position.y, s0 = g.scale.x, dist = Math.abs(x1 - x0) + Math.abs(z1 - z0);
+    if (dist < 0.01 && Math.abs(y0) < 0.01 && s0 > 0.99) return wait;
+    const dur = Math.min(2.2, 0.7 + dist * 0.045), xFirst = Math.abs(x1 - x0) >= Math.abs(z1 - z0);
+    const ph = (t, a, b) => { const k = THREE.MathUtils.clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+    vp.moveTimer = setTimeout(() => {
+      vp.moveTween = tween(dur, (e, raw) => {
+        const p1 = ph(raw, 0.12, 0.55), p2 = ph(raw, 0.5, 0.9);
+        const fx = xFirst ? p1 : p2, fz = xFirst ? p2 : p1;
+        g.position.set(x0 + (x1 - x0) * fx, y0 * (1 - raw) + Math.sin(raw * Math.PI) * 0.3, z0 + (z1 - z0) * fz);
+        g.scale.setScalar(s0 + (1 - s0) * raw);
+      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveTween = null; });
+    }, wait);
+    return wait + dur * 1000;
   });
+}
+/* re-arrange the board without changing the sculptures (e.g. another track) */
+function relayout() {
+  if (!S.pos.length) return;
+  const arrive = ensurePositions(S.pos.length, !reduceMotion);
+  scheduleSkin(Math.max(0, ...arrive) + 300);
 }
 function disposeFigure(vp, animate) {
   const old = vp.fig;
@@ -320,7 +417,7 @@ function chooseWork(cls, g, prevYear, used) {
   return best ? best.id : null;
 }
 function computeSequence(day, prev = []) {
-  const n = Math.min(10, Math.max(EXISTING.length, day.length));
+  const n = Math.min(MAX_POS, Math.max(EXISTING.length, day.length));
   const out = [], used = new Set(Object.values(S.override)); let prevYear = null;
   for (let i = 0; i < n; i++) {
     const orig = EXISTING[i] || null, act = day[i] || null;
@@ -351,17 +448,20 @@ async function applyDay(day, opts = {}) {
   const seq = computeSequence(S.day, opts.fresh ? [] : S.pos);
   S.pos = seq;
   if (S.sel >= seq.length) S.sel = 0;
-  ensurePositions(seq.length, animate);
+  // sculptures that change shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
+  if (animate) seq.forEach((p, i) => { const vp = V[i]; if (vp && vp.fig && vp.work !== p.work) { disposeFigure(vp, true); vp.work = null; } });
+  const arrive = ensurePositions(seq.length, animate, animate ? 450 : 0), t0 = performance.now();
   renderStrip(); renderData(); renderBars();
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq) return;
-  seq.forEach((p, i) => setTimeout(() => setFigure(i, p, animate), animate ? i * 240 : 0));
-  scheduleSkin(animate ? 1100 : 0);
+  const late = performance.now() - t0;
+  seq.forEach((p, i) => setTimeout(() => setFigure(i, p, animate), animate ? Math.max(0, arrive[i] + 120 - late) : 0));
+  scheduleSkin(animate ? Math.max(0, ...arrive) + 1300 - late : 0);
   if (Sound.on) Sound.play(seq[S.sel] ? clsOf(seq[S.sel].work) : null);
 }
 
 /* ---------- skin ---------- */
-const cutPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.12);
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), PT + 1.1); // 'cut' opens the skin above 2 m, so the poses show from above
 const skinUniforms = { uRib: { value: 1 }, uRibColor: { value: new THREE.Color(0xc5a86c) } };
 const skinMat = new THREE.MeshPhysicalMaterial({
   vertexColors: true, side: THREE.DoubleSide, roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.12,
@@ -391,7 +491,7 @@ function helperPrims(cls, b) {
   if (cls === 'horizontal') cap(v(b.min.x + 0.1, H + 0.42, -0.12), v(b.max.x - 0.1, H + 0.42, -0.12), 0.07);
   return out;
 }
-function shiftPts(pts, dx, dy) { const o = new Float32Array(pts.length); for (let i = 0; i < pts.length; i += 3) { o[i] = pts[i] + dx; o[i + 1] = pts[i + 1] + dy; o[i + 2] = pts[i + 2]; } return o; }
+function shiftPts(pts, dx, dy, dz = 0) { const o = new Float32Array(pts.length); for (let i = 0; i < pts.length; i += 3) { o[i] = pts[i] + dx; o[i + 1] = pts[i + 1] + dy; o[i + 2] = pts[i + 2] + dz; } return o; }
 async function buildSkin() {
   const job = ++skinJob;
   if (!S.pos.length) return;
@@ -400,33 +500,42 @@ async function buildSkin() {
   if (job !== skinJob) return;
   const figs = [];
   let maxH = 0;
-  S.pos.forEach((p, i) => {
-    const mesh = meshes[i], b = mesh.bounds, cls = clsOf(p.work);
-    const x = V[i] ? V[i].x : layoutX(S.pos.length, i);
+  const P = S.pos.map((p, i) => V[i] ? { x: V[i].x, z: V[i].z } : { x: 0, z: 0 });
+  // the skin grows along the day's track only; sculptures outside the day's story stay free on the board
+  const T = S.day.length ? S.pos.map((p, i) => i).filter(i => S.pos[i].act) : S.pos.map((p, i) => i);
+  const tangent = (k) => { // direction of the track through its k-th position
+    const a = P[T[Math.max(0, k - 1)]], b = P[T[Math.min(T.length - 1, k + 1)]], dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1;
+    return [dx / l, dz / l];
+  };
+  T.forEach((i, k) => {
+    const p = S.pos[i], mesh = meshes[i], b = mesh.bounds, cls = clsOf(p.work), { x, z } = P[i];
     const prims = helperPrims(cls, b);
     prims.push({ t: 'c', a: new THREE.Vector3(0, -PT - 0.35, 0), b: new THREE.Vector3(0, -0.28, 0), ra: 0.42, rb: 0.42 });
     const hours = p.act ? (p.act.hours || CLASS[p.act.cls].dur) : 1;
     const s = p.act ? THREE.MathUtils.clamp(0.82 + 0.28 * Math.log2(1 + hours), 0.85, 1.75) : 1;
     const pal = S.posPal[i] || S.palettes[cls];
     const c = new THREE.Color(pal[2]).lerp(new THREE.Color(0xffffff), 0.35);
-    const half = (b.max.x - b.min.x) / 2;
-    figs.push({ cx: x, s, c: 0.26, prims: packPrims(prims, x, PT, 0), pts: shiftPts(mesh.pts, x, PT), r: 0.05, xmin: x - (half + 2.4) * s, xmax: x + (half + 2.4) * s, color: [c.r, c.g, c.b] });
+    const rho = (Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2 + 2.0) * s, [tx, tz] = tangent(k);
+    figs.push({ cx: x, cz: z, tx, tz, s, c: 0.26, prims: packPrims(prims, x, PT, z), pts: shiftPts(mesh.pts, x, PT, z), r: 0.05, xmin: x - rho, xmax: x + rho, zmin: z - rho, zmax: z + rho, color: [c.r, c.g, c.b] });
     maxH = Math.max(maxH, b.max.y);
   });
-  for (let i = 0; i + 1 < S.pos.length; i++) {
-    const A = meshes[i].bounds, B = meshes[i + 1].bounds;
-    const xa = V[i] ? V[i].x : layoutX(S.pos.length, i), xb = V[i + 1] ? V[i + 1].x : layoutX(S.pos.length, i + 1);
+  for (let k = 0; k + 1 < T.length; k++) { // bridges along the track, from each sculpture to the next
+    const i = T[k], j = T[k + 1], A = meshes[i].bounds, B = meshes[j].bounds, a = P[i], b = P[j];
+    const dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
+    const ra = (A.max.x - A.min.x) * 0.2, rb = (B.max.x - B.min.x) * 0.2;
     const v = (x, y, z) => new THREE.Vector3(x, y, z);
     const prims = [
-      { t: 'c', a: v(xa + A.max.x * 0.4, PT + A.max.y * 0.5, -0.36), b: v(xb + B.min.x * 0.4, PT + B.max.y * 0.5, -0.36), ra: 0.15, rb: 0.15 },
-      { t: 'c', a: v(xa, PT * 0.42, -0.22), b: v(xb, PT * 0.42, -0.22), ra: 0.2, rb: 0.2 },
+      { t: 'c', a: v(a.x + ux * ra, PT + A.max.y * 0.5, a.z + uz * ra - 0.36), b: v(b.x - ux * rb, PT + B.max.y * 0.5, b.z - uz * rb - 0.36), ra: 0.15, rb: 0.15 },
+      { t: 'c', a: v(a.x, PT * 0.42, a.z - 0.22), b: v(b.x, PT * 0.42, b.z - 0.22), ra: 0.2, rb: 0.2 },
     ];
-    const ca = figs[i].color, cb = figs[i + 1].color;
-    figs.push({ cx: (xa + xb) / 2, s: 1, c: 0.26, prims: packPrims(prims), xmin: xa - 0.8, xmax: xb + 0.8, color: [(ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2, (ca[2] + cb[2]) / 2] });
+    const ca = figs[k].color, cb = figs[k + 1].color;
+    figs.push({ cx: (a.x + b.x) / 2, cz: (a.z + b.z) / 2, s: 1, c: 0.26, prims: packPrims(prims), xmin: Math.min(a.x, b.x) - 0.8, xmax: Math.max(a.x, b.x) + 0.8, zmin: Math.min(a.z, b.z) - 1.2, zmax: Math.max(a.z, b.z) + 0.8, color: [(ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2, (ca[2] + cb[2]) / 2] });
   }
-  const x0 = layoutX(S.pos.length, 0), x1 = layoutX(S.pos.length, S.pos.length - 1);
-  const cell = S.skinStyle === 'fold' ? 0.17 : 0.078;
-  const msg = { type: 'skin', figs, cell, kSeq: 0.7, kBody: 0.08, min: [x0 - 2.6, -0.25, -2.0], max: [x1 + 2.6, PT + maxH * 1.3 + 0.75, 1.5] };
+  const xs = T.map(i => P[i].x), zs = T.map(i => P[i].z);
+  const min = [Math.min(...xs) - 2.6, -0.25, Math.min(...zs) - 2.2], max = [Math.max(...xs) + 2.6, PT + maxH * 1.3 + 0.75, Math.max(...zs) + 1.8];
+  const vol = (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2]);
+  const cell = Math.max(S.skinStyle === 'fold' ? 0.17 : 0.078, Math.cbrt(vol / 2.4e6)); // keep the grid size bounded on a wide board
+  const msg = { type: 'skin', figs, cell, kSeq: 0.7, kBody: 0.08, min, max };
   setLoading('正在生成表皮…');
   let r;
   try { r = await Geo.run(msg); } catch (e) { setLoading(null); toast('表皮生成失败：' + e.message); return; }
@@ -471,7 +580,7 @@ function applyView() {
     skinMat.opacity = S.view === 'both' ? 0.5 : 0.97;
     skinMat.depthWrite = S.view !== 'both';
   }
-  cutPlane.constant = S.cut ? 0.12 : 50;
+  cutPlane.constant = S.cut ? PT + 1.1 : 50;
   updateColorView();
   const bb = document.getElementById('bonesQuick'); if (bb) bb.setAttribute('aria-pressed', String(S.bones));
 }
@@ -500,8 +609,8 @@ function flyTo(pos, target, dur = 1.4) {
 function flyToPosition(i) {
   const vp = V[i]; if (!vp || !vp.bounds) return;
   const b = vp.bounds, h = b.max.y, wdt = b.max.x - b.min.x;
-  const d = 1.5 + Math.max(h, wdt * 0.8) * 1.15;
-  flyTo(new THREE.Vector3(vp.x + d * 0.42, PT + h * 0.62 + 0.35, d), new THREE.Vector3(vp.x, PT + h * 0.5, 0));
+  const d = 1.5 + Math.max(h, wdt * 0.8) * 1.15, dz = Math.max(0.8, Math.min(d, 6.9 - vp.z)), dx = Math.sqrt(Math.max(0.36, d * d - dz * dz));
+  flyTo(new THREE.Vector3(vp.x + dx, PT + h * 0.62 + 0.35, vp.z + dz), new THREE.Vector3(vp.x, PT + h * 0.5, vp.z));
 }
 function flyHome() { const H = isSmall() ? HOME_M : HOME; flyTo(H.pos.clone(), H.target.clone(), 1.6); }
 function select(i, opts = {}) {
