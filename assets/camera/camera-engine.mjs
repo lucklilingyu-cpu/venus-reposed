@@ -1,5 +1,5 @@
-import { CameraReferenceMatcher, CameraPoseHold } from './pose-reference.mjs?v=20261015-2';
-import { YOLO_JOINTS, detectorHasTorso, createYoloDetector } from './yolo-pose.mjs?v=20261015-2';
+import { CameraReferenceMatcher, CameraPoseHold } from './pose-reference.mjs?v=20261015-3';
+import { YOLO_JOINTS, detectorHasTorso, createYoloDetector } from './yolo-pose.mjs?v=20261015-3';
 const INDICES = { nose: 0, lsh: 11, rsh: 12, lel: 13, rel: 14, lwr: 15, rwr: 16, lhip: 23, rhip: 24, lkn: 25, rkn: 26, lank: 27, rank: 28 };
 
 export function cameraJoints(result) {
@@ -64,7 +64,7 @@ async function mainThreadDetector(modelUrl,yoloModelUrl,notify) {
 async function workerDetector(modelUrl,yoloModelUrl,notify) {
   // Classic workers allow this MediaPipe version's WASM loader to use importScripts.
   // Dynamic import of the vision module remains supported inside the classic worker.
-  const worker = new Worker(new URL('./camera-worker.mjs?v=20261015-2', import.meta.url));
+  const worker = new Worker(new URL('./camera-worker.mjs?v=20261015-3', import.meta.url));
   const pending = new Map(); let serial = 0, closed = false;
   function fail(error) {
     for (const item of pending.values()) { clearTimeout(item.timer); item.reject(error); }

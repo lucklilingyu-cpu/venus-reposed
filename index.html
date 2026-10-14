@@ -104,7 +104,7 @@
 
       <section id="mode-camera" class="dcard" hidden>
         <div class="eyebrow">Live body language</div>
-        <h2 class="ph">在镜头前做一个动作，保持 2 秒加入序列</h2>
+        <h2 class="ph">在镜头前做动作，实时识别并加入序列</h2>
         <div class="cam"><video id="camVideo" playsinline muted></video><canvas id="camCanvas"></canvas><div class="msg" id="camMsg">摄像头未开启</div></div>
         <div class="hold" aria-hidden="true"><i id="holdBar"></i></div>
         <div class="row">
@@ -315,7 +315,7 @@
       <h3>怎么用</h3>
       <ul>
         <li><b>文字日记</b>：写下“我的一天”，点“生成姿势序列”，按关键词规则拆分活动并标注姿势。</li>
-        <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则算出百分比，保持 2 秒加入序列。</li>
+        <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则分析姿态，识别到可靠动作即加入序列。</li>
         <li><b>图谱</b>：浏览 118 件模型，打开任一件查看白色陶瓷渲染和骨骼。精细版按需加载，也可以把姿势已分类的雕像放到展厅里选中的位置。</li>
         <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
         <li><b>视图</b>：雕塑序列（只有雕塑）、表皮序列（缠绕当天雕塑的丝绸丝带：一条粗主丝带 + 两条细丝带）、叠加（再加上其余雕塑各自的姿态丝带），以及雕塑与丝带（每件雕塑和它自己的姿态丝带）。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>

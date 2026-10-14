@@ -128,7 +128,7 @@ export class CameraReferenceMatcher {
     const sum = CLASSES.reduce((s, c) => s+P[c], 0) || 1;
     for (const cls of CLASSES) P[cls] /= sum;
     if (this.probabilities && now-this.lastTime < 1500&&!hint) {
-      for (const cls of CLASSES) P[cls] = .6*this.probabilities[cls]+.4*P[cls];
+      for (const cls of CLASSES) P[cls] = .15*this.probabilities[cls]+.85*P[cls];
     }
     this.probabilities = { ...P }; this.lastTime = now;
     const top = CLASSES.reduce((a, b) => P[a] >= P[b] ? a : b);
@@ -139,8 +139,13 @@ export class CameraReferenceMatcher {
 }
 
 export class CameraPoseHold {
+  // Kept under its existing API name; this is now an immediate, deduplicated
+  // trigger. There is no hold duration or minimum number of frames.
   constructor() { this.reset(); }
   reset() { this.candidate = null; this.lastAccepted = null; this.started = 0; this.lastFrame = null; this.missingSince = null; this.frames = 0; }
+  same(a,b,tolerance=.3) {
+    return !!(a&&b&&a.top===b.top&&(a.g||null)===(b.g||null)&&poseDistance(a.feature,b.feature)<tolerance);
+  }
   update(result, now) {
     if (!result?.ready || !(result.P[result.top] > .5)) {
       this.candidate = null; this.started = now; this.frames = 0;
@@ -149,16 +154,12 @@ export class CameraPoseHold {
       return { progress: 0, accept: false };
     }
     this.missingSince = null;
-    const same = (a, b, tolerance) => a && b && a.top === b.top && (a.g || null) === (b.g || null) && poseDistance(a.feature, b.feature) < tolerance;
-    // CPU/WASM detectors can take over a second on slower devices. Explicit loss
-    // still resets immediately; a long unobserved interval never counts as a hold.
-    if (!same(result, this.candidate, .24) || this.lastFrame === null || now-this.lastFrame > 2000) {
+    if (!this.same(result, this.candidate, .24)) {
       this.candidate = result; this.started = now; this.frames = 1;
     } else this.frames++;
     this.lastFrame = now;
-    const progress = Math.min(1, (now-this.started)/2000);
-    const accept = progress === 1 && this.frames >= 3 && !same(result, this.lastAccepted, .3);
+    const accept = !this.same(result, this.lastAccepted);
     if (accept) this.lastAccepted = result;
-    return { progress, accept };
+    return { progress: 1, accept };
   }
 }

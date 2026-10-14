@@ -3,7 +3,7 @@ let landmarker = null, fileset = null, PoseLandmarker = null, modelUrl = '', yol
 let yolo = null, yoloLoading = null, yoloModule = null, queue = Promise.resolve(), preferYoloUntil=0;
 async function ensureYolo() {
   if (!yoloLoading) yoloLoading = (async () => {
-    yoloModule ||= await import('./yolo-pose.mjs?v=20261015-2');
+    yoloModule ||= await import('./yolo-pose.mjs?v=20261015-3');
     yolo = await yoloModule.createYoloDetector(yoloModelUrl, status => self.postMessage({ type: 'status', status }));
     return yolo;
   })().catch(error => { yoloLoading = null; throw error; });
@@ -32,7 +32,7 @@ async function handleMessage(event) {
   try {
     if (type === 'init') {
       modelUrl = event.data.modelUrl; yoloModelUrl = event.data.yoloModelUrl;
-      yoloModule = await import('./yolo-pose.mjs?v=20261015-2');
+      yoloModule = await import('./yolo-pose.mjs?v=20261015-3');
       try { await initialize(); } catch (_) { await ensureYolo(); }
       self.postMessage({ id, ready: true });
     }
