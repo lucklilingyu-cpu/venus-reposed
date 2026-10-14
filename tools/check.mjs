@@ -12,7 +12,10 @@ const html = readFileSync(join(root, 'index.html'), 'utf8');
 const m = html.match(/const PARTS = \[([\s\S]*?)\];/);
 if (!m) { console.error('✗ index.html: PARTS list not found'); process.exit(1); }
 const parts = [...m[1].matchAll(/'([^']+\.js)'/g)].map((x) => x[1]);
-const files = readdirSync(join(root, 'js')).filter((f) => f.endsWith('.js')).sort();
+const scanModule = html.match(/const SCAN_MODULE = "([^"]+)"/)?.[1];
+// The scan loader has a hash-pinned production copy; its unbundled source mirror is not a second module.
+const files = readdirSync(join(root, 'js')).filter((f) => f.endsWith('.js') &&
+  !(f === '04d-va-hall-scan.js' && scanModule && parts.includes(scanModule))).sort();
 
 let ok = true;
 for (const f of files) if (!parts.includes(f)) { console.error(`✗ js/${f} is not listed in PARTS in index.html`); ok = false; }

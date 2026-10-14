@@ -350,7 +350,7 @@ function focusSculpture(i) {
   focusBeam.visible = true;
   focusBeam.material.uniforms.strength.value = 0;
   vp.tag.classList.remove('hidden');
-  focusTween = tween(0.65, e => { focusBeam.material.uniforms.strength.value = 2 * e; focusLight.intensity = 2000 * e; }, () => { focusTween = null; });
+  focusTween = tween(0.65, e => { focusBeam.material.uniforms.strength.value = 1.3 * e; focusLight.intensity = 1000 * e; }, () => { focusTween = null; });
   canvas.dataset.focusWork = vp.work;
 }
 const STATUS_COL = { keep: 0xb59a63, swap: 0x246d75, new: 0x6f68a0, beyond: 0xc9c4bc, manual: 0x232323 };

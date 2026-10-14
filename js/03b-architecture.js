@@ -4,9 +4,9 @@
 function createArchitectureDisplay(parent, renderer) {
   function apply() {
     parent.removeFromParent();
-    scene.background = null;
+    scene.background = ExhibitionEnvelope.background;
     scene.fog = null;
-    renderer.setClearColor(0xffffff, 0);
+    renderer.setClearColor(ExhibitionEnvelope.background, 1);
     if (canvas.dataset.vaHallScan === 'ready') VAHallScan.applyMaterials();
     renderer.shadowMap.needsUpdate = true;
   }
