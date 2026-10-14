@@ -213,7 +213,7 @@ function updateLabels() {
     if (!vis) return;
     tag.style.left = ((_v.x + 1) / 2 * w) + 'px';
     tag.style.top = ((1 - _v.y) / 2 * h) + 'px';
-    const cls = clsOf(p.work);
+    const cls = p.act && fitsCls(REC[p.work], p.act.cls) ? p.act.cls : clsOf(p.work); // a sculpture chosen for the day shows the day's pose
     const key = i + cls + p.status + (i === S.sel) + S.day.length + '|' + Group.countAt(i);
     if (tag.dataset.k !== key) {
       tag.dataset.k = key;

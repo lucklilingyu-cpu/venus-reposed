@@ -191,8 +191,8 @@ window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, S
 window.__vr.showWorks = async (ids) => {
   S.day = ids.map(id => ({ cls: REC[id].cls || 'standing', g: null, label: '#' + id, time: null, hours: 1 }));
   S.pos = ids.map((id, k) => ({ orig: null, act: S.day[k], work: id, status: 'keep' }));
-  ensurePositions(ids.length, false);
+  arrangeBoard(S.pos, false);
   await Promise.all(S.pos.map(p => meshOf(p.work)));
   S.pos.forEach((p, i) => setFigure(i, p, false));
 };
-window.__vr.Walk = Walk; window.__vr.Atlas = Atlas; window.__vr.Group = Group; window.__vr.REC = REC; window.__vr.meshOf = meshOf; window.__vr.ceramic = ceramic;
+window.__vr.Walk = Walk; window.__vr.Atlas = Atlas; window.__vr.FIGS = FIGS; Object.defineProperty(window.__vr, 'moves', { get: () => lastMoves }); window.__vr.EXISTING = EXISTING; window.__vr.computeSequence = computeSequence; window.__vr.Group = Group; window.__vr.REC = REC; window.__vr.meshOf = meshOf; window.__vr.ceramic = ceramic;

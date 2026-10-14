@@ -37,27 +37,30 @@ const DEFAULT_PALETTES = {
 };
 
 /* ---------------------------------------------------------------
-   The group's Goddess Sculpture Atlas: 105 records with display
+   The group's Goddess Sculpture Atlas: 105 records (+ data/atlas-extra.json) with display
    meshes, pose vocabulary and skeleton candidates.
-   data/atlas.json is loaded once at start (top-level await);
+   data/atlas.json is loaded once at start (top-level await), then data/atlas-extra.json;
    meshes are m/<id>.js, thumbnails t/<id>.webp.
    Regenerate them with tools/build_atlas.py.
 ---------------------------------------------------------------- */
 const SKETCH_SRC = 'img/sketch.jpg'; // the group's concept sketch (not hung in the hall at the moment)
 const ATLAS = await fetch('data/atlas.json').then(r => { if (!r.ok) throw new Error('atlas data ' + r.status); return r.json(); });
 const REC = {}; ATLAS.records.forEach(r => { REC[r.id] = r; });
+/* data/atlas-extra.json: corrected pose classes (fix) and newly acquired models (records); see AGENTS.md */
+await fetch('data/atlas-extra.json').then(r => (r.ok ? r.json() : null)).then(x => {
+  if (!x) return;
+  for (const [id, f] of Object.entries(x.fix || {})) if (REC[id]) { const { why, ...rest } = f; Object.assign(REC[id], rest); }
+  for (const r of x.records || []) if (!REC[r.id]) { ATLAS.records.push(r); REC[r.id] = r; }
+}).catch(() => {});
 const FIGS = ATLAS.records.filter(r => r.kind === 'figure' && r.cls);
+/* can this sculpture stand for the pose class? its main class or one of its other classes (alt) */
+const fitsCls = (r, cls) => !!r && (r.cls === cls || (r.alt || []).includes(cls));
 const recTitle = (r) => (r && r.t) ? r.t : `未识别作品 #${r ? r.id : '?'}`;
 const recMeta = (r) => [r.a, r.d].filter(Boolean).join(' · ') || '作者与年代待考';
-/* the sequence that already stands along the court's axis (illustrative, chosen from the atlas) */
-// the hall's own sequence: the first seven, then nine more from the atlas, mixing the pose classes
-const EXISTING = (() => {
-  const ids = ['3', '7', '1', '24', '63', '32', '49'];
-  for (const cls of ['standing', 'seated', 'walking', 'crouching', 'reclining', 'standing', 'seated', 'walking', 'standing']) {
-    const r = FIGS.find(f => f.cls === cls && f.t && !ids.includes(f.id)); if (r) ids.push(r.id);
-  }
-  return ids.map(id => ({ id }));
-})();
+/* the hall's own sequence (illustrative, chosen from the atlas): 21 different sculptures mixing the pose classes.
+   The first seven are the original hall; no sculpture appears twice. */
+const EXISTING = ['3', '7', '1', '24', '63', '32', '49', '44', '65', '47', '54', '20', '23', '51', '55', '59', '25', '8', '43', '106', '31']
+  .filter((id, i, a) => REC[id] && REC[id].cls && a.indexOf(id) === i).map(id => ({ id }));
 const ZH = {
   pose: { standing: '站立', seated: '坐', reclining: '斜倚 / 卧', crouching: '蹲', kneeling: '跪', upright_unspecified: '直立（未细分）', seated_or_reclining_uncertain: '坐或卧（不确定）', undetermined: '未定' },
   gest: { arm_bent: '手臂弯曲', arm_extended: '手臂伸展', arm_raised: '手臂上举', arm_lowered: '手臂下垂', arms_crossed: '双臂交叉', hand_at_head: '手在头部', hand_at_torso: '手在胸腹', hand_at_hip_or_thigh: '手在髋部或大腿', hand_at_lap_or_knee: '手在膝上', hand_on_support: '手扶支撑', hand_open: '手张开', hand_clenched: '握拳', supporting_head: '托头', supporting_body: '撑起身体', holding_object: '持物', holding_object_uncertain: '持物（不确定）', holding_fabric: '手持衣褶', supporting_other_figure: '托着另一人物', interaction_with_figure: '与人物互动', interaction_with_animal: '与动物互动', interaction_uncertain: '互动不确定', gesture_uncertain: '手势不确定', no_gesture_visible: '无可见手势', limbs_not_visible: '肢体不可见', limb_visibility_uncertain: '肢体可见性不确定', limbs_missing_or_truncated: '肢体残缺' },

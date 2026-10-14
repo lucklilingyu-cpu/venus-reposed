@@ -247,7 +247,7 @@ function makePosition() {
 const BOARD = { x0: -13.2, dx: 2.3, cols: 13, z0: -4.9, dz: 2.45, rows: 5 };
 const CELLS = [];
 for (let r = 0; r < BOARD.rows; r++) for (let k = 0; k < BOARD.cols; k++) if ((k + r) % 2 === 0) CELLS.push({ k, r, x: BOARD.x0 + k * BOARD.dx, z: BOARD.z0 + r * BOARD.dz });
-const MAX_POS = 24;
+const MAX_POS = 28; // at most this many sculptures on the 33 squares
 function skeletonSegments(act) { // the first pose as 2D bones, walked depth-first from the head
   const pose = buildPose(CANON[act.cls]);
   const J = {}; for (const k in pose.joints) J[k] = pose.joints[k].clone();
@@ -297,53 +297,133 @@ function planLayout(n) {
     CELLS.forEach((c, i) => { if (used.has(i)) return; const d = (c.x - p.x) ** 2 + (c.z - p.z) ** 2; if (d < bd) { bd = d; best = i; } });
     used.add(best); cellOf.push(CELLS[best]);
   }
-  // the day's sculptures are spread from the start to the end of the track; the others fill the squares between
+  // the day's sculptures are spread from the start to the end of the track (in order); the others take the squares between
   const m = S.day.length ? Math.min(n, S.day.length) : n;
   const dayIdx = Array.from({ length: m }, (_, k) => (m === 1 ? 0 : Math.round(k * (n - 1) / (m - 1))));
   const rest = cellOf.map((_, i) => i).filter(i => !dayIdx.includes(i));
-  return [...dayIdx, ...rest].map(i => cellOf[i]);
+  return { day: dayIdx.map(i => cellOf[i]), rest: rest.map(i => cellOf[i]) };
 }
-/* move every plinth to its square like a chess piece: lift, slide along one line, then the other, set down.
+/* minimum-cost assignment (Hungarian method): cost is rows × cols with rows <= cols; returns the column of each row */
+function assignMin(cost) {
+  const n = cost.length, m = n ? cost[0].length : 0, INF = 1e18;
+  const u = new Float64Array(n + 1), v = new Float64Array(m + 1), p = new Int32Array(m + 1), way = new Int32Array(m + 1);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i; let j0 = 0;
+    const minv = new Float64Array(m + 1).fill(INF), done = new Uint8Array(m + 1);
+    do {
+      done[j0] = 1; const i0 = p[j0]; let delta = INF, j1 = 0;
+      for (let j = 1; j <= m; j++) if (!done[j]) {
+        const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+        if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+      }
+      for (let j = 0; j <= m; j++) if (done[j]) { u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+  }
+  const res = new Array(n).fill(-1);
+  for (let j = 1; j <= m; j++) if (p[j]) res[p[j] - 1] = j - 1;
+  return res;
+}
+/* pair a with b (any sizes) so the total squared distance is smallest; returns [[a, b], …] */
+function pairUp(A, B, d2) {
+  if (!A.length || !B.length) return [];
+  if (A.length <= B.length) { const r = assignMin(A.map(a => B.map(b => d2(a, b)))); return A.map((a, k) => [a, B[r[k]]]); }
+  const r = assignMin(B.map(b => A.map(a => d2(a, b)))); return B.map((b, k) => [A[r[k]], b]);
+}
+const PH = (t, a, b) => { const k = THREE.MathUtils.clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+const cancelMove = (vp) => { clearTimeout(vp.moveTimer); if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; } };
+/* Put the plinths of a sequence on the board, like chess pieces.
+   - A sculpture that is already on the board keeps its plinth and travels with it to its new square.
+   - Sculptures outside the day take the free track squares nearest to where they stand, so most of them stay.
+   - Plinths whose sculpture leaves are emptied (the sculpture shatters) and go to the nearest square that needs one;
+     extra plinths sink into the water, missing ones rise out of it.
+   - Moves happen one after another in the order of the sequence (01, 02, …); a plinth waits until its square has been
+     cleared. Each move lifts the plinth, slides it along a rank or file, turns once, slides on and sets it down (2–3 s).
    Returns, for each position, the time (ms from now) when its plinth has landed. */
-function ensurePositions(n, animate, delay = 0) {
-  const cells = planLayout(n);
-  while (V.length < n) { const vp = makePosition(), c = cells[V.length]; vp.g.position.set(c.x, -0.7, c.z); vp.g.scale.setScalar(0.001); vp.fresh = true; V.push(vp); }
-  while (V.length > n) {
-    const vp = V.pop(); clearTimeout(vp.moveTimer); disposeFigure(vp, animate); vp.tag.remove();
-    if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.7, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }
+let lastMoves = []; // the latest move plan (for testing)
+function arrangeBoard(seq, animate, delay = 0) {
+  const n = seq.length, plan = planLayout(n), m = plan.day.length;
+  const d2 = (a, b) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
+  const at = (vp) => ({ x: vp.g.position.x, z: vp.g.position.z });
+  V.forEach(cancelMove);
+  // 1. sculptures that stay on the board keep their plinths (the same place in the sequence first)
+  const next = new Array(n).fill(null), taken = new Set();
+  seq.forEach((p, i) => { const vp = V[i]; if (vp && vp.fig && vp.work === p.work) { next[i] = vp; taken.add(vp); } });
+  seq.forEach((p, i) => { if (next[i]) return; const vp = V.find(v => !taken.has(v) && v.fig && v.work === p.work); if (vp) { next[i] = vp; taken.add(vp); } });
+  // 2. squares: the day in track order; the others on the remaining track squares, nearest first
+  const target = new Array(n);
+  for (let i = 0; i < m; i++) target[i] = plan.day[i];
+  const restPos = Array.from({ length: n - m }, (_, k) => m + k), kept = restPos.filter(i => next[i]);
+  const freeCells = new Set(plan.rest);
+  for (const [i, c] of pairUp(kept, plan.rest, (i, c) => d2(at(next[i]), c))) { target[i] = c; freeCells.delete(c); }
+  const left = plan.rest.filter(c => freeCells.has(c));
+  restPos.filter(i => !next[i]).forEach((i, k) => { target[i] = left[k]; });
+  // 3. the other plinths are emptied and go to the nearest open squares
+  const spare = V.filter(v => !taken.has(v)), open = [];
+  for (let i = 0; i < n; i++) if (!next[i]) open.push(i);
+  for (const [vp, i] of pairUp(spare, open, (vp, i) => d2(at(vp), target[i]))) { next[i] = vp; taken.add(vp); }
+  V.forEach(vp => { const i = next.indexOf(vp); if (vp.fig && (i < 0 || seq[i].work !== vp.work)) { disposeFigure(vp, animate); vp.work = null; } });
+  for (const vp of V) if (!taken.has(vp)) { // no square left: sink into the water
+    disposeFigure(vp, animate); vp.tag.remove();
+    if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.9, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }
     else scene.remove(vp.g);
   }
-  return V.map((vp, i) => {
-    const c = cells[i], g = vp.g, x1 = c.x, z1 = c.z;
-    vp.x = x1; vp.z = z1;
-    clearTimeout(vp.moveTimer);
-    if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; }
-    if (!animate) { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.fresh = false; return 0; }
-    const wait = delay + i * 70;
-    if (vp.fresh) { // a new plinth rises out of the water on its square
-      vp.fresh = false;
-      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(0.8, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }); }, wait);
-      return wait + 800;
-    }
-    const x0 = g.position.x, z0 = g.position.z, y0 = g.position.y, s0 = g.scale.x, dist = Math.abs(x1 - x0) + Math.abs(z1 - z0);
-    if (dist < 0.01 && Math.abs(y0) < 0.01 && s0 > 0.99) return wait;
-    const dur = Math.min(2.2, 0.7 + dist * 0.045), xFirst = Math.abs(x1 - x0) >= Math.abs(z1 - z0);
-    const ph = (t, a, b) => { const k = THREE.MathUtils.clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-    vp.moveTimer = setTimeout(() => {
-      vp.moveTween = tween(dur, (e, raw) => {
-        const p1 = ph(raw, 0.12, 0.55), p2 = ph(raw, 0.5, 0.9);
-        const fx = xFirst ? p1 : p2, fz = xFirst ? p2 : p1;
-        g.position.set(x0 + (x1 - x0) * fx, y0 * (1 - raw) + Math.sin(raw * Math.PI) * 0.3, z0 + (z1 - z0) * fz);
-        g.scale.setScalar(s0 + (1 - s0) * raw);
-      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveTween = null; });
-    }, wait);
-    return wait + dur * 1000;
+  for (let i = 0; i < n; i++) if (!next[i]) { const vp = makePosition(), c = target[i]; vp.g.position.set(c.x, -0.7, c.z); vp.g.scale.setScalar(0.001); vp.fresh = true; next[i] = vp; }
+  V.length = 0; V.push(...next);
+  // 4. the moves
+  const arrive = new Array(n).fill(0), moves = [];
+  V.forEach((vp, i) => {
+    const c = target[i], g = vp.g; vp.x = c.x; vp.z = c.z;
+    if (!animate) { g.position.set(c.x, 0, c.z); g.scale.setScalar(1); vp.fresh = false; return; }
+    const dist = Math.abs(c.x - g.position.x) + Math.abs(c.z - g.position.z);
+    if (!vp.fresh && dist < 0.01 && Math.abs(g.position.y) < 0.01 && g.scale.x > 0.99) { arrive[i] = delay + 250; return; }
+    moves.push({ i, vp, from: at(vp), to: c, dist, fresh: vp.fresh, dur: vp.fresh ? 1.6 : 2 + Math.min(1, dist / 14) });
   });
+  if (!animate) return arrive;
+  // order: sequence order, but a plinth waits for the one standing on its square to leave first
+  const near = (a, b) => d2(a, b) < 0.5, order = [], rem = moves.slice();
+  while (rem.length) {
+    let k = rem.findIndex(a => !rem.some(b => b !== a && !b.fresh && near(b.from, a.to)));
+    if (k < 0) k = 0; // two plinths trading squares: the first one goes
+    order.push(rem.splice(k, 1)[0]);
+  }
+  const STEP = Math.min(450, 5600 / Math.max(1, order.length)), still = V.filter((vp, i) => !moves.some(mv => mv.i === i));
+  let t = delay; const done = [];
+  for (const mv of order) {
+    let s = t;
+    for (const o of done) if (!o.fresh && near(o.from, mv.to)) s = Math.max(s, o.start + o.dur * 180); // the piece on my square has lifted and started to leave
+    mv.start = s; t = s + STEP; done.push(mv);
+    arrive[mv.i] = s + mv.dur * 1000;
+    const { vp } = mv, g = vp.g, { x: x0, z: z0 } = mv.from, { x: x1, z: z1 } = mv.to, y0 = g.position.y, s0 = g.scale.x;
+    if (mv.fresh) { // a new plinth rises out of the water on its square
+      vp.fresh = false;
+      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { vp.moveTween = null; }); }, s);
+      continue;
+    }
+    // rook-like path: along the longer line first, unless a standing plinth is on that corner
+    const busy = (x, z) => still.some(o => (o.x - x) ** 2 + (o.z - z) ** 2 < 1.2);
+    let xFirst = Math.abs(x1 - x0) >= Math.abs(z1 - z0);
+    if (xFirst && busy(x1, z0) && !busy(x0, z1)) xFirst = false; else if (!xFirst && busy(x0, z1) && !busy(x1, z0)) xFirst = true;
+    const straight = Math.abs(x1 - x0) < 0.01 || Math.abs(z1 - z0) < 0.01;
+    vp.moveTimer = setTimeout(() => {
+      vp.moveTween = tween(mv.dur, (e, raw) => {
+        const lift = PH(raw, 0, 0.14) - PH(raw, 0.86, 1);
+        const p1 = straight ? PH(raw, 0.14, 0.86) : PH(raw, 0.14, 0.52), p2 = straight ? p1 : PH(raw, 0.48, 0.86);
+        const fx = xFirst ? p1 : p2, fz = xFirst ? p2 : p1;
+        g.position.set(x0 + (x1 - x0) * fx, y0 * (1 - raw) + lift * 0.28, z0 + (z1 - z0) * fz);
+        g.scale.setScalar(s0 + (1 - s0) * raw);
+      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveTween = null; pulseRing(vp); });
+    }, s);
+  }
+  lastMoves = order.map(mv => ({ i: mv.i, start: Math.round(mv.start), dur: mv.dur, dist: +mv.dist.toFixed(1), fresh: mv.fresh }));
+  return arrive;
 }
 /* re-arrange the board without changing the sculptures (e.g. another track) */
 function relayout() {
   if (!S.pos.length) return;
-  const arrive = ensurePositions(S.pos.length, !reduceMotion);
+  const arrive = arrangeBoard(S.pos, !reduceMotion);
   scheduleSkin(Math.max(0, ...arrive) + 300);
 }
 function disposeFigure(vp, animate) {
@@ -373,6 +453,7 @@ function plinthFit(vp, b, animate) {
   animate ? tween(0.8, apply) : apply(1);
 }
 async function setFigure(i, p, animate) {
+  if (S.pos[i] !== p) return; // superseded by a newer sequence
   const vp = V[i];
   vp.ring.material.color.setHex(STATUS_COL[p.status] || STATUS_COL.beyond);
   if (vp.work === p.work && vp.fig) { pulseRing(vp); applyViewTo(vp); return; }
@@ -407,32 +488,50 @@ function pulseRing(vp) {
   tween(1.2, (e, raw) => { const k = 1 + Math.sin(raw * Math.PI) * 0.18; vp.ring.scale.set(vp.scaleX * 1.42 * k, vp.scaleZ * 1.42 * k, 1); });
 }
 
-/* ---------- choosing replacements from the atlas ---------- */
-function chooseWork(cls, g, prevYear, used) {
-  let c = FIGS.filter(r => r.cls === cls);
-  if (g) { const cg = c.filter(r => r.g === g); if (cg.length) c = cg; }
-  const fresh = c.filter(r => !used.has(r.id)); if (fresh.length) c = fresh;
+/* ---------- choosing replacements from the atlas ----------
+   No sculpture should stand on the board twice. For a pose class the candidates are, in order:
+   sculptures of that class (with the gesture first), sculptures that can also stand for it (alt),
+   sculptures of a neighbouring class (KIN); only when all of them are on the board already does one repeat. */
+const KIN = { standing: ['walking'], walking: ['standing'], seated: ['crouching', 'reclining'], crouching: ['seated'], reclining: ['horizontal', 'seated'], horizontal: ['reclining'] };
+function chooseWork(cls, g, prevYear, used, count = new Map()) {
+  const free = (r) => !used.has(r.id);
   const key = r => (r.t ? 0 : 2e5) + ((prevYear == null || r.y == null) ? 5e4 : Math.abs(r.y - prevYear));
-  const best = c.slice().sort((a, b) => key(a) - key(b))[0];
-  return best ? best.id : null;
+  const best = (c) => c.slice().sort((a, b) => key(a) - key(b))[0];
+  const tiers = [
+    g ? FIGS.filter(r => r.cls === cls && r.g === g && free(r)) : [],
+    FIGS.filter(r => r.cls === cls && free(r)),
+    FIGS.filter(r => (r.alt || []).includes(cls) && free(r)),
+    FIGS.filter(r => (KIN[cls] || []).includes(r.cls) && free(r)),
+  ];
+  for (const c of tiers) if (c.length) return best(c).id;
+  // everything fitting is on the board: repeat the one used least
+  const c = FIGS.filter(r => fitsCls(r, cls));
+  const r = c.slice().sort((a, b) => ((count.get(a.id) || 0) - (count.get(b.id) || 0)) || key(a) - key(b))[0];
+  return r ? r.id : null;
 }
 function computeSequence(day, prev = []) {
   const n = Math.min(MAX_POS, Math.max(EXISTING.length, day.length));
-  const out = [], used = new Set(Object.values(S.override)); let prevYear = null;
+  // sculptures that keep their place (outside the day, or chosen by hand) are reserved first, so a replacement never doubles them
+  const used = new Set(), count = new Map(); let prevYear = null;
+  for (let i = 0; i < n; i++) {
+    const id = S.override[i] && REC[S.override[i]] ? S.override[i] : (!day[i] && EXISTING[i] ? EXISTING[i].id : null);
+    if (id) { used.add(id); count.set(id, (count.get(id) || 0) + 1); }
+  }
+  const out = [];
   for (let i = 0; i < n; i++) {
     const orig = EXISTING[i] || null, act = day[i] || null;
     let work, status;
     if (S.override[i] && REC[S.override[i]]) { work = S.override[i]; status = 'manual'; }
     else if (!act) { work = orig.id; status = 'beyond'; }
-    else if (orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g)) { work = orig.id; status = 'keep'; }
+    else if (orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g) && !used.has(orig.id)) { work = orig.id; status = 'keep'; }
     else {
-      const pv = prev[i];
-      const reuse = pv && (pv.status === 'swap' || pv.status === 'new') && REC[pv.work].cls === act.cls && (!act.g || REC[pv.work].g === act.g) && !used.has(pv.work);
-      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used);
+      const pv = prev[i], pr = pv && REC[pv.work];
+      const reuse = pr && (pv.status === 'swap' || pv.status === 'new') && fitsCls(pr, act.cls) && (!act.g || pr.g === act.g) && !used.has(pv.work);
+      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used, count);
       status = orig ? 'swap' : 'new';
       if (!work) { work = orig ? orig.id : FIGS[0].id; status = orig ? 'keep' : 'new'; }
     }
-    used.add(work);
+    if (status !== 'beyond' && status !== 'manual') { used.add(work); count.set(work, (count.get(work) || 0) + 1); }
     if (REC[work].y != null) prevYear = REC[work].y;
     out.push({ orig, act, work, status });
   }
@@ -448,9 +547,8 @@ async function applyDay(day, opts = {}) {
   const seq = computeSequence(S.day, opts.fresh ? [] : S.pos);
   S.pos = seq;
   if (S.sel >= seq.length) S.sel = 0;
-  // sculptures that change shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
-  if (animate) seq.forEach((p, i) => { const vp = V[i]; if (vp && vp.fig && vp.work !== p.work) { disposeFigure(vp, true); vp.work = null; } });
-  const arrive = ensurePositions(seq.length, animate, animate ? 450 : 0), t0 = performance.now();
+  // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
+  const arrive = arrangeBoard(seq, animate, animate ? 600 : 0), t0 = performance.now();
   renderStrip(); renderData(); renderBars();
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq) return;

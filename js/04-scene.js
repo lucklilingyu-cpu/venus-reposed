@@ -140,10 +140,10 @@ const M = {
   gold: new THREE.MeshStandardMaterial({ color: COL.gold, roughness: 0.3, metalness: 1.0 }),
   glassRoof: new THREE.MeshPhysicalMaterial({ color: 0xe6f0f6, roughness: 0.1, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }),
   windowGlow: new THREE.MeshBasicMaterial({ color: 0xfbf6ec }),
-  tier: new THREE.MeshPhysicalMaterial({ color: 0xe9f0ef, roughness: 0.05, metalness: 0.0, transparent: true, opacity: 0.3, clearcoat: 1 }),
-  drum: new THREE.MeshPhysicalMaterial({ color: 0xe0d9cf, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
+  tier: new THREE.MeshPhysicalMaterial({ color: 0x6f897c, roughness: 0.18, metalness: 0.0, transparent: true, opacity: 0.5, clearcoat: 0.8, envMapIntensity: 0.5 }), // sage glass steps, half in the water
+  drum: new THREE.MeshPhysicalMaterial({ color: 0xd8cfc1, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
   marble: new THREE.MeshPhysicalMaterial({ color: 0xece4da, roughness: 0.5, metalness: 0, clearcoat: 0.18, clearcoatRoughness: 0.55, sheen: 0.35, sheenColor: new THREE.Color(0xfff0e6), sheenRoughness: 0.8 }),
-  poolFloor: new THREE.MeshStandardMaterial({ color: 0xb4cfcd, roughness: 0.6 }),
+  poolFloor: new THREE.MeshStandardMaterial({ color: 0x47524a, roughness: 0.8 }),
   coping: new THREE.MeshStandardMaterial({ color: 0xe6ddcf, roughness: 0.55 }),
 };
 // the room environment only adds a soft fill to the architecture, so the sun and its shadows read clearly
@@ -211,15 +211,23 @@ const waterShader = {
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
       #include <logdepthbuf_vertex>
     }`,
+  // a still, deep pool: dark sage-green body (between the red floor and the white sculptures, echoing the green walls),
+  // a mirror at grazing angles, lighter where the stone edge shows through, slow small ripples
   fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float time; varying vec4 vUv; varying vec3 vW;
     #include <logdepthbuf_pars_fragment>
     void main(){
       #include <logdepthbuf_fragment>
-      float n = sin(vW.x*1.7+time*0.9)*0.5 + sin(vW.z*2.3-time*1.1)*0.5 + sin((vW.x+vW.z)*3.1+time*1.7)*0.25;
-      vec4 uv = vUv; uv.xy += n*0.03*uv.w;
-      vec4 base = texture2DProj(tDiffuse, uv);
-      vec3 water = vec3(0.5,0.68,0.7);
-      vec3 c = mix(base.rgb*0.82, water, 0.46) + vec3(0.05)*pow(max(n,0.0),3.0);
+      vec2 p = vW.xz;
+      float n = sin(p.x*2.1 + time*0.55)*0.5 + sin(p.y*2.9 - time*0.65)*0.5 + sin((p.x*0.8 + p.y)*4.7 + time*1.05)*0.22 + sin((p.x - p.y*0.6)*7.3 - time*1.3)*0.12;
+      vec4 uv = vUv; uv.xy += vec2(n, n*0.6)*0.009*uv.w;
+      vec3 refl = texture2DProj(tDiffuse, uv).rgb;
+      vec3 V = normalize(cameraPosition - vW);
+      float fres = 0.1 + 0.6*pow(1.0 - clamp(V.y, 0.0, 1.0), 3.0);
+      float edge = min(15.5 - abs(vW.x), 3.6 - abs(vW.z));
+      float shallow = 1.0 - smoothstep(0.05, 1.3, edge);
+      vec3 deep = vec3(0.062, 0.105, 0.092), shal = vec3(0.2, 0.215, 0.165);
+      vec3 body = mix(deep, shal, shallow*0.8) * (0.95 + 0.06*n);
+      vec3 c = mix(body, refl*vec3(0.6, 0.7, 0.64), fres) + vec3(0.03, 0.032, 0.026)*pow(max(n, 0.0), 4.0);
       gl_FragColor = vec4(c, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>

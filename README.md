@@ -8,7 +8,7 @@ Bartlett B-Pro Architectural Design · Workshop 7（V&A Cast Courts）小组项�
 
 在网站里点“步行”或直接按 W A S D，可以像游戏一样在展厅里走动、抬头看穹顶。
 
-雕塑像国际象棋一样交错排在水面的棋盘格上。生成新的一天时，底座像棋子一样移到新格子，雕塑再碎片化生成。序列栏右上角可以切换排布轨迹：“第一个动作的骨架”或“S 形”。
+雕塑像国际象棋一样交错排在水面的棋盘格上（默认 21 件，各不相同）。生成新的一天时，底座按序列顺序一个接一个像棋子一样移到新格子（每步 2–3 秒），雕塑再碎片化生成。序列栏右上角可以切换排布轨迹：“第一个动作的骨架”或“S 形”。
 
 这个仓库就是网站本身。提交到 `main` 分支的修改，大约 1 分钟后自动上线。不需要构建，也不需要 Netlify 或 Claude 账号。
 
@@ -120,16 +120,16 @@ Codex 会自动读仓库里的 `AGENTS.md`，里面写清楚了这个项目的�
 | `js/09c-walk.js` | 步行模式：W A S D 行走、鼠标环顾、碰撞 |
 | `js/10-main.js` | 按钮事件、漫游、启动 |
 | `config.js` | 数据库地址和编辑码 |
-| `data/`、`m/`、`t/` | 图谱的 105 件雕塑：数据、模型、缩略图 |
+| `data/`、`m/`、`t/` | 图谱的雕塑：数据、模型、缩略图（105 件 + 新收录；`data/atlas-extra.json` 是手动修正的姿势分类和新收录的模型） |
 | `img/sketch.jpg` | 概念草图（目前没有挂在展厅里） |
 | `supabase/setup.sql` | 数据库脚本（已经运行过，不用再运行） |
-| `tools/` | 检查语法 `check.mjs`；重新生成图谱数据 `build_atlas.py` |
+| `tools/` | 检查语法 `check.mjs`；重新生成图谱数据 `build_atlas.py`；加入一件新收录的扫描模型 `add_model.py` |
 | `AGENTS.md` | 写给 Codex 等 AI 工具的项目说明 |
 
 注意：
 
 - **新建 js 文件**：要把文件名加进 `index.html` 最下面的 `PARTS` 列表，否则不会运行。
-- **不要直接改 `m/` 和 `t/`**：它们由 `tools/build_atlas.py` 生成。
+- **不要直接改 `m/` 和 `t/`**：它们由 `tools/build_atlas.py` 生成。新收录的模型用 `python tools/add_model.py 模型.stl 107` 生成，再把它打印出的记录填好、放进 `data/atlas-extra.json` 的 `records`（只收版权允许公开展示的模型，写上来源和署名）。
 
 ---
 

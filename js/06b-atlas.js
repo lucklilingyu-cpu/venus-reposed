@@ -1,6 +1,6 @@
 
 /* ---------------------------------------------------------------
-   Atlas: the group's 105 models as a browsable gallery, and a
+   Atlas: the group's models (105 + new acquisitions) as a browsable gallery, and a
    white studio "specimen" view with the skeleton candidates
 ---------------------------------------------------------------- */
 const Atlas = (() => {
@@ -83,7 +83,7 @@ const Atlas = (() => {
       <div class="den">${esc(recMeta(r))}</div>
       <dl class="meta">
         ${r.m ? `<dt>收藏</dt><dd>${esc(r.m)}</dd>` : ''}
-        <dt>平台类别</dt><dd>${r.cls ? CLASS[r.cls].zh : '浮雕 / 建筑（不进入雕塑序列）'}</dd>
+        <dt>平台类别</dt><dd>${r.cls ? CLASS[r.cls].zh : '浮雕 / 建筑（不进入雕塑序列）'}${r.cls && r.alt && r.alt.length ? '（也可代表：' + r.alt.map(c => CLASS[c].zh).join('、') + '）' : ''}</dd>
         <dt>图谱姿势</dt><dd>${esc((r.pose || []).map(x => ZH.pose[x] || x).join('、') || '—')}</dd>
         <dt>骨骼</dt><dd>${esc(skn)}</dd>
         <dt>可信度</dt><dd>${r.conf != null ? Math.round(r.conf * 100) + '%' : '—'}</dd>
@@ -91,6 +91,7 @@ const Atlas = (() => {
       <div class="tags">${tagList(r.gest, ZH.gest)}${tagList(r.cloth, ZH.cloth)}</div>
       <p class="desc">${esc(r.desc || r.poseRaw || '')}</p>
       ${r.skNote ? `<p class="small muted">骨骼备注：${esc(r.skNote)}</p>` : ''}
+      ${r.license ? `<p class="small muted">版权：${esc(r.license)}${r.credit ? '。' + esc(r.credit) : ''}</p>` : ''}
       <div class="row">
         <button class="btn primary" id="specPlace" ${placeable ? '' : 'disabled'}>放到展厅第 ${pad2(S.sel + 1)} 位</button>
         ${r.src ? `<a class="btn ghost" href="${esc(r.src)}" target="_blank" rel="noopener">资料来源 ↗</a>` : ''}
@@ -109,7 +110,7 @@ const Atlas = (() => {
     };
   }
   function open(id) {
-    if (!built) { renderFilters(); renderGrid(); built = true; }
+    if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 组内研究网站的数据与网格`; }
     el.hidden = false; Atlas.isOpen = true;
     if (id) show(id); else { spec.hidden = true; grid.hidden = false; }
   }

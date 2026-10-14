@@ -52,13 +52,15 @@ js/               the app code, joined in PARTS order into one module:
   09c-walk.js     walk mode: W A S D / arrows, Shift to run, mouse look (pointer lock or drag), touch pad, collisions with WALK
   10-main.js      event wiring, tour, picking, resize, render loop, boot. Everything after the `/* DEBUG */` marker is test-only.
 config.js         Supabase URL + publishable key (public by design) + optional editCode. Never put a service_role/secret key here.
-data/atlas.json   105 atlas records (see "Atlas data")
+data/atlas.json   105 atlas records (generated, see "Atlas data")
+data/atlas-extra.json  hand-made corrections (pose classes, alt classes) and newly acquired models — survives a rebuild
 m/<id>.js         atlas display meshes, base64 in a tiny script wrapper (generated — don't hand-edit)
 t/<id>.webp       atlas thumbnails (generated)
 img/sketch.jpg    the group's concept sketch (not hung in the hall at the moment)
 supabase/setup.sql   database schema, row-level security, RPC functions, storage bucket + policies, edit code
 tools/check.mjs      node tools/check.mjs — every js/*.js is in PARTS, and the joined code parses as a module
 tools/build_atlas.py regenerates data/, m/, t/ from the Goddess Atlas website build
+tools/add_model.py   adds one new scan (simplified mesh + thumbnail) for data/atlas-extra.json
 docs/重新搭建.md      rebuilding everything from scratch (Chinese)
 ```
 
@@ -75,11 +77,12 @@ docs/重新搭建.md      rebuilding everything from scratch (Chinese)
 python -m http.server 8000            # preview at http://localhost:8000  (use python3 on macOS if needed; must be served — file:// cannot load the data)
 node tools/check.mjs                  # PARTS list + syntax check of the joined module — run before every commit
 python tools/build_atlas.py "<path to goddess_web/dist>"   # refresh atlas data (needs numpy)
+python tools/add_model.py <scan.stl|obj> <id> [--up z] [--front -y]   # add a newly acquired scan: writes m/<id>.js, t/<id>.webp, prints a record for data/atlas-extra.json
 ```
 
 There is no automated test suite. After a change, open the preview (and `http://localhost:8000/?debug` if you need `window.__vr`), then check:
 
-1. The hall loads, with 16 white ceramic sculptures on plinths, staggered on the chessboard over the pool, and labels above them.
+1. The hall loads, with 21 different white ceramic sculptures on plinths, staggered on the chessboard over the pool, and labels above them.
 2. "生成姿势序列" with a sample diary changes the sequence; the skin view ("表皮序列") builds.
 3. "图谱 ATLAS" opens; a model rotates in the specimen viewer.
 4. "小组 GROUP" opens and lists the works from the live database. Don't create test works on the live database unless the user asks; if you do, delete them afterwards.
@@ -131,14 +134,20 @@ This is the `works.data` jsonb, the same object the UI reads.
 
 ## The sequence board (js/05-seq.js)
 
-- **Board**: `BOARD` is 13 files × 5 ranks over the pool (x = -13.2 + 2.3k, z = -4.9 + 2.45r). Only the "dark squares" (`(k + r) % 2 === 0`) are used: 33 `CELLS`. The two outer ranks (z = ±4.9) stand just beyond the water. The hall shows up to `MAX_POS` = 24 positions; `EXISTING` (01-data.js) holds the 16 default sculptures.
+- **Board**: `BOARD` is 13 files × 5 ranks over the pool (x = -13.2 + 2.3k, z = -4.9 + 2.45r). Only the "dark squares" (`(k + r) % 2 === 0`) are used: 33 `CELLS`. The two outer ranks (z = ±4.9) stand just beyond the water. The hall shows up to `MAX_POS` = 28 positions; `EXISTING` (01-data.js) holds the 21 default sculptures (all different).
 - **Tracks** (`S.layout`, the select `#layoutSel` in the sequence strip):
   - `'skeleton'` (default): the bones of the day's first pose (`CANON[cls]` + gesture tweaks, walked from the head), laid along the pool with the head to the east.
   - `'s'`: one S-shaped sine wave along the pool.
-  - `planLayout(n)` samples n points along the track and snaps each to the nearest free cell. The day's poses are spread evenly along the track; the other sculptures fill the remaining points.
-- **Chess moves**: `ensurePositions(n, animate, delay)` slides existing plinths along one board axis, then the other (with a small lift), raises new plinths out of the water and sinks removed ones. It returns the arrival time of each plinth; `applyDay` waits for it before `setFigure` builds the sculpture with the shard burst. Keep that effect. `relayout()` re-plans after the track changes.
+  - `planLayout(n)` samples n points along the track and snaps each to the nearest free cell. It returns `{ day, rest }`: the day's poses spread evenly along the track (in order) and the remaining track squares.
+- **Chess moves**: `arrangeBoard(seq, animate, delay)` puts the plinths of a sequence on the board and reorders `V` to match `seq`:
+  - a sculpture already on the board keeps its plinth and travels with it; sculptures outside the day take the free track squares nearest to them (Hungarian assignment, `assignMin`/`pairUp`), so most of them stay;
+  - plinths whose sculpture leaves are emptied (shard burst) and go to the nearest open square; extra plinths sink, missing ones rise out of the water;
+  - moves run one after another in sequence order (01, 02, …, `STEP` ≤ 450 ms apart); a plinth whose square is still occupied waits until that plinth has lifted; each move lifts, slides along a rank or file, turns once and sets down, 2–3 s (`2 + dist/14`);
+  - it returns the landing time of each position; `applyDay` waits for it before `setFigure` grows the new sculpture (shard/rise effect — keep it). `relayout()` re-plans after the track changes. `?debug` exposes the last plan as `__vr.moves`.
 - Each `V[i]` has `x`, `z`; anything that places things at a position (labels, picking, camera moves, export, walk collisions) must use both.
 - **Skin**: grows only through the day's positions (in track order), bridges stretched along the track tangent. The cut view (`S.cut`) is a horizontal plane at `PT + 1.1`, so you look down into the poses.
+- **Choosing sculptures** (`computeSequence`, `chooseWork`): no sculpture stands on the board twice. Sculptures that keep their place (outside the day, or chosen by hand) are reserved first. For a pose the candidates are: same main class (gesture first) → records whose `alt` lists the class → a neighbouring class (`KIN`) → only then the least-used repeat. Labels of day positions show the day's pose (`fitsCls`).
+- **Water** (04-scene.js, `waterShader`): a still, deep sage-green pool — dark body, a mirror only at grazing angles (Fresnel), lighter at the stone edge, small slow ripples. It sits between the red floor and the white sculptures; keep it muted. The plinth steps (`M.tier`) are sage glass to match.
 
 ## Atlas data
 
@@ -164,6 +173,14 @@ This is the `works.data` jsonb, the same object the UI reads.
 | `sk` | skeleton candidates `{src, figs:[{segs, pts}]}`, in the mesh's coordinate space |
 
 Sculptures are scaled per pose class (`TARGET` in `05-seq.js`), sit on a plinth whose top is at `PT = 0.92`, and face +Z.
+
+`data/atlas-extra.json` is merged at start (01-data.js), after atlas.json:
+
+- `fix`: `{ "<id>": { kind?, cls?, alt?, why } }` — corrections to generated records, e.g. freestanding sculptures that the dataset filed as reliefs, or `alt: ['horizontal']` for a reclining figure that can also stand for lying. `why` is a note for the group.
+- `records`: new models, same fields as atlas.json plus `license` and `credit` (shown in the atlas viewer). Each needs `m/<id>.js` (GGP1 mesh wrapped like the others, ~12–16k triangles, centred, max extent 1) and `t/<id>.webp` (360×400). A record is skipped if atlas.json already has its id.
+- `tools/add_model.py` makes the mesh (quadric vertex clustering to ~16k triangles) and a thumbnail, and prints the record to fill in.
+- New models come from the group's acquisition folder (`D:\新建文件夹\3D model\new-goddess-acquisitions`, with license and attribution files). Only add models with a license that allows public display (CC0, public domain, CC BY), and copy the credit line.
+- Current additions: `106` Demeter of Knidos (SMK plaster cast KAS128, Public Domain Mark), `rot` turns its Z-up scan to Y-up.
 
 ## Conventions
 
