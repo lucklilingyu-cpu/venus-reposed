@@ -343,6 +343,68 @@ function addCamPose(r) {
 
 /* ---------- video / photos ---------- */
 const Vid = { frames: [], busy: false };
+let poseGalleryItems = null;
+async function loadPoseGallery() {
+  if (poseGalleryItems) return poseGalleryItems;
+  const box = $('#poseGallery'), status = $('#poseGalleryStatus');
+  try {
+    const response = await fetch('data/pose-gallery.json', { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const json = await response.json();
+    poseGalleryItems = Array.isArray(json.images) ? json.images : [];
+    box.innerHTML = poseGalleryItems.map(item => `<button class="pose-gallery-item" type="button" data-pose-gallery="${esc(item.id)}" aria-pressed="false" aria-label="识别 ${esc(item.title)}"><img src="${esc(item.file)}" alt="" loading="lazy" decoding="async"><span>${esc(item.title)}</span></button>`).join('');
+    $('#poseGalleryCount').textContent = `${poseGalleryItems.length} 张`;
+    status.textContent = poseGalleryItems.length ? '选一张图片识别骨架。' : '图集中没有图片。';
+    return poseGalleryItems;
+  } catch (e) {
+    status.textContent = '图片图集暂时无法载入。';
+    return [];
+  }
+}
+async function analyzeGalleryImage(id, button) {
+  if (Vid.busy) return;
+  Vid.busy = true;
+  const status = $('#poseGalleryStatus'), box = $('#frames');
+  $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
+  status.textContent = '正在加载姿势模型并识别骨架…';
+  try {
+    const item = (await loadPoseGallery()).find(x => x.id === id);
+    if (!item) throw new Error('找不到图片');
+    await loadMP();
+    const img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
+    const fr = frameFrom(img, img.naturalWidth, img.naturalHeight, 0, null);
+    const found = mpDetect(fr.canvas);
+    box.replaceChildren();
+    const fig = document.createElement('figure');
+    const cap = document.createElement('figcaption');
+    cap.textContent = item.title;
+    if (found) {
+      const palette = paletteFromCanvases([fr.canvas], 5);
+      drawStick(fr.canvas.getContext('2d'), found.P2, fr.canvas.width, fr.canvas.height, '#f0b84c');
+      fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
+      const visible = Object.values(found.K).filter(p => (p.v ?? 0) > 0.5).length;
+      const core = ['lsh', 'rsh', 'lhip', 'rhip', 'lkn', 'rkn', 'lank', 'rank'].filter(k => (found.K[k].v ?? 0) > 0.5).length;
+      if (core < 8) {
+        status.textContent = `检测到 ${visible}/13 个可见关节点，但肩、髋、膝和脚踝没有全部识别到；展厅暂未更新。请试试全身更清楚的图片。`;
+        return;
+      }
+      const result = classifyPose(found.K, null);
+      const label = `${item.title.slice(0, 28)} · ${CLASS[result.top].zh}`;
+      S.posPal = { 0: palette }; S.sel = 0;
+      await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true });
+      status.textContent = `识别为「${CLASS[result.top].zh}」，检测到 ${visible}/13 个可见关节点；展厅雕塑已更新。`;
+    } else {
+      fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
+      status.textContent = '没有找到可靠的身体骨架，展厅未更新。请试试主体更大、四肢更清楚的图片。';
+    }
+  } catch (e) {
+    status.textContent = e && e.message === '姿势模型加载超时' ? '姿势模型加载超时；检查网络后再试。' : '识别没有完成；检查网络后再试。';
+  } finally {
+    Vid.busy = false;
+    $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; });
+    $('#videoGo').disabled = !Vid.frames.length;
+  }
+}
 async function loadMedia(files) {
   Vid.frames = [];
   const box = $('#frames'); box.innerHTML = '';

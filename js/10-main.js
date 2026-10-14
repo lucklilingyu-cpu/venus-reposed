@@ -22,6 +22,8 @@ vf.addEventListener('change', () => { if (vf.files.length) loadMedia(Array.from(
 ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => { const f = Array.from(e.dataTransfer.files || []).filter(x => /^(image|video)\//.test(x.type)); if (f.length) loadMedia(f).catch(er => { $('#videoStatus').textContent = '读取失败：' + er.message; }); });
 $('#videoGo').addEventListener('click', analyzeMedia);
+$('#poseGallery').addEventListener('click', (e) => { const b = e.target.closest('[data-pose-gallery]'); if (b) analyzeGalleryImage(b.dataset.poseGallery, b); });
+loadPoseGallery();
 $('#layoutSel').addEventListener('change', (e) => {
   S.layout = e.target.value; relayout();
   toast(S.layout === 's' ? '雕塑沿 S 形轨迹排在棋盘格上' : '雕塑沿第一个动作的骨架排在棋盘格上');
@@ -79,7 +81,6 @@ $$('#sheetTabs button').forEach(b => b.addEventListener('click', () => {
 }));
 $('#strip').classList.add('m-on');
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') clearSculptureFocus();
   if (e.target.closest && e.target.closest('textarea,input,select')) return; // keys sent to the document itself have no closest()
   if (e.key === 'Escape') { $('#about').hidden = true; menu.hidden = true; stopTour(); if (Group.formOpen) { Group.closeModals(); return; } if (Atlas.isOpen) Atlas.close(); if (Group.isOpen) Group.close(); }
   if (e.key === 'ArrowRight') select(Math.min(S.pos.length - 1, S.sel + 1), { fly: true });
@@ -109,15 +110,6 @@ $('#tourStop').addEventListener('click', stopTour);
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let downXY = null;
 canvas.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; });
-canvas.addEventListener('dblclick', (e) => {
-  if (Walk.active) return;
-  const r = canvas.getBoundingClientRect();
-  ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ndc, camera);
-  const hit = ray.intersectObjects(V.flatMap(vp => vp.fig && vp.fig.visible ? [vp.fig, vp.drum] : []), false)[0];
-  const i = hit ? V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object) : -1;
-  i >= 0 ? focusSculpture(i) : clearSculptureFocus();
-});
 canvas.addEventListener('pointerup', (e) => {
   if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
   if (Walk.active) { if (!Walk.locked) return; ndc.set(0, 0); } // walking: pick what the crosshair points at
@@ -126,7 +118,7 @@ canvas.addEventListener('pointerup', (e) => {
   const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
   const hit = ray.intersectObjects(targets, false)[0];
-  if (!hit) { clearSculptureFocus(); return; }
+  if (!hit) return;
   let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object);
   if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.hypot(vp.x - hit.point.x, vp.z - hit.point.z); if (d < best) { best = d; i = k; } }); }
   if (i >= 0) select(i, { fly: false });
