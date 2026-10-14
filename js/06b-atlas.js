@@ -102,6 +102,7 @@ const Atlas = (() => {
       </dl>
       <div class="tags">${tagList(r.gest, ZH.gest)}${tagList(r.cloth, ZH.cloth)}</div>
       <p class="desc">${esc(r.desc || r.poseRaw || '')}</p>
+      ${r.identityNote ? `<p class="small muted">资料备注：${esc(r.identityNote)}</p>` : ''}
       ${r.skNote ? `<p class="small muted">骨骼备注：${esc(r.skNote)}</p>` : ''}
       ${r.license ? `<p class="small muted">版权：${esc(r.license)}${r.credit ? '。' + esc(r.credit) : ''}</p>` : ''}
       <div class="row">

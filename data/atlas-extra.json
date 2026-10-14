@@ -19,7 +19,9 @@
     "34": {
       "kind": "figure",
       "cls": "standing",
-      "why": "独立雕像：站立、披衣的维纳斯"
+      "why": "独立雕像：站立、披衣的维纳斯",
+      "d": "unknown",
+      "y": null
     },
     "36": {
       "kind": "figure",
@@ -29,7 +31,12 @@
     "41": {
       "kind": "figure",
       "cls": "standing",
-      "why": "独立雕像：站立，一臂举至头部"
+      "why": "独立雕像：站立，一臂举至头部",
+      "t": "狄安娜与鹿 · Diana with a Deer",
+      "src": "https://zenodo.org/records/20188456",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null
     },
     "50": {
       "kind": "figure",
@@ -45,7 +52,13 @@
       "alt": [
         "horizontal"
       ],
-      "why": "独立群像：仙女斜卧在浪花上"
+      "why": "独立群像：仙女斜卧在浪花上",
+      "t": "海中仙女群像 · The Sea Nymphs",
+      "src": "https://zenodo.org/records/21165084",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "a": "Paul-Eugène Breton",
+      "d": "unknown",
+      "y": null
     },
     "64": {
       "kind": "figure",
@@ -89,7 +102,10 @@
     "52": {
       "alt": [
         "seated"
-      ]
+      ],
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
     },
     "63": {
       "alt": [
@@ -113,6 +129,259 @@
         "walking"
       ],
       "why": "拉弓时迈开的步子"
+    },
+    "2": {
+      "t": "意大利维纳斯 · Venus Italica（石膏复制品）",
+      "src": "https://open.smk.dk/artwork/image/KAS793",
+      "identityNote": "SMK 馆藏 KAS793；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "d": "原作：1804–1812；本石膏复制品：unknown",
+      "y": 1804,
+      "m": "Statens Museum for Kunst",
+      "a": "Antonio Canova（原作）",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "4": {
+      "t": "卡比托利欧维纳斯 · Capitoline Venus（石膏复制品）",
+      "src": "https://open.smk.dk/artwork/image/KAS493",
+      "identityNote": "SMK 馆藏 KAS493；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "d": "原型：公元前2世纪；馆方标为罗马复制；本石膏复制品：unknown",
+      "y": null,
+      "m": "Statens Museum for Kunst",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "5": {
+      "t": "米洛的维纳斯 · Venus de Milo（石膏复制品）",
+      "src": "https://open.smk.dk/artwork/image/KAS434",
+      "identityNote": "SMK 馆藏 KAS434；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "d": "原作：公元前2世纪；本石膏复制品：unknown",
+      "y": null,
+      "m": "Statens Museum for Kunst",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "6": {
+      "t": "背有厄洛斯之手的蹲踞阿佛洛狄忒（石膏复制品）",
+      "src": "https://open.smk.dk/artwork/image/KAS357",
+      "identityNote": "SMK 馆藏 KAS357；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "d": "原型：公元前3世纪；馆方标为罗马复制；本石膏复制品：unknown",
+      "y": null,
+      "m": "Statens Museum for Kunst",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "10": {
+      "t": "出水的阿佛洛狄忒 · Esquiline Venus（石膏复制品）",
+      "src": "https://open.smk.dk/artwork/image/KAS185",
+      "identityNote": "SMK 馆藏 KAS185；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "d": "原作：公元前1世纪（罗马）；本石膏复制品：unknown",
+      "y": null,
+      "m": "Statens Museum for Kunst",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "11": {
+      "t": "塞提一世向奥西里斯、伊西斯与荷鲁斯献祭（浮雕）",
+      "src": "https://zenodo.org/records/10293175",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "12": {
+      "t": "刻瑞斯女神喷泉 · Fountain of Ceres",
+      "src": "https://zenodo.org/records/10322871",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "16": {
+      "t": "姆特女神坐像上半部（存疑）· Upper part of a statue of Mut(?)",
+      "src": "https://www.britishmuseum.org/collection/object/Y_EA948",
+      "identityNote": "扫描来源题名为 Hathor；大英博物馆现行 EA948 目录标为 Mut(?)。采用馆方带问号的鉴定；年代保留第18王朝，不将上传年份或收购年份当作创作年份。",
+      "m": "British Museum",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "30": {
+      "t": "拧干头发的阿佛洛狄忒 · Aphrodite Wringing out her Hair",
+      "src": "https://zenodo.org/records/21215973",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "35": {
+      "t": "阿佛洛狄忒的诞生 · Birth of Aphrodite",
+      "src": "https://zenodo.org/records/21171842",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "37": {
+      "t": "瓦尔德赖希斯城堡的狄安娜 · Diana, Waldreichs Castle",
+      "src": "https://zenodo.org/records/21489513",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "38": {
+      "t": "狄安娜与猎犬 · Diana with a Hound",
+      "src": "https://zenodo.org/records/21164981",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "a": "Paul-Jean-Baptiste Gasq",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "58": {
+      "t": "骑海兽的涅瑞伊得斯 · Nereid on a Sea Monster",
+      "src": "https://zenodo.org/records/21678247",
+      "identityNote": "名称按对应的原始扫描资料核对；未确认的创作年代标为 unknown。",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "105": {
+      "t": "哈索尔女神柱头 · Hathor Capital",
+      "src": "https://zenodo.org/records/21645919",
+      "identityNote": "原始扫描题名 Hathor capital，馆藏号 MAK/AS/1193；作品创作年代未能确认。",
+      "m": "Archaeological Museum in Kraków",
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "1": {
+      "d": "原型：公元前3世纪；馆方标为罗马复制；本石膏复制品：unknown",
+      "y": null,
+      "m": "Statens Museum for Kunst",
+      "src": "https://open.smk.dk/artwork/image/KAS618",
+      "identityNote": "SMK 馆藏 KAS618；年代取自馆方的原作资料，区分原作／原型与本石膏复制品。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "26": {
+      "d": "1918–1928",
+      "y": 1918,
+      "a": "Aristide Maillol",
+      "src": "https://www.mba-lyon.fr/en/fiche-oeuvre/venus-necklace",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "31": {
+      "d": "1683–1686（Barois 原作；扫描／复制品年代：unknown）",
+      "y": 1683,
+      "src": "https://collections.louvre.fr/ark:/53355/cl010092111",
+      "identityNote": "卢浮宫 MR 1999 的 Barois 型作品年代；原始扫描来源明确指向卢浮宫，复制品或扫描的制作年代未确认。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "43": {
+      "d": "公元125–150年（馆方存疑）；希腊原型：公元前4世纪",
+      "y": 125,
+      "src": "https://collections.louvre.fr/ark:/53355/cl010278930",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "49": {
+      "d": "罗马帝国时期；希腊原型：公元前4世纪末；本复制品：unknown",
+      "y": null,
+      "src": "https://collections.louvre.fr/ark:/53355/cl010278726",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "67": {
+      "d": "约公元1–2世纪（据铭文字体推定）",
+      "y": null,
+      "src": "https://insaph.kcl.ac.uk/iaph2007/iAph080228.html",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "76": {
+      "d": "1914（原作；本复制版本：unknown）",
+      "y": 1914,
+      "a": "Auguste Renoir；Richard Guino",
+      "src": "https://www.musee-orsay.fr/en/artworks/jugement-de-paris-15567",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "83": {
+      "d": "公元前442–438年",
+      "y": -442,
+      "a": "Pheidias' workshop",
+      "src": "https://www.theacropolismuseum.gr/en/parthenon-east-frieze-block-6-vi",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "84": {
+      "d": "公元前410–400年",
+      "y": -410,
+      "identityNote": "年代见对应扫描的对象说明；1845 是收购年份，未用作创作年份。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。",
+      "src": "https://zenodo.org/records/21648536"
+    },
+    "89": {
+      "d": "公元2世纪后半叶",
+      "y": null,
+      "identityNote": "对应扫描来源明确记为公元2世纪后半叶，未虚构具体单一年份。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。",
+      "src": "https://zenodo.org/records/21244977"
+    },
+    "100": {
+      "d": "1547（原作）",
+      "y": 1547,
+      "a": "Jean Goujon",
+      "src": "https://collections.louvre.fr/ark:/53355/cl010091946",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "112": {
+      "y": -440,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "113": {
+      "y": -500,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "114": {
+      "y": -438,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "115": {
+      "y": -438,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "116": {
+      "y": -438,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "117": {
+      "y": null,
+      "d": "unknown",
+      "identityNote": "SMK KAS863 原作年代原文“Enten 430 eller 10 f.Kr.”有歧义；不能确认时标 unknown，不保留旧的公元430年。",
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "23": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "28": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "56": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "78": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "86": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "103": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
+    },
+    "104": {
+      "d": "unknown",
+      "y": null,
+      "why": "2026-10-14：核对原始模型来源和馆方资料；未确认年代为 unknown。"
     }
   },
   "records": []

@@ -218,7 +218,7 @@ function updateLabels() {
     if (tag.dataset.k !== key) {
       tag.dataset.k = key;
       tag.querySelector('.sculpture-name').textContent = recTitle(r);
-      tag.querySelector('.sculpture-year').textContent = r.d || (r.y != null ? (r.y < 0 ? '公元前 ' + Math.abs(r.y) : r.y + ' 年') : '年代待考');
+      tag.querySelector('.sculpture-year').textContent = r.d || (r.y != null ? (r.y < 0 ? '公元前 ' + Math.abs(r.y) : r.y + ' 年') : 'unknown');
     }
   });
 }
