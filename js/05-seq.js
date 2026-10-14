@@ -10,10 +10,23 @@ const clsOf = (id) => (REC[id] && REC[id].cls) || 'standing';
 const MESH_MAGIC = 0x31504747;
 function parseMeshBin(buf) {
   const dv = new DataView(buf);
-  if (buf.byteLength < 12 || dv.getUint32(0, true) !== MESH_MAGIC) throw new Error('不是图谱的网格文件');
+  if (buf.byteLength < 12 || buf.byteLength > 8000000) throw new Error('不是图谱的网格文件');
+  const magic = dv.getUint32(0, true), detail = magic === 0x32504747;
+  if (magic !== MESH_MAGIC && !detail) throw new Error('不是图谱的网格文件');
   const vc = dv.getUint32(4, true), ic = dv.getUint32(8, true);
-  if (buf.byteLength !== 12 + vc * 12 + ic * 4) throw new Error('网格文件长度不对');
-  return { pos: new Float32Array(buf.slice(12, 12 + vc * 12)), idx: new Uint32Array(buf.slice(12 + vc * 12)) };
+  const offset = detail ? 16 : 12;
+  if (!vc || vc > 300000 || !ic || ic > 1200000 || ic % 3 ||
+      (detail && (buf.byteLength < 16 || dv.getUint32(12, true) !== 1)) ||
+      buf.byteLength !== offset + vc * (detail ? 24 : 12) + ic * 4) throw new Error('网格文件长度不对');
+  const pos = new Float32Array(buf.slice(offset, offset + vc * 12));
+  const normal = detail ? new Float32Array(buf.slice(offset + vc * 12, offset + vc * 24)) : null;
+  const idx = new Uint32Array(buf.slice(offset + vc * (detail ? 24 : 12)));
+  if (pos.some(x => !Number.isFinite(x)) || idx.some(x => x >= vc)) throw new Error('网格数据无效');
+  if (normal) for (let i = 0; i < normal.length; i += 3) {
+    const len = Math.hypot(normal[i], normal[i + 1], normal[i + 2]);
+    if (!Number.isFinite(len) || len < 0.9 || len > 1.1) throw new Error('网格法线无效');
+  }
+  return { pos, idx, normal };
 }
 function loadMeshScript(id) { // local package: meshes wrapped as scripts so they load from disk
   return new Promise((res, rej) => {
@@ -72,9 +85,21 @@ async function fetchMesh(id) {
 }
 const TARGET = { standing: ['h', 1.8], walking: ['h', 1.8], seated: ['h', 1.4], crouching: ['h', 1.12], reclining: ['l', 2.0], horizontal: ['l', 2.0] };
 const meshCache = new Map();
+const detailMeshCache = new Map();
+async function fetchDetailMesh(id) {
+  const entry = MODEL_DETAILS[id];
+  if (!entry || !/^md\/[1-9]\d*\.bin\.gz$/.test(entry.url) || typeof DecompressionStream === 'undefined') return null;
+  const r = await fetch(entry.url, { signal: AbortSignal.timeout(20000) });
+  if (!r.ok) throw new Error('精细模型加载失败');
+  let buf = await r.arrayBuffer();
+  // Some hosts decode gzip themselves; GitHub Pages serves the compressed file.
+  const bytes = new Uint8Array(buf);
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  return parseMeshBin(buf);
+}
 /* returns { geo, bounds, pts (Float32Array, plinth-local), xf (web -> plinth-local), skel: [{segs, pts}] } */
 /* rotate (rows of R), scale to the pose class, stand on y = 0, make the winding consistent */
-function figureGeometry(pos, idx, R, cls) {
+function figureGeometry(pos, idx, R, cls, normal = null) {
   const out = new Float32Array(pos.length);
   const mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
   for (let i = 0; i < pos.length; i += 3) {
@@ -86,11 +111,16 @@ function figureGeometry(pos, idx, R, cls) {
   const s = target / Math.max(1e-6, mode === 'h' ? ext[1] : mode === 'l' ? Math.max(ext[0], ext[2]) : Math.max(...ext));
   const t = [-(mn[0] + mx[0]) / 2 * s, -mn[1] * s, -(mn[2] + mx[2]) / 2 * s];
   for (let i = 0; i < out.length; i += 3) { out[i] = out[i] * s + t[0]; out[i + 1] = out[i + 1] * s + t[1]; out[i + 2] = out[i + 2] * s + t[2]; }
-  fixWinding(out, idx);
+  if (!normal) fixWinding(out, idx);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(out, 3));
   geo.setIndex(new THREE.BufferAttribute(idx, 1));
-  geo.computeVertexNormals(); geo.computeBoundingBox(); geo.computeBoundingSphere();
+  if (normal) {
+    const n = new Float32Array(normal.length);
+    for (let i = 0; i < n.length; i += 3) for (let a = 0; a < 3; a++) n[i + a] = R[a][0] * normal[i] + R[a][1] * normal[i + 1] + R[a][2] * normal[i + 2];
+    geo.setAttribute('normal', new THREE.BufferAttribute(n, 3));
+  } else geo.computeVertexNormals();
+  geo.computeBoundingBox(); geo.computeBoundingSphere();
   return { geo, out, s, t, bounds: { min: geo.boundingBox.min.clone(), max: geo.boundingBox.max.clone() } };
 }
 function meshOf(id) {
@@ -117,10 +147,44 @@ function meshOf(id) {
   p.catch(() => meshCache.delete(id));
   return p;
 }
+function detailedMeshOf(id) {
+  if (!MODEL_DETAILS[id]) return meshOf(id);
+  if (detailMeshCache.has(id)) return detailMeshCache.get(id);
+  const promise = Promise.all([meshOf(id), fetchDetailMesh(id)]).then(([base, data]) => {
+    if (!data) return base;
+    const r = REC[id];
+    const { geo, bounds } = figureGeometry(data.pos, data.idx, r.rot || [[1, 0, 0], [0, 1, 0], [0, 0, 1]], r.cls, data.normal);
+    return { ...base, geo, bounds, detail: true };
+  }).catch(() => { detailMeshCache.delete(id); return meshOf(id); });
+  detailMeshCache.set(id, promise);
+  // Bounded CPU cache. A mesh still attached to a viewer retains its geometry.
+  if (detailMeshCache.size > 6) {
+    const oldest = detailMeshCache.keys().next().value, old = detailMeshCache.get(oldest);
+    detailMeshCache.delete(oldest);
+    old.then(mesh => { if (mesh.detail) releaseDetailGeometry(oldest, mesh.geo); }).catch(() => {});
+  }
+  return promise;
+}
+function releaseDetailGeometry(id, geo) {
+  if (!detailMeshCache.has(id) && !V.some(v => v.fig && v.fig.geometry === geo) && !Atlas.usesGeometry(geo)) geo.dispose();
+}
+async function refineSelectedFigure() {
+  const i = S.sel, vp = V[i], p = S.pos[i];
+  if (!p || !vp || !vp.fig || vp.work !== p.work) return;
+  // Other plinths use previews, keeping the full hall responsive on phones.
+  for (let j = 0; j < V.length; j++) if (j !== i && V[j].detailBase && V[j].fig) {
+    const oldGeo = V[j].fig.geometry;
+    V[j].fig.geometry = V[j].detailBase; V[j].detailBase = null;
+    releaseDetailGeometry(V[j].work, oldGeo);
+  }
+  const fig = vp.fig, mesh = await detailedMeshOf(p.work);
+  if (!mesh.detail || S.sel !== i || S.pos[i] !== p || vp.fig !== fig) return;
+  vp.detailBase = vp.detailBase || fig.geometry; fig.geometry = mesh.geo;
+}
 
 /* ---------- materials ---------- */
 const ceramic = new THREE.MeshPhysicalMaterial({
-  color: 0xebe7e1, roughness: 0.34, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.12, envMapIntensity: 1.0,
+  color: 0xf7f5f0, roughness: 0.3, metalness: 0, clearcoat: 0.65, clearcoatRoughness: 0.18, envMapIntensity: 0.85,
 });
 const boneMat = new THREE.MeshBasicMaterial({ color: 0x2b2a2c, depthTest: false, transparent: true, opacity: 0.88 });
 const jointMat = new THREE.MeshBasicMaterial({ color: 0xc5a86c, depthTest: false, transparent: true, opacity: 0.95 });
@@ -465,6 +529,8 @@ async function setFigure(i, p, animate) {
   const m = new THREE.Mesh(mesh.geo, ceramic); m.castShadow = true; m.receiveShadow = false;
   m.userData.pos = i;
   vp.g.add(m); vp.fig = m;
+  vp.detailBase = null;
+  if (i === S.sel) refineSelectedFigure().catch(() => {});
   vp.bones = skeletonObject(mesh.skel);
   if (vp.bones) { vp.bones.position.y = PT; vp.g.add(vp.bones); }
   plinthFit(vp, mesh.bounds, animate);
@@ -714,6 +780,7 @@ function flyHome() { const H = isSmall() ? HOME_M : HOME; flyTo(H.pos.clone(), H
 function select(i, opts = {}) {
   if (i < 0 || i >= S.pos.length) return;
   S.sel = i;
+  refineSelectedFigure().catch(() => {});
   renderStrip(true); renderData(); renderGestures();
   if (opts.fly) flyToPosition(i);
   if (Sound.on) Sound.play(clsOf(S.pos[i].work));

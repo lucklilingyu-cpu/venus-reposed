@@ -2,6 +2,8 @@
 
 Guidance for coding agents (Codex, etc.) working in this repository. The site's UI is in Chinese; keep user-facing text in Chinese unless asked otherwise.
 
+Atlas update (2026-10-14): the main catalogue now has 118 records (original 105 + 13 acquisitions). `md/<id>.bin.gz` contains 117 GGP2 detail meshes with preserved normals; `data/atlas-models.json` declares paths, counts and source hashes. Lightweight meshes remain in `m/`. Selected hall sculptures and Atlas specimen views load detail progressively; keep fallbacks and the bounded detail cache. Run `node tools/check_atlas.mjs` after atlas changes. IDs 106–118 are occupied; new local additions start at 119. See `docs/图谱同步.md`.
+
 ## What this is
 
 A static website for a Bartlett B-Pro Architectural Design group project (Workshop 7, V&A Cast Courts).

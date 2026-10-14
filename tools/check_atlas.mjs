@@ -1,0 +1,40 @@
+// Verify the shipped catalogue, both mesh formats, and upstream integrity hashes.
+import { readFileSync, existsSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const read = p => readFileSync(root + p);
+const atlas = JSON.parse(read('data/atlas.json'));
+const details = JSON.parse(read('data/atlas-models.json')).models;
+const src = read('js/05-seq.js').toString();
+const parse = vm.runInNewContext('const MESH_MAGIC = 0x31504747; ' + src.slice(src.indexOf('function parseMeshBin'), src.indexOf('function loadMeshScript')) + '; parseMeshBin', { DataView, Float32Array, Uint32Array, Number, Math });
+const ab = b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+const ids = new Set();
+let detailCount = 0;
+for (const r of atlas.records) {
+  assert(!ids.has(r.id), 'Duplicate ID ' + r.id); ids.add(r.id);
+  assert(existsSync(root + 't/' + r.id + '.webp'), 'Missing thumbnail ' + r.id);
+  const match = read('m/' + r.id + '.js').toString().match(/"([A-Za-z0-9+/=]{100,})"/);
+  assert(match, 'Missing mesh wrapper ' + r.id);
+  parse(ab(Buffer.from(match[1], 'base64')));
+  const d = details[r.id];
+  if (!d) continue;
+  const gz = read(d.url), bin = gunzipSync(gz);
+  assert.equal(createHash('sha256').update(gz).digest('hex'), d.compressed_sha256, 'Compressed integrity ' + r.id);
+  assert.equal(createHash('sha256').update(bin).digest('hex'), d.sha256, 'Mesh integrity ' + r.id);
+  const mesh = parse(ab(bin));
+  assert(mesh.normal, 'Missing preserved normals ' + r.id);
+  assert.equal(mesh.idx.length / 3, d.triangles);
+  assert.equal(mesh.pos.length / 3, d.vertices);
+  assert.equal(r.rot.length, 3);
+  if (+r.id > 105) assert(r.src && r.license && r.credit, 'Missing acquisition attribution ' + r.id);
+  detailCount++;
+}
+assert.equal(atlas.count, ids.size);
+assert.equal(Object.keys(details).length, detailCount);
+assert.throws(() => parse(new ArrayBuffer(4)));
+assert.throws(() => parse(new ArrayBuffer(16)));
+console.log(`✓ ${ids.size} catalogue records / previews / thumbnails; ${detailCount} detail meshes, hashes, indices and normals verified`);

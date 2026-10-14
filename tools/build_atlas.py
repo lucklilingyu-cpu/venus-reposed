@@ -13,14 +13,19 @@ if len(sys.argv) < 2:
 SRC = os.path.join(sys.argv[1], '')
 PUBLIC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # the site folder (repository root)
 OUT = os.path.join(PUBLIC, 'data')
-ds=json.load(open(SRC+'data/goddess_dataset_web.json', encoding='utf-8'))['records']
+catalog = SRC+'data/collection-records.json'
+ds=json.load(open(catalog if os.path.exists(catalog) else SRC+'data/goddess_dataset_web.json', encoding='utf-8'))['records']
 gm=json.load(open(SRC+'data/gallery-map.json', encoding='utf-8'))['models']
 ps=json.load(open(SRC+'data/person-skeletons.json', encoding='utf-8'))
+new_ps = SRC+'data/acquisition-person-skeletons.json'
+if os.path.exists(new_ps):
+    ps['subjects'] += json.load(open(new_ps, encoding='utf-8'))['subjects']
 ur=json.load(open(SRC+'data/unirig-candidates.json', encoding='utf-8'))
 mv=json.load(open(SRC+'data/goddess_movement_dataset.json', encoding='utf-8'))
 
 REL = re.compile(r'relief|frieze|mosaic|mosaico|temple|gate|agora|nymphaeum|sanctuary|sarcophag|column|slab|pillar|altar|throne|\bbust\b|face of|monument|parthenon|architect|reconstruct', re.I)
 def kind(r):
+    if r.get('acquisition'): return 'figure'
     txt = ' '.join([r['title'], r.get('pose_raw',''), r.get('description','')])
     if 'relief_setting' in r['surroundings'] or 'architectural_setting' in r['surroundings']: return 'relief'
     if REL.search(r['title']) or REL.search(r.get('pose_raw','')): return 'relief'
@@ -66,6 +71,7 @@ def rot_of(cam):
 # skeletons
 person = {}
 for s in ps['subjects']:
+    if s.get('accepted_for_visualization') is False: continue
     J = s['joints']; segs = []
     for b in s['bones']:
         a, c = J.get(b['parent']), J.get(b['child'])
@@ -108,11 +114,13 @@ for r in ds:
     note = (ur['outcomes'].get(sid, {}) or {}).get('reason', '')
     cam = gm[sid]['camera']
     out.append({
-        'id': sid, 't': r['title'], 'a': r['artist'], 'd': r['date_period'], 'm': r['museum'], 'y': year_of(r['date_period']),
+        'id': sid, 't': r['title'], 'a': r['artist'], 'd': r['date_period'], 'm': r['museum'], 'y': year_of(r.get('original_date') or r['date_period']),
         'pose': r['pose'], 'cls': c_fig, 'kind': k, 'g': gesture_of(r, c_fig) if c_fig else None,
         'gest': r['gesture'], 'cloth': r['clothing'], 'attr': r['attributes'],
         'desc': (r['description'] or '')[:260], 'poseRaw': (r.get('pose_raw') or '')[:200], 'conf': r['confidence'], 'src': r['source_url'],
         'rot': rot_of(cam), 'bytes': gm[sid]['bytes'], 'sk': sk, 'skNote': note[:220],
+        **({'license': r.get('license_label', '') + ' (' + r.get('license_url', '') + ')',
+            'credit': r.get('attribution', ''), 'skNote': '新增扫描；骨骼为局部候选，解剖对应尚未确认。' if sk else '暂无经过确认的骨骼数据。'} if r.get('acquisition') else {}),
     })
 json.dump({'source': 'Goddess Sculpture Atlas (goddess-sculpture-atlas.silkykoala4.chatgpt.site)', 'count': len(out), 'records': out}, open(os.path.join(OUT, 'atlas.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 from collections import Counter
@@ -132,3 +140,20 @@ for r in out:
         f.write(f'window.__atlasMeshLoaded&&window.__atlasMeshLoaded("{i}","{b64}");')
     shutil.copy(SRC + f'gallery/thumbs/{i}.webp', os.path.join(PUBLIC, 't', f'{i}.webp'))
 print('wrote', len(out), 'records to', PUBLIC)
+# Keep detail resources local: the hall continues to work if the source Site changes.
+# These GGP2 files include the source's crease-preserving vertex normals.
+detail_dir = os.path.join(PUBLIC, 'md')
+os.makedirs(detail_dir, exist_ok=True)
+models = {}
+for r in out:
+    sid = r['id']; detail = gm[sid].get('detail', {})
+    if detail.get('status') != 'available': continue
+    path = os.path.join(SRC, detail['url'])
+    if not os.path.exists(path): raise FileNotFoundError(path)
+    name = sid + '.bin.gz'
+    shutil.copy(path, os.path.join(detail_dir, name))
+    models[sid] = {k: detail[k] for k in ('triangles', 'vertices', 'sha256', 'source_sha256', 'compressed_sha256') if k in detail}
+    models[sid]['url'] = 'md/' + name
+json.dump({'source': 'https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/', 'models': models},
+          open(os.path.join(OUT, 'atlas-models.json'), 'w', encoding='utf-8'), separators=(',', ':'))
+print('wrote', len(models), 'detail meshes')

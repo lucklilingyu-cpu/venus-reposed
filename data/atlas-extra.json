@@ -1,50 +1,119 @@
 {
   "about": "Corrections and additions to data/atlas.json, kept here so they survive a rebuild with tools/build_atlas.py. 'fix' changes fields of existing records (kind, cls = main pose class, alt = other pose classes the sculpture can also stand for). 'records' are new models (mesh m/<id>.js, thumbnail t/<id>.webp). A new record is skipped if atlas.json already has its id.",
   "fix": {
-    "8":  { "kind": "figure", "cls": "crouching", "why": "独立雕像：跪坐的维纳斯亲吻丘比特，原先误归为浮雕" },
-    "20": { "kind": "figure", "cls": "seated", "why": "独立群像：坐着的维纳斯为阿多尼斯加冕" },
-    "25": { "kind": "figure", "cls": "standing", "why": "独立雕像：站立的维纳斯与鸽子" },
-    "34": { "kind": "figure", "cls": "standing", "why": "独立雕像：站立、披衣的维纳斯" },
-    "36": { "kind": "figure", "cls": "standing", "why": "独立群像：少女向维纳斯像低语，均为站姿" },
-    "41": { "kind": "figure", "cls": "standing", "why": "独立雕像：站立，一臂举至头部" },
-    "50": { "kind": "figure", "cls": "standing", "alt": ["walking"], "why": "独立雕像：狄安娜装束，迈步，带猎犬" },
-    "60": { "kind": "figure", "cls": "reclining", "alt": ["horizontal"], "why": "独立群像：仙女斜卧在浪花上" },
-    "64": { "kind": "figure", "cls": "seated", "why": "独立雕像：卡斯塔利亚坐在岩石上，一臂上举" },
-    "13": { "cls": "seated", "why": "密涅瓦坐在基座上，不是站姿" },
-    "62": { "cls": "reclining", "alt": ["seated"], "why": "阿瑞图萨侧卧在石台上" },
-    "65": { "cls": "reclining", "alt": ["seated"], "why": "塞纳河仙女倚着肘部半卧" },
-    "7":  { "alt": ["reclining"] },
-    "55": { "alt": ["horizontal"], "why": "卡诺瓦的仙女几乎平躺" },
-    "99": { "alt": ["horizontal"] },
-    "52": { "alt": ["seated"] },
-    "63": { "alt": ["crouching"], "why": "跪坐，接近蹲姿" },
-    "59": { "alt": ["crouching"] },
-    "45": { "alt": ["walking"], "why": "奔跑中的狄安娜" },
-    "47": { "alt": ["walking"], "why": "拉弓时迈开的步子" }
-  },
-  "records": [
-    {
-      "id": "106",
-      "t": "Demeter of Knidos (plaster cast KAS128)",
-      "a": "Unknown ancient sculptor",
-      "d": "original about 350 BCE (British Museum); plaster cast acquired by SMK in 1897",
-      "m": "Statens Museum for Kunst, Copenhagen (cast); original marble in the British Museum",
-      "y": -350,
-      "pose": ["seated"],
-      "cls": "seated",
+    "8": {
       "kind": "figure",
-      "g": null,
-      "gest": ["arm_bent", "limbs_missing_or_truncated"],
-      "cloth": ["drapery", "robe"],
-      "attr": ["base_or_support"],
-      "desc": "A veiled, draped goddess seated upright on a throne; the forearms are broken off. Scan of the plaster cast in the Royal Cast Collection, Copenhagen.",
-      "poseRaw": "Seated upright on a throne, knees apart under heavy drapery, head veiled",
-      "conf": null,
-      "src": "https://open.smk.dk/artwork/image/KAS128",
-      "rot": [[1, 0, 0], [0, 0, 1], [0, -1, 0]],
-      "license": "Public Domain Mark 1.0 (https://creativecommons.org/publicdomain/mark/1.0/)",
-      "credit": "Unknown ancient artist; plaster cast KAS128, Statens Museum for Kunst, National Gallery of Denmark; original marble, British Museum, Demeter of Knidos. Scan supplied by SMK.",
-      "skNote": "新收录模型（2026-10-13 收录，来自小组的 new-goddess-acquisitions），还没有骨骼候选。"
+      "cls": "crouching",
+      "why": "独立雕像：跪坐的维纳斯亲吻丘比特，原先误归为浮雕"
+    },
+    "20": {
+      "kind": "figure",
+      "cls": "seated",
+      "why": "独立群像：坐着的维纳斯为阿多尼斯加冕"
+    },
+    "25": {
+      "kind": "figure",
+      "cls": "standing",
+      "why": "独立雕像：站立的维纳斯与鸽子"
+    },
+    "34": {
+      "kind": "figure",
+      "cls": "standing",
+      "why": "独立雕像：站立、披衣的维纳斯"
+    },
+    "36": {
+      "kind": "figure",
+      "cls": "standing",
+      "why": "独立群像：少女向维纳斯像低语，均为站姿"
+    },
+    "41": {
+      "kind": "figure",
+      "cls": "standing",
+      "why": "独立雕像：站立，一臂举至头部"
+    },
+    "50": {
+      "kind": "figure",
+      "cls": "standing",
+      "alt": [
+        "walking"
+      ],
+      "why": "独立雕像：狄安娜装束，迈步，带猎犬"
+    },
+    "60": {
+      "kind": "figure",
+      "cls": "reclining",
+      "alt": [
+        "horizontal"
+      ],
+      "why": "独立群像：仙女斜卧在浪花上"
+    },
+    "64": {
+      "kind": "figure",
+      "cls": "seated",
+      "why": "独立雕像：卡斯塔利亚坐在岩石上，一臂上举"
+    },
+    "13": {
+      "cls": "seated",
+      "why": "密涅瓦坐在基座上，不是站姿"
+    },
+    "62": {
+      "cls": "reclining",
+      "alt": [
+        "seated"
+      ],
+      "why": "阿瑞图萨侧卧在石台上"
+    },
+    "65": {
+      "cls": "reclining",
+      "alt": [
+        "seated"
+      ],
+      "why": "塞纳河仙女倚着肘部半卧"
+    },
+    "7": {
+      "alt": [
+        "reclining"
+      ]
+    },
+    "55": {
+      "alt": [
+        "horizontal"
+      ],
+      "why": "卡诺瓦的仙女几乎平躺"
+    },
+    "99": {
+      "alt": [
+        "horizontal"
+      ]
+    },
+    "52": {
+      "alt": [
+        "seated"
+      ]
+    },
+    "63": {
+      "alt": [
+        "crouching"
+      ],
+      "why": "跪坐，接近蹲姿"
+    },
+    "59": {
+      "alt": [
+        "crouching"
+      ]
+    },
+    "45": {
+      "alt": [
+        "walking"
+      ],
+      "why": "奔跑中的狄安娜"
+    },
+    "47": {
+      "alt": [
+        "walking"
+      ],
+      "why": "拉弓时迈开的步子"
     }
-  ]
+  },
+  "records": []
 }

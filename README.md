@@ -2,6 +2,8 @@
 
 Bartlett B-Pro Architectural Design · Workshop 7（V&A Cast Courts）小组项目的虚拟展厅和作品平台。
 
+2026-10-14 已同步新版图谱：118 件作品，117 件精细网格。展厅选中雕塑或打开图谱单件时加载精细版，统一白色陶瓷渲染；详见 [图谱同步说明](docs/图谱同步.md)。运行 `node tools/check_atlas.mjs` 可校验所有网格及源文件哈希。新增模型编号请从 119 起使用，避免覆盖已同步的 106–118。
+
 - **网址**：https://lucklilingyu-cpu.github.io/venus-reposed/
   - 旧网址 venus-reposed.netlify.app 会自动跳转到这里。
 - **代码仓库**：https://github.com/lucklilingyu-cpu/venus-reposed
