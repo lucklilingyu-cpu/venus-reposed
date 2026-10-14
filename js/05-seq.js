@@ -2,7 +2,19 @@
 /* ---------------------------------------------------------------
    Atlas meshes on the plinths, replacement, skeletons, skin
 ---------------------------------------------------------------- */
-const PT = 0.92; // plinth top
+// Derive the common vertical translation from the white drum's WORLD minimum.
+// The unchanged alignment.json declares the display floor at world y=0.
+const DISPLAY_FLOOR_Y = 0;
+const WHITE_DRUM_HEIGHT = 0.3;
+const PT = (() => {
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, WHITE_DRUM_HEIGHT, 72));
+  drum.position.y = 0.92 - WHITE_DRUM_HEIGHT / 2;
+  drum.updateWorldMatrix(true, false);
+  const minimum = new THREE.Box3().setFromObject(drum).min.y;
+  const top = 0.92 + DISPLAY_FLOOR_Y - minimum;
+  drum.geometry.dispose(); drum.material.dispose();
+  return top;
+})();
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clsOf = (id) => (REC[id] && REC[id].cls) || 'standing';
 
@@ -330,21 +342,7 @@ function stopRiseBeam(vp) {
   for (const slot of arrivalLights) if (slot.owner === vp) { slot.light.intensity = 0; slot.owner = null; }
 }
 function startRiseBeam(vp) {
-  stopRiseBeam(vp);
-  if (reduceMotion) return;
-  if (!vp.riseBeam) { vp.riseBeam = makeSculptureBeam(0xe1f7ff); vp.g.add(vp.riseBeam); }
-  const beam = vp.riseBeam; beam.visible = true;
-  const slot = arrivalLights.find(s => !s.owner);
-  if (slot) {
-    slot.owner = vp;
-    slot.light.position.set(vp.x, PT + focusBeamHeight, vp.z);
-    slot.light.target.position.set(vp.x, PT + 0.6, vp.z);
-  }
-  vp.beamTween = tween(2.5, (e, raw) => {
-    const k = Math.min(1, raw / 0.12) * Math.min(1, (1 - raw) / 0.36);
-    beam.material.uniforms.strength.value = k;
-    if (slot && slot.owner === vp) slot.light.intensity = 2400 * k;
-  }, () => stopRiseBeam(vp));
+  stopRiseBeam(vp); // removed glass-platform arrival decoration
 }
 function clearSculptureFocus() {
   if (focusedSculpture) focusedSculpture.tag.classList.add('hidden');
@@ -369,19 +367,15 @@ function makePosition() {
   const g = new THREE.Group(); scene.add(g);
   const plinth = new THREE.Group(); g.add(plinth);
   const tiers = [];
-  for (let t = 0; t < 3; t++) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.17, 64), M.tier);
-    m.position.y = -0.1 + 0.085 + t * 0.23; m.receiveShadow = true;
-    plinth.add(m); tiers.push(m);
-  }
+  // Removed glass tiers are never constructed, including rebuild/reset.
   const drum = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.3, 72), M.drum);
   drum.position.y = PT - 0.15; drum.castShadow = true; drum.receiveShadow = true; plinth.add(drum);
   const trim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 8, 96), M.gold); trim.rotation.x = Math.PI / 2; trim.position.y = PT; plinth.add(trim);
   const ringMat = new THREE.MeshBasicMaterial({ color: STATUS_COL.beyond, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
   const ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.035, 96), ringMat);
-  ring.rotation.x = -Math.PI / 2; ring.position.y = -0.085; g.add(ring);
+  ring.rotation.x = -Math.PI / 2; ring.position.y = -0.085; ring.visible = false; // detached compatibility handle
   const moveHalo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1.02, 64), new THREE.MeshBasicMaterial({ color: 0x82d9ef, transparent: true, opacity: 0, toneMapped: false, side: THREE.DoubleSide, depthWrite: false }));
-  moveHalo.rotation.x = -Math.PI / 2; moveHalo.position.y = 0.015; g.add(moveHalo);
+  moveHalo.rotation.x = -Math.PI / 2; moveHalo.position.y = 0.015; moveHalo.visible = false; // detached compatibility handle
   const tag = document.createElement('div'); tag.className = 'sculpture-caption hidden';
   tag.innerHTML = '<span class="sculpture-name"></span><span class="sculpture-year"></span>';
   labelsEl.appendChild(tag);
@@ -555,7 +549,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
   const arrive = new Array(n).fill(0), moves = [];
   V.forEach((vp, i) => {
     const c = target[i], g = vp.g; vp.x = c.x; vp.z = c.z;
-    if (!animate) { g.position.set(c.x, 0, c.z); g.scale.setScalar(1); vp.fresh = false; return; }
+    if (!animate) { g.position.set(c.x, 0, c.z); g.scale.setScalar(1); groundWhitePosition(vp); vp.fresh = false; return; }
     const dist = Math.abs(c.x - g.position.x) + Math.abs(c.z - g.position.z);
     moves.push({ i, vp, from: at(vp), to: c, dist, fresh: vp.fresh, dur: 4.5 });
   });
@@ -569,7 +563,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
     const { vp } = mv, g = vp.g, { x: x0, z: z0 } = mv.from, { x: x1, z: z1 } = mv.to, y0 = g.position.y, s0 = g.scale.x;
     if (mv.fresh) { // a new plinth rises out of the water on its square
       vp.fresh = false;
-      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { vp.moveTween = null; }); }, s);
+      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { groundWhitePosition(vp); vp.moveTween = null; }); }, s);
       continue;
     }
     // Rook-like path along the longer line first; all pieces are moving together.
@@ -582,7 +576,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
         const halo = 1.32 + Math.sin(raw * Math.PI) * 0.16;
         vp.moveHalo.scale.set(vp.scaleX * halo, vp.scaleZ * halo, 1);
         g.scale.setScalar(s0 + (1 - s0) * raw);
-      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveHalo.material.opacity = 0; vp.moveTween = null; pulseRing(vp); });
+      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); groundWhitePosition(vp); vp.moveHalo.material.opacity = 0; vp.moveTween = null; pulseRing(vp); });
     }, s);
   }
   lastMoves = order.map(mv => ({ i: mv.i, start: Math.round(mv.start), dur: mv.dur, dist: +mv.dist.toFixed(1), fresh: mv.fresh, from: mv.from, to: { x: mv.to.x, z: mv.to.z }, background: mv.i >= m }));
@@ -623,6 +617,14 @@ function disposeFigure(vp, animate) {
     const y0 = old.position.y;
     tween(0.9, (e) => { mat.opacity = 1 - e; old.position.y = y0 - e * 0.35; }, () => { old.parent && old.parent.remove(old); mat.dispose(); release(); });
   } else { old.parent && old.parent.remove(old); release(); }
+}
+function groundWhitePosition(vp) {
+  vp.g.updateWorldMatrix(true, true);
+  const minimum = new THREE.Box3().setFromObject(vp.drum).min.y;
+  // Translate the parent in world Y: figure, trim, bones and pose ribbons move together.
+  vp.g.position.y += DISPLAY_FLOOR_Y - minimum;
+  vp.g.updateWorldMatrix(true, true);
+  vp.g.userData.groundedMinimum = new THREE.Box3().setFromObject(vp.drum).min.y;
 }
 function plinthFit(vp, b, animate) {
   const sx = Math.max(0.66, (b.max.x - b.min.x) / 2 + 0.26), sz = Math.max(0.6, (b.max.z - b.min.z) / 2 + 0.24);
@@ -670,9 +672,7 @@ async function setFigure(i, p, animate) {
   } else { m.position.set(0, PT, 0); }
   applyViewTo(vp);
 }
-function pulseRing(vp) {
-  tween(1.2, (e, raw) => { const k = 1 + Math.sin(raw * Math.PI) * 0.18; vp.ring.scale.set(vp.scaleX * 1.42 * k, vp.scaleZ * 1.42 * k, 1); });
-}
+function pulseRing(vp) { /* removed glass-platform ring decoration */ }
 
 /* ---------- choosing replacements from the atlas ----------
    No sculpture should stand on the board twice. For a pose class the candidates are, in order:

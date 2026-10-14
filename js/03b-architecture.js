@@ -7,6 +7,7 @@ function createArchitectureDisplay(parent, renderer) {
     scene.background = null;
     scene.fog = null;
     renderer.setClearColor(0xffffff, 0);
+    if (canvas.dataset.vaHallScan === 'ready') VAHallScan.applyMaterials();
     renderer.shadowMap.needsUpdate = true;
   }
   return { apply, refreshShadows: apply, removed: true, source: 'website-procedural-space' };

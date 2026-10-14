@@ -1,6 +1,6 @@
 {
   "source": "VA_space_without_white_sculptures.blend",
-  "model": "assets/va-hall/va-hall-scan.glb",
+  "model": "assets/va-hall/va-hall-scan-central-clean.glb",
   "courtA": {
     "centerBlender": [
       -17.976336168202977,
@@ -231,5 +231,11 @@
     "blender": "METRIC",
     "scaleLength": 1,
     "policy": "1 Blender metre = 1 website metre; original internal scan transforms retained"
-  }
+  },
+  "modelParts": [
+    "assets/va-hall/va-hall-scan-central-clean.part01.bin",
+    "assets/va-hall/va-hall-scan-central-clean.part02.bin",
+    "assets/va-hall/va-hall-scan-central-clean.part03.bin",
+    "assets/va-hall/va-hall-scan-central-clean.part04.bin"
+  ]
 }
