@@ -346,7 +346,7 @@ const Vid = { frames: [], busy: false };
 let poseGalleryItems = null, lastGalleryFocus = -1;
 let galleryOverviewTimer = 0;
 let poseSlideshowRoot = null, poseSlideshowItems = [], poseSlideshowIndex = 0, poseSlideshowTimer = 0;
-const POSE_ORBIT_SLOTS = 5;
+const POSE_ORBIT_SLOTS = 8;
 const poseSlideshowPoint = new THREE.Vector3();
 function ensurePoseSlideshow() {
   if (poseSlideshowRoot) return poseSlideshowRoot;
@@ -354,7 +354,7 @@ function ensurePoseSlideshow() {
   poseSlideshowRoot.id = 'poseSlideshow'; poseSlideshowRoot.className = 'pose-slideshow hidden';
   poseSlideshowRoot.setAttribute('aria-hidden', 'true');
   const cards = Array.from({ length: POSE_ORBIT_SLOTS }, (_, i) =>
-    `<div class="pose-orbit-slot"><figure class="pose-orbit-card"><div class="pose-orbit-face"><img alt=""><figcaption></figcaption></div></figure></div>`
+    `<div class="pose-orbit-slot"><figure class="pose-orbit-card"><img alt=""><figcaption></figcaption></figure></div>`
   ).join('');
   poseSlideshowRoot.innerHTML = `<div class="pose-orbit">${cards}</div>
     <div class="pose-slide-note"><span class="pose-slide-kicker">POSE STUDY · ${esc('姿势图集')}</span><span class="pose-slide-count"></span></div>`;
@@ -371,7 +371,6 @@ function updatePoseSlideshowFrame(animate = false) {
     slot.hidden = i >= n;
     const angle = i * 360 / Math.min(n, POSE_ORBIT_SLOTS);
     slot.style.setProperty('--slot-angle', `${angle}deg`);
-    slot.style.setProperty('--counter-angle', `${-angle}deg`);
     const card = slot.querySelector('.pose-orbit-card');
     card.querySelector('img').src = item.file;
     card.querySelector('img').alt = item.title;
