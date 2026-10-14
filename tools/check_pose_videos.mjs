@@ -12,6 +12,8 @@ const baseline=file=>execFileSync(git,['show',base+':'+file],{cwd:root,encoding:
 const stripHTML=text=>normal(text).replace(/        <!-- POSE VIDEO COLLECTION START -->\n[\s\S]*?        <!-- POSE VIDEO COLLECTION END -->\n/g,'').replace("'07b-pose-video-gallery.js', ",'');
 const stripCSS=text=>normal(text).replace(/\/\* POSE VIDEO COLLECTION START \*\/\n[\s\S]*?\/\* POSE VIDEO COLLECTION END \*\/\n?/g,'').trimEnd();
 assert.equal(stripHTML(readFileSync(join(root,'index.html'),'utf8')),stripHTML(baseline('index.html')),'all existing markup and loader behavior must remain unchanged');
+const markup=readFileSync(join(root,'index.html'),'utf8');
+assert(markup.indexOf('id="poseVideoCollection"')>markup.indexOf('id="poseAnnotatorStatus"'),'video collection must follow the photos and annotation tools');
 assert.equal(stripCSS(readFileSync(join(root,'style.css'),'utf8')),stripCSS(baseline('style.css')),'existing styles must remain unchanged');
 for(const file of ['js/07-inputs.js','js/10-main.js','js/05-seq.js','js/05b-ribbons.js','data/pose-gallery.json'])
   assert.equal(normal(readFileSync(join(root,file),'utf8')),normal(baseline(file)),file+' must remain unchanged');
@@ -69,4 +71,4 @@ assert(!context.testVideoAPI.poseVideoSafeItem({...data.videos[0],file:'https://
 assert(!context.testVideoAPI.poseVideoSafeItem({...data.videos[0],file:'../other.mp4'}));
 document.hidden=true;document.listeners.visibilitychange();assert.equal(pauses,8);
 element('#modeTabs').listeners.click({target:{closest:()=>({dataset:{mode:'camera'}})}});assert.equal(pauses,9);
-console.log(JSON.stringify({ok:true,videos:7,totalBytes:bytes,englishNamesWithoutVersions:true,photoGalleryUnchanged:true,cameraAndSculptureCodeUnchanged:true,playbackSelectionAndDownloads:true}));
+console.log(JSON.stringify({ok:true,videos:7,totalBytes:bytes,englishNamesWithoutVersions:true,photoGalleryUnchanged:true,videosAfterPhotos:true,cameraAndSculptureCodeUnchanged:true,playbackSelectionAndDownloads:true}));
