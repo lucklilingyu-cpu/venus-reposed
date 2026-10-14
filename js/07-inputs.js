@@ -391,8 +391,15 @@ async function analyzeGalleryImage(id, button) {
       const result = classifyPose(found.K, null);
       const label = `${item.title.slice(0, 28)} · ${CLASS[result.top].zh}`;
       S.posPal = { 0: palette }; S.sel = 0;
-      await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true });
-      status.textContent = `识别为「${CLASS[result.top].zh}」，检测到 ${visible}/13 个可见关节点；展厅雕塑已更新。`;
+      await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true,
+        onVisualComplete: (seq) => {
+          const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
+          if (i < 0) return;
+          Walk.exit();
+          focusSculpture(i);
+          status.textContent = `识别为「${CLASS[result.top].zh}」，展厅动画已完成，正在近景展示对应雕像。`;
+        } });
+      status.textContent = `识别为「${CLASS[result.top].zh}」，检测到 ${visible}/13 个可见关节点；展厅雕塑正在更新。`;
     } else {
       fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
       status.textContent = '没有找到可靠的身体骨架，展厅未更新。请试试主体更大、四肢更清楚的图片。';
