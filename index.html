@@ -14,6 +14,20 @@
 <body>
 <!-- ===== 页面结构：面板、浮层、弹窗都在这里。样式在 style.css，功能在 js/ ===== -->
 <div id="app">
+  <!-- ===== 开场入口页：只是盖在展厅上的一层，展厅在它后面照常加载。点“进入展厅”后淡出。 ===== -->
+  <section class="intro" id="intro" aria-label="开场">
+    <div class="intro-sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="intro-plate"><span>VENUS, RE-POSED</span></div>
+    <div class="intro-main">
+      <h1 class="intro-title"><span>Venus,</span><span class="rose">Re-posed</span></h1>
+      <p class="intro-lede">写下你的一天，让它成为一串姿势。<br>在 V&amp;A Cast Courts 的轴线上，换掉与你不同的女神雕塑。</p>
+      <button class="intro-cta" id="introEnter" type="button"><span>进入展厅</span><i aria-hidden="true">›</i></button>
+    </div>
+    <div class="intro-foot">
+      <span>Bartlett B-Pro Architectural Design · Workshop 7</span>
+      <span class="intro-hint">拖动环顾 · 滚轮缩放 · W A S D 步行</span>
+    </div>
+  </section>
   <canvas id="scene" aria-label="V&amp;A Cast Courts 虚拟展厅三维视图"></canvas>
   <div id="labels"></div>
 
@@ -332,6 +346,27 @@
 </div>
 
 <!-- ===== 下面是启动部分，一般不用改 ===== -->
+<script>
+  // 开场入口页：同一标签页里只显示一次；点按钮、按 Enter 或空格进入
+  (function () {
+    var el = document.getElementById('intro'), btn = document.getElementById('introEnter');
+    if (!el) return;
+    var seen = false;
+    try { seen = sessionStorage.getItem('venusIntroSeen') === '1'; } catch (e) {}
+    if (seen) { el.hidden = true; return; }
+    document.body.classList.add('intro-on');
+    function enter() {
+      try { sessionStorage.setItem('venusIntroSeen', '1'); } catch (e) {}
+      el.classList.add('leaving'); document.body.classList.remove('intro-on');
+      document.removeEventListener('keydown', onKey, true);
+      setTimeout(function () { el.hidden = true; }, 900);
+    }
+    function onKey(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } }
+    btn.addEventListener('click', enter);
+    document.addEventListener('keydown', onKey, true);
+    btn.focus({ preventScroll: true });
+  })();
+</script>
 <script src="config.js"></script>
 <script>
   // 启动失败时，在加载提示里显示原因
