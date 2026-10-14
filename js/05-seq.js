@@ -86,9 +86,21 @@ async function fetchMesh(id) {
 const TARGET = { standing: ['h', 1.8], walking: ['h', 1.8], seated: ['h', 1.4], crouching: ['h', 1.12], reclining: ['l', 2.0], horizontal: ['l', 2.0] };
 const meshCache = new Map();
 const detailMeshCache = new Map();
+let detailLoads = 0;
+const detailWaiters = [], retiringDetails = new Set();
+async function withDetailSlot(load) {
+  if (detailLoads >= 3) await new Promise(resolve => detailWaiters.push(resolve));
+  else detailLoads++;
+  try { return await load(); }
+  finally {
+    const next = detailWaiters.shift();
+    if (next) next(); else detailLoads--;
+  }
+}
 async function fetchDetailMesh(id) {
   const entry = MODEL_DETAILS[id];
   if (!entry || !/^md\/[1-9]\d*\.bin\.gz$/.test(entry.url) || typeof DecompressionStream === 'undefined') return null;
+  return withDetailSlot(async () => {
   const r = await fetch(entry.url + '?v=' + entry.sha256.slice(0, 12), { signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw new Error('精细模型加载失败');
   let buf = await r.arrayBuffer();
@@ -96,6 +108,7 @@ async function fetchDetailMesh(id) {
   const bytes = new Uint8Array(buf);
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
   return parseMeshBin(buf);
+  });
 }
 /* returns { geo, bounds, pts (Float32Array, plinth-local), xf (web -> plinth-local), skel: [{segs, pts}] } */
 /* rotate (rows of R), scale to the pose class, stand on y = 0, make the winding consistent */
@@ -158,7 +171,7 @@ function detailedMeshOf(id) {
   }).catch(() => { detailMeshCache.delete(id); return meshOf(id); });
   detailMeshCache.set(id, promise);
   // Bounded CPU cache. A mesh still attached to a viewer retains its geometry.
-  if (detailMeshCache.size > 6) {
+  if (detailMeshCache.size > MAX_POS + 6) {
     const oldest = detailMeshCache.keys().next().value, old = detailMeshCache.get(oldest);
     detailMeshCache.delete(oldest);
     old.then(mesh => { if (mesh.detail) releaseDetailGeometry(oldest, mesh.geo); }).catch(() => {});
@@ -166,20 +179,22 @@ function detailedMeshOf(id) {
   return promise;
 }
 function releaseDetailGeometry(id, geo) {
-  if (!detailMeshCache.has(id) && !V.some(v => v.fig && v.fig.geometry === geo) && !Atlas.usesGeometry(geo)) geo.dispose();
+  if (!detailMeshCache.has(id) && !retiringDetails.has(geo) && !V.some(v => v.fig && v.fig.geometry === geo) && !Atlas.usesGeometry(geo)) geo.dispose();
 }
-async function refineSelectedFigure() {
-  const i = S.sel, vp = V[i], p = S.pos[i];
+function updateHallQuality() {
+  const figures = V.filter(v => v.fig);
+  const cv = document.getElementById('scene');
+  cv.dataset.visibleModels = String(figures.length);
+  cv.dataset.detailModels = String(figures.filter(v => v.fig.userData.detail).length);
+}
+async function refineFigure(i, p) {
+  const vp = V[i];
   if (!p || !vp || !vp.fig || vp.work !== p.work) return;
-  // Other plinths use previews, keeping the full hall responsive on phones.
-  for (let j = 0; j < V.length; j++) if (j !== i && V[j].detailBase && V[j].fig) {
-    const oldGeo = V[j].fig.geometry;
-    V[j].fig.geometry = V[j].detailBase; V[j].detailBase = null;
-    releaseDetailGeometry(V[j].work, oldGeo);
-  }
   const fig = vp.fig, mesh = await detailedMeshOf(p.work);
-  if (!mesh.detail || S.sel !== i || S.pos[i] !== p || vp.fig !== fig) return;
-  vp.detailBase = vp.detailBase || fig.geometry; fig.geometry = mesh.geo;
+  // A plinth can move to another index while a network request is pending.
+  if (!mesh.detail || !V.includes(vp) || vp.work !== p.work || vp.fig !== fig) return;
+  fig.geometry = mesh.geo; fig.userData.detail = true; vp.bounds = mesh.bounds;
+  updateHallQuality();
 }
 
 /* ---------- materials ---------- */
@@ -494,6 +509,12 @@ function disposeFigure(vp, animate) {
   const old = vp.fig;
   if (vp.bones) { vp.g.remove(vp.bones); vp.bones = null; }
   if (!old) return;
+  const oldWork = vp.work;
+  if (old.userData.detail) retiringDetails.add(old.geometry);
+  const release = () => {
+    if (old.userData.detail) { retiringDetails.delete(old.geometry); releaseDetailGeometry(oldWork, old.geometry); }
+    updateHallQuality();
+  };
   vp.fig = null;
   if (animate) {
     old.updateWorldMatrix(true, false);
@@ -501,8 +522,8 @@ function disposeFigure(vp, animate) {
     burst(box, 36);
     const mat = ceramic.clone(); mat.transparent = true; old.material = mat;
     const y0 = old.position.y;
-    tween(0.9, (e) => { mat.opacity = 1 - e; old.position.y = y0 - e * 0.35; }, () => { old.parent && old.parent.remove(old); mat.dispose(); });
-  } else old.parent && old.parent.remove(old);
+    tween(0.9, (e) => { mat.opacity = 1 - e; old.position.y = y0 - e * 0.35; }, () => { old.parent && old.parent.remove(old); mat.dispose(); release(); });
+  } else { old.parent && old.parent.remove(old); release(); }
 }
 function plinthFit(vp, b, animate) {
   const sx = Math.max(0.66, (b.max.x - b.min.x) / 2 + 0.26), sz = Math.max(0.6, (b.max.z - b.min.z) / 2 + 0.24);
@@ -520,7 +541,7 @@ async function setFigure(i, p, animate) {
   if (S.pos[i] !== p) return; // superseded by a newer sequence
   const vp = V[i];
   vp.ring.material.color.setHex(STATUS_COL[p.status] || STATUS_COL.beyond);
-  if (vp.work === p.work && vp.fig) { pulseRing(vp); applyViewTo(vp); return; }
+  if (vp.work === p.work && vp.fig) { pulseRing(vp); applyViewTo(vp); refineFigure(i, p).catch(() => {}); return; }
   let mesh;
   try { mesh = await meshOf(p.work); } catch (e) { toast('模型 #' + p.work + ' 加载失败'); return; }
   if (S.pos[i] !== p) return; // superseded
@@ -529,8 +550,8 @@ async function setFigure(i, p, animate) {
   const m = new THREE.Mesh(mesh.geo, ceramic); m.castShadow = true; m.receiveShadow = false;
   m.userData.pos = i;
   vp.g.add(m); vp.fig = m;
-  vp.detailBase = null;
-  if (i === S.sel) refineSelectedFigure().catch(() => {});
+  updateHallQuality();
+  refineFigure(i, p).catch(() => {});
   vp.bones = skeletonObject(mesh.skel);
   if (vp.bones) { vp.bones.position.y = PT; vp.g.add(vp.bones); }
   plinthFit(vp, mesh.bounds, animate);
@@ -780,7 +801,6 @@ function flyHome() { const H = isSmall() ? HOME_M : HOME; flyTo(H.pos.clone(), H
 function select(i, opts = {}) {
   if (i < 0 || i >= S.pos.length) return;
   S.sel = i;
-  refineSelectedFigure().catch(() => {});
   renderStrip(true); renderData(); renderGestures();
   if (opts.fly) flyToPosition(i);
   if (Sound.on) Sound.play(clsOf(S.pos[i].work));
