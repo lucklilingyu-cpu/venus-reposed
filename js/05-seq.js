@@ -679,7 +679,7 @@ function chooseWork(cls, g, prevYear, used, count = new Map(), avoid = null, var
   const r = c.slice().sort((a, b) => ((count.get(a.id) || 0) - (count.get(b.id) || 0)) || key(a) - key(b))[0];
   return r ? r.id : null;
 }
-function computeSequence(day, prev = [], varied = false, focusIndex = null) {
+function computeSequence(day, prev = [], varied = false, focusIndex = null, variedIndex = null) {
   const n = Math.min(MAX_POS, Math.max(EXISTING.length, day.length));
   // sculptures that keep their place (outside the day, or chosen by hand) are reserved first, so a replacement never doubles them
   const used = new Set(), count = new Map(); let prevYear = null;
@@ -690,14 +690,17 @@ function computeSequence(day, prev = [], varied = false, focusIndex = null) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const orig = EXISTING[i] || null, act = focusIndex == null ? (day[i] || null) : (i === focusIndex ? (day[0] || null) : null);
+    const vary = varied || i === variedIndex;
     let work, status;
     if (S.override[i] && REC[S.override[i]]) { work = S.override[i]; status = 'manual'; }
     else if (!act) { work = orig.id; status = 'beyond'; }
-    else if (!varied && orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g) && !used.has(orig.id)) { work = orig.id; status = 'keep'; }
+    else if (variedIndex != null && i !== variedIndex && prev[i] && REC[prev[i].work] && fitsCls(REC[prev[i].work], act.cls) &&
+      (!act.g || REC[prev[i].work].g === act.g) && !used.has(prev[i].work)) { work = prev[i].work; status = prev[i].status; }
+    else if (!vary && orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g) && !used.has(orig.id)) { work = orig.id; status = 'keep'; }
     else {
       const pv = prev[i], pr = pv && REC[pv.work];
-      const reuse = !varied && pr && (pv.status === 'swap' || pv.status === 'new') && fitsCls(pr, act.cls) && (!act.g || pr.g === act.g) && !used.has(pv.work);
-      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used, count, pv ? pv.work : null, varied);
+      const reuse = !vary && pr && (pv.status === 'swap' || pv.status === 'new') && fitsCls(pr, act.cls) && (!act.g || pr.g === act.g) && !used.has(pv.work);
+      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used, count, pv ? pv.work : null, vary);
       status = orig ? 'swap' : 'new';
       if (!work) { work = orig ? orig.id : FIGS[0].id; status = orig ? 'keep' : 'new'; }
     }
@@ -717,7 +720,7 @@ async function applyDay(day, opts = {}) {
   if (opts.source != null) S.source = opts.source;
   if (opts.fresh) S.override = opts.override ? { ...opts.override } : {};
   const previous = S.pos;
-  const seq = computeSequence(S.day, previous, !!opts.fresh || !!opts.varied, opts.focusIndex);
+  const seq = computeSequence(S.day, previous, !!opts.fresh || !!opts.varied, opts.focusIndex, opts.variedIndex);
   S.pos = seq;
   if (S.sel >= seq.length) S.sel = 0;
   // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them

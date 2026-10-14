@@ -25,6 +25,7 @@ export function featuresFrom(K, P2, width, height) {
 }
 
 export function poseDistance(a, b, mirrored = false) {
+  if(!a||!b||!!a.partial!==!!b.partial)return Infinity;
   let sum = 0, weight = 0, visible = 0;
   const swap = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11];
   // Ignore the nose for body matching; it is not an identity or face-recognition feature.
@@ -36,12 +37,39 @@ export function poseDistance(a, b, mirrored = false) {
     const dy = a.f[i*2+1]-b.f[j*2+1];
     sum += w*(Math.min(9, dx*dx)+Math.min(9, dy*dy)); weight += w; visible++;
   }
-  return visible >= 8 && weight > 0 ? Math.sqrt(sum/weight) : Infinity;
+  return visible >= (a.partial?4:8) && weight > 0 ? Math.sqrt(sum/weight) : Infinity;
+}
+
+function upperFeature(feature) {
+  if(!feature?.v[1]||!feature.v[2])return null;
+  const {f,v}=feature,cx=(f[2]+f[4])/2,cy=(f[3]+f[5])/2;
+  const scale=Math.hypot(f[2]-f[4],f[3]-f[5]);if(scale<.08)return null;
+  return {f:f.map((x,i)=>(x-(i%2?cy:cx))/scale),v:[...v],partial:true,
+    visible:v.slice(1,7).filter(x=>x>=.5).length,legs:0};
+}
+
+export function upperFeaturesFrom(K,P2,width,height) {
+  if(!K||!P2||!(width>0&&height>0))return null;
+  const points=JOINTS.map((key,i)=>{
+    const p=P2[key],v=K[key]?.v??0;
+    return i<7&&p&&p.every(finite)&&p[0]>=0&&p[0]<=1&&p[1]>=0&&p[1]<=1&&v>=.5
+      ?[p[0]*width,-p[1]*height,v]:null;
+  });
+  if(!points[1]||!points[2]||points.slice(3,7).filter(Boolean).length<2)return null;
+  const span=Math.hypot(points[1][0]-points[2][0],points[1][1]-points[2][1]);
+  if(span<height*.045||span>width*.8)return null;
+  const cx=(points[1][0]+points[2][0])/2,cy=(points[1][1]+points[2][1])/2;
+  return {f:points.flatMap(p=>p?[(p[0]-cx)/span,(p[1]-cy)/span]:[0,0]),
+    v:points.map(p=>p?p[2]:0),partial:true,visible:points.slice(1).filter(Boolean).length,legs:0};
 }
 
 function gestureOf(feature, base, K) {
   const { f, v } = feature;
   if (v[0] >= .5 && v[5] >= .5 && v[6] >= .5 && f[11] > f[1]-.18 && f[13] > f[1]-.18) return 'hair';
+  if(feature.partial){
+    if(v[5]>=.5&&v[6]>=.5&&Math.hypot(f[10],f[11]+.6)<.85&&Math.hypot(f[12],f[13]+.6)<.85)return 'cover';
+    return null;
+  }
   if (feature.legs === 4 && Math.abs(f[23]-f[25]) > .55 && base.top === 'standing' && base.kMean > 125) return 'oneleg';
   if (v[5] >= .5 && v[6] >= .5) {
     const chest = [Math.hypot(f[10], f[11]-.65), Math.hypot(f[12], f[13]-.65)];
@@ -55,18 +83,24 @@ export class CameraReferenceMatcher {
   constructor(library = null) {
     const valid = library?.format === 'camera-pose-library-v1' && Array.isArray(library.templates);
     this.templates = valid ? library.templates.filter(p => CLASSES.includes(p.cls) && p.f?.length === 26 && p.v?.length === 13 && p.f.every(finite) && p.v.every(finite)).slice(0, 2400) : [];
+    this.upperTemplates=this.templates.map(p=>({...p,...upperFeature(p)})).filter(p=>p.partial);
     this.probabilities = null;
     this.lastTime = 0;
   }
   reset() { this.probabilities = null; this.lastTime = 0; }
-  classify(K, P2, width, height, base, now) {
-    const feature = featuresFrom(K, P2, width, height);
-    if (!feature || feature.visible < 8 || feature.legs < 3) {
+  classify(K, P2, width, height, base, now,postureHint='auto') {
+    const body=featuresFrom(K,P2,width,height),hint=CLASSES.includes(postureHint)?postureHint:null;
+    const feature=body&&body.visible>=8&&body.legs>=2?body:upperFeaturesFrom(K,P2,width,height);
+    if (!feature) {
       this.reset();
-      return { ...base, ready: false, feature, reason: '已检测到身体，请让肩膀、髋部和更多腿部关节入镜，以便可靠判断姿势。' };
+      return { ...base, ready: false, feature, reason: '请让双肩和更多手臂进入画面，保持光线清楚。坐着也可以识别。' };
+    }
+    if(feature.partial&&!hint){
+      this.reset();
+      return {...base,ready:false,feature,partial:true,reason:'已识别上半身。请选择下方的“坐姿辅助”或“站姿辅助”；自动区分站、坐时，请再让髋部和膝盖入镜，不要求脚踝入镜。'};
     }
     const nearest = [];
-    for (const template of this.templates) {
+    for (const template of feature.partial?this.upperTemplates:this.templates) {
       const distance = Math.min(poseDistance(feature, template), poseDistance(feature, template, true));
       if (distance > .42) continue;
       const item = { distance, template };
@@ -81,23 +115,26 @@ export class CameraReferenceMatcher {
       const weight = Math.exp(-item.distance*item.distance/.035);
       votes[item.template.cls] += weight; total += weight;
     }
-    if (total > 0 && base.top !== 'walking') {
+    if (total > 0 && base.top !== 'walking'&&!hint) {
       const top = CLASSES.reduce((a, b) => votes[a] >= votes[b] ? a : b);
       // Automatically labelled references never overrule a strong incompatible world-space pose.
       const sources = new Set(nearest.filter(x => x.template.cls === top).map(x => x.template.source));
       const compatible = top === base.top || (P[base.top] < .5 && votes[top]/total > .75 && sources.size >= 2 && nearest[0].distance < .18);
-      if (compatible) for (const cls of CLASSES) P[cls] = .72*P[cls]+.28*votes[cls]/total;
+      if(feature.legs===2&&votes[top]/total>.6&&sources.size>=2){
+        for(const cls of CLASSES)P[cls]=votes[cls]/total;
+      }else if (compatible) for (const cls of CLASSES) P[cls] = .72*P[cls]+.28*votes[cls]/total;
     }
+    if(hint)for(const cls of CLASSES)P[cls]=cls===hint ? .95 : .01;
     const sum = CLASSES.reduce((s, c) => s+P[c], 0) || 1;
     for (const cls of CLASSES) P[cls] /= sum;
-    if (this.probabilities && now-this.lastTime < 750) {
+    if (this.probabilities && now-this.lastTime < 1500&&!hint) {
       for (const cls of CLASSES) P[cls] = .6*this.probabilities[cls]+.4*P[cls];
     }
     this.probabilities = { ...P }; this.lastTime = now;
     const top = CLASSES.reduce((a, b) => P[a] >= P[b] ? a : b);
     let g = gestureOf(feature, { ...base, top }, K);
     if ((g === 'hair' && !['standing', 'crouching'].includes(top)) || (g && g !== 'hair' && top !== 'standing')) g = null;
-    return { ...base, P, top, g, feature, ready: true, matchedSamples: nearest.length, reason: '' };
+    return { ...base, P, top, g, feature, ready: true, partial:!!feature.partial,hinted:!!hint,matchedSamples: nearest.length, reason: '' };
   }
 }
 

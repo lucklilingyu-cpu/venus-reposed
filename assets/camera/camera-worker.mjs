@@ -1,15 +1,15 @@
 // Runs landmark inference off the render thread. Frames never leave this worker/browser.
 let landmarker = null, fileset = null, PoseLandmarker = null, modelUrl = '', yoloModelUrl = '', timestamp = 0;
-let yolo = null, yoloLoading = null, yoloModule = null, queue = Promise.resolve();
+let yolo = null, yoloLoading = null, yoloModule = null, queue = Promise.resolve(), preferYoloUntil=0;
 async function ensureYolo() {
   if (!yoloLoading) yoloLoading = (async () => {
-    yoloModule ||= await import('./yolo-pose.mjs');
+    yoloModule ||= await import('./yolo-pose.mjs?v=20261015-2');
     yolo = await yoloModule.createYoloDetector(yoloModelUrl, status => self.postMessage({ type: 'status', status }));
     return yolo;
   })().catch(error => { yoloLoading = null; throw error; });
   return yoloLoading;
 }
-async function initialize(delegate = 'GPU') {
+async function initialize(delegate = 'CPU') {
   if (!PoseLandmarker) {
     const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
     const mod = await import(`${base}/vision_bundle.mjs`);
@@ -21,8 +21,8 @@ async function initialize(delegate = 'GPU') {
     minPoseDetectionConfidence: .45, minPosePresenceConfidence: .45, minTrackingConfidence: .45 };
   try { landmarker = await PoseLandmarker.createFromOptions(fileset, options); }
   catch (error) {
-    if (delegate !== 'GPU') throw error;
-    options.baseOptions.delegate = 'CPU';
+    if (delegate !== 'CPU') throw error;
+    options.baseOptions.delegate = 'GPU';
     landmarker = await PoseLandmarker.createFromOptions(fileset, options);
   }
 }
@@ -32,12 +32,15 @@ async function handleMessage(event) {
   try {
     if (type === 'init') {
       modelUrl = event.data.modelUrl; yoloModelUrl = event.data.yoloModelUrl;
-      yoloModule = await import('./yolo-pose.mjs');
+      yoloModule = await import('./yolo-pose.mjs?v=20261015-2');
       try { await initialize(); } catch (_) { await ensureYolo(); }
       self.postMessage({ id, ready: true });
     }
     else if (type === 'detect') {
       timestamp = Math.max(timestamp+1, now);
+      if(yolo&&now<preferYoloUntil){
+        const pose=await yolo.detect(bitmap);self.postMessage({id,...(pose||{})});return;
+      }
       let result;
       try { result = landmarker?.detectForVideo(bitmap, timestamp) || null; }
       catch (error) {
@@ -47,10 +50,10 @@ async function handleMessage(event) {
         timestamp++;
       }
       let pose = { landmarks: result?.landmarks?.[0] || null, world: result?.worldLandmarks?.[0] || null, detector: 'mediapipe-full' };
-      if (!yoloModule.detectorHasBody(pose)) {
+      if (!yoloModule.detectorHasTorso(pose)) {
         try {
           const alternative = await (await ensureYolo()).detect(bitmap);
-          if (alternative && (yoloModule.detectorHasBody(alternative) || !pose.landmarks)) pose = alternative;
+          if (alternative && (yoloModule.detectorHasTorso(alternative) || !pose.landmarks)) {pose = alternative;preferYoloUntil=now+5000;}
         } catch (_) {
           if (!pose.landmarks) throw new Error('增强姿势识别暂未载入，请检查网络后重试。');
         }

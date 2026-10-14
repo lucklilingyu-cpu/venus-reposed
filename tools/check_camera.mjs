@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import {createHash} from 'node:crypto';
 import { CameraReferenceMatcher, CameraPoseHold, featuresFrom, poseDistance, JOINTS, CLASSES } from '../assets/camera/pose-reference.mjs';
-import {decodeYolo,detectorHasBody,YOLO_JOINTS} from '../assets/camera/yolo-pose.mjs';
+import {decodeYolo,detectorHasBody,detectorHasTorso,YOLO_JOINTS} from '../assets/camera/yolo-pose.mjs';
 import {cameraJoints} from '../assets/camera/camera-engine.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,11 +19,20 @@ const baseline = normalize(execFileSync(gitExecutable, ['show', baseRef+':js/07-
 const before = '/* ---------- camera mode ---------- */', after = '/* ---------- video / photos ---------- */';
 assert.equal(source.slice(0, source.indexOf(before)), baseline.slice(0, baseline.indexOf(before)), 'shared detector, text and existing classifier must stay unchanged');
 assert.equal(source.slice(source.indexOf(after)), baseline.slice(baseline.indexOf(after)), 'video, photo and gallery code must stay unchanged');
-assert.equal(source.slice(source.indexOf('function addCamPose('), source.indexOf(after)),
-  baseline.slice(baseline.indexOf('function addCamPose('), baseline.indexOf(after)), 'existing sculpture switch call must stay unchanged');
-for (const file of ['index.html', 'style.css', 'js/05-seq.js', 'js/05b-ribbons.js', 'js/10-main.js']) {
+for (const file of ['index.html', 'style.css', 'js/05b-ribbons.js', 'js/10-main.js']) {
   assert(normalize(readFileSync(join(root,file),'utf8')) === normalize(execFileSync(gitExecutable,['show',baseRef+':'+file],{cwd:root,encoding:'utf8'})), file+' changed outside camera scope');
 }
+const originalSequence=normalize(execFileSync(gitExecutable,['show',baseRef+':js/05-seq.js'],{cwd:root,encoding:'utf8'}));
+const sequenceSource=normalize(readFileSync(join(root,'js/05-seq.js'),'utf8'));
+const expectedSequence=originalSequence.includes('variedIndex = null')?originalSequence:originalSequence
+  .replace('focusIndex = null) {','focusIndex = null, variedIndex = null) {')
+  .replace('    let work, status;','    const vary = varied || i === variedIndex;\n    let work, status;')
+  .replace("    else if (!act) { work = orig.id; status = 'beyond'; }", "    else if (!act) { work = orig.id; status = 'beyond'; }\n    else if (variedIndex != null && i !== variedIndex && prev[i] && REC[prev[i].work] && fitsCls(REC[prev[i].work], act.cls) &&\n      (!act.g || REC[prev[i].work].g === act.g) && !used.has(prev[i].work)) { work = prev[i].work; status = prev[i].status; }")
+  .replace('else if (!varied && orig','else if (!vary && orig')
+  .replace('const reuse = !varied && pr','const reuse = !vary && pr')
+  .replace('pv ? pv.work : null, varied);','pv ? pv.work : null, vary);')
+  .replace('!!opts.varied, opts.focusIndex);','!!opts.varied, opts.focusIndex, opts.variedIndex);');
+assert.equal(sequenceSource,expectedSequence,'only the optional camera replacement index may extend sculpture selection; animations stay unchanged');
 const html=readFileSync(join(root,'index.html'),'utf8');
 const parts=[...html.match(/const PARTS = \[([\s\S]*?)\];/)[1].matchAll(/'([^']+\.js)'/g)].map(x=>x[1]);
 const temporary=join(root, '.check-camera-joined.tmp.mjs');
@@ -74,6 +83,13 @@ for(let i=0;i<13;i++){const j=swap[i];mirror.f.push(-a.f[2*j],a.f[2*j+1]);mirror
 assert(poseDistance(a,mirror,true)<1e-8,'left/right mirrored pose support');checks++;
 const cropped=structuredClone(K);for(const key of ['lkn','rkn','lank','rank'])cropped[key].v=.1;
 assert.equal(new CameraReferenceMatcher(library).classify(cropped,image(cropped),640,480,context.classifier(cropped,[]),1000).ready,false,'cropped legs must not be invented');checks++;
+const upper=structuredClone(K);for(const key of ['lhip','rhip','lkn','rkn','lank','rank'])upper[key].v=.1;
+const upperPose=new CameraReferenceMatcher(library).classify(upper,image(upper),640,480,context.classifier(upper,[]),1000,'seated');
+assert(upperPose.ready&&upperPose.partial&&upperPose.hinted);assert.equal(upperPose.top,'seated','upper body may use explicit seated context');checks++;
+const noAnkles=structuredClone(K);noAnkles.lank.v=noAnkles.rank.v=.1;
+assert(new CameraReferenceMatcher(library).classify(noAnkles,image(noAnkles),640,480,context.classifier(noAnkles,[]),1000).ready,'knees and hips should suffice without ankles');checks++;
+const head=structuredClone(upper);for(const key of ['lel','rel','lwr','rwr'])head[key].v=.1;
+assert.equal(new CameraReferenceMatcher(library).classify(head,image(head),640,480,context.classifier(head,[]),1000,'seated').ready,false,'face alone cannot count as a body');checks++;
 const invalid=image(K);invalid.lhip=[NaN,.5];assert.equal(featuresFrom(K,invalid,640,480),null);checks++;
 const matcher=new CameraReferenceMatcher(library);
 const standing=matcher.classify(K,P2,640,480,base,1000);
@@ -108,6 +124,24 @@ assert(poseDistance(featuresFrom(unified.K,unified.P2,640,480),a)<1e-6,'17 point
 const empty=decodeYolo(new Float32Array(32*57),640,480,1,0,0);assert.equal(empty,null);
 raw[6+YOLO_JOINTS.lank*3]=-20;raw[6+YOLO_JOINTS.rank*3]=-20;
 assert.equal(detectorHasBody(decodeYolo(raw,640,480,1,0,0)),false,'out-of-image joints cannot produce a body');checks++;
+assert(detectorHasTorso(decodeYolo(raw,640,480,1,0,0)),'a usable torso avoids a second detector when ankles are absent');checks++;
+function sequenceFixture(code){
+  const records=CLASSES.flatMap((cls,i)=>[0,1,2].map(j=>({id:cls+j,cls,t:cls,y:1900+i*10+j})));
+  const REC=Object.fromEntries(records.map(r=>[r.id,r]));
+  const c=vm.createContext({Math,MAX_POS:3,EXISTING:['standing0','seated0','horizontal0'].map(id=>({id})),
+    FIGS:records,REC,S:{override:{}},fitsCls:(r,cls)=>r.cls===cls||(r.alt||[]).includes(cls)});
+  const fragment=code.slice(code.indexOf('const KIN ='),code.indexOf('let applySeq ='));
+  vm.runInContext(fragment+'\nglobalThis.sequence=computeSequence;',c);return c;
+}
+const oldChooser=sequenceFixture(originalSequence),newChooser=sequenceFixture(sequenceSource);
+const clean=value=>JSON.parse(JSON.stringify(value));
+for(const cls of CLASSES){const day=[{cls,g:null}];assert.deepEqual(clean(newChooser.sequence(day)),clean(oldChooser.sequence(day)),'non-camera selection unchanged for '+cls);}checks++;
+const standingDay=[{cls:'standing',g:null}],initial=newChooser.sequence(standingDay);
+const replaced=newChooser.sequence(standingDay,initial,false,null,0);
+assert.notEqual(replaced[0].work,initial[0].work,'camera must visibly replace a sculpture even for the same class');
+assert.equal(replaced[1].work,initial[1].work);checks++;
+const extended=newChooser.sequence([...standingDay,{cls:'seated',g:null}],replaced,false,null,1);
+assert.equal(extended[0].work,replaced[0].work,'adding the next camera pose must preserve earlier camera sculptures');checks++;
 const start=performance.now();for(let i=0;i<80;i++)matcher.classify(K,P2,640,480,base,1000+i*80);
 const average=(performance.now()-start)/80;assert(average<80,'reference matcher must not consume the camera frame budget');
 // A cancelled initialization must never overwrite a newer camera session.
@@ -117,9 +151,9 @@ function element(id){if(!elements.has(id))elements.set(id,id==='#camCanvas'?fake
 let streamId=0;
 const lifecycle=vm.createContext({URL, document:{baseURI:'http://localhost/venus-reposed/'},navigator:{mediaDevices:{getUserMedia:async()=>{const id=++streamId;return {getTracks:()=>[{stop:()=>stoppedTracks.push(id)}]};}}},
   S:{source:'摄像头'},$ :element,applyDay(){},requestAnimationFrame:()=>1,cancelAnimationFrame(){},
-  withTimeout:p=>p,fakeModule:Promise.resolve({createCameraEngine:()=>new Promise(resolve=>pendingEngines.push(resolve))})});
+  withTimeout:p=>p,setTimeout:()=>1,clearTimeout(){},fakeModule:Promise.resolve({createCameraEngine:()=>new Promise(resolve=>pendingEngines.push(resolve))})});
 const lifecycleCode=source.slice(source.indexOf(before),source.indexOf('function startDemo('))
-  .replace("import(new URL('assets/camera/camera-engine.mjs', document.baseURI).href)",'fakeModule');
+  .replace(/import\(new URL\('assets\/camera\/camera-engine\.mjs[^']*', document.baseURI\).href\)/,'fakeModule');
 vm.runInContext(lifecycleCode+'\nglobalThis.cameraAPI={Cam,startCamera,stopCamera};',lifecycle);
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const first=lifecycle.cameraAPI.startCamera();await tick();assert.equal(pendingEngines.length,1);
@@ -129,4 +163,32 @@ const fakeEngine=()=>({closed:false,close(){this.closed=true;},matcher:{reset(){
 const fresh=fakeEngine(),stale=fakeEngine();pendingEngines[1](fresh);await second;pendingEngines[0](stale);await first;
 assert.equal(lifecycle.cameraAPI.Cam.engine,fresh,'stale model must not overwrite restarted camera');assert(stale.closed);assert(!fresh.closed);checks++;
 lifecycle.cameraAPI.stopCamera();assert(fresh.closed);assert.equal(lifecycle.cameraAPI.Cam.last,null);assert.equal(element('#camAdd').disabled,true);checks++;
-console.log(JSON.stringify({ok:true,checks,templates:library.templates.length,sourceVideos:library.sources.length,matcherMilliseconds:Number(average.toFixed(2)),uiAndSculptureCodeUnchanged:true,joinedModuleParses:true}));
+// Exercise the real camera frame -> countdown -> applyDay -> visual callback path.
+let cameraTime=0,pendingVisual=null;const uiElements=new Map(),posture={value:'auto'},calledOptions=[];
+const uiCanvas={width:600,height:450,getBoundingClientRect:()=>({width:300,height:225}),getContext:()=>({clearRect(){},fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},fillText(){}})};
+function uiElement(id){if(!uiElements.has(id))uiElements.set(id,id==='#camCanvas'?uiCanvas:id==='#camVideo'?{videoWidth:640,videoHeight:480}:{style:{},innerHTML:''});return uiElements.get(id);}
+const cameraState={source:'摄像头',day:[],pos:[],override:{},sel:0};newChooser.S=cameraState;
+const cameraUI=vm.createContext({Math,Date,Object,S:cameraState,$:uiElement,document:{getElementById:()=>posture},
+  performance:{now:()=>cameraTime},CLS:CLASSES,CLASS:Object.fromEntries(CLASSES.map(c=>[c,{zh:c,dur:1}])),
+  GESTURES:{hair:{cls:['standing','crouching']},oneleg:{cls:['standing']},cover:{cls:['standing']},lookback:{cls:['standing']}},
+  REC:newChooser.REC,recTitle:r=>r.t,esc:x=>String(x),pad2:x=>String(x).padStart(2,'0'),toast(){},renderBars(){},
+  setTimeout:()=>1,clearTimeout(){},flyToPosition(){},
+  applyDay:(day,opts)=>{calledOptions.push(opts);cameraState.day=day;
+    cameraState.pos=newChooser.sequence(day,cameraState.pos,!!opts.fresh||!!opts.varied,opts.focusIndex,opts.variedIndex);
+    pendingVisual=()=>opts.onVisualComplete?.(cameraState.pos);return Promise.resolve();}});
+const drawing=source.slice(source.indexOf('const K_EDGES ='),source.indexOf('/* ---------- MediaPipe'));
+vm.runInContext(classes+'\n'+drawing+'\n'+source.slice(source.indexOf(before),source.indexOf(after))+'\nglobalThis.api={Cam,camFrame,addCamPose};',cameraUI);
+cameraUI.api.Cam.engine={matcher:new CameraReferenceMatcher(library),hold:new CameraPoseHold(),libraryLoaded:true};
+cameraUI.api.camFrame(K,P2,true);
+assert(uiElement('#camStatus').innerHTML.includes('0.0 / 2.0'),'visible countdown begins at zero');
+cameraTime=1000;cameraUI.api.camFrame(K,P2,true);assert(uiElement('#camStatus').innerHTML.includes('1.0 / 2.0'));checks++;
+cameraTime=2200;cameraUI.api.camFrame(K,P2,true);assert.equal(cameraState.day.length,1);
+assert.equal(calledOptions[0].variedIndex,0);assert(uiElement('#camAdd').disabled);
+await cameraUI.api.addCamPose(cameraUI.api.Cam.last);assert.equal(cameraState.day.length,1,'animation in progress must not stack new transitions');checks++;
+pendingVisual();cameraTime=2400;cameraUI.api.camFrame(K,P2,true);assert.equal(uiElement('#camAdd').disabled,false);
+const firstCameraWork=cameraState.pos[0].work;await cameraUI.api.addCamPose(cameraUI.api.Cam.last);
+assert.equal(cameraState.day.length,2);assert.equal(cameraState.pos[0].work,firstCameraWork);assert.equal(calledOptions[1].variedIndex,1);pendingVisual();checks++;
+cameraTime=2700;cameraUI.api.camFrame(upper,image(upper),true);assert.equal(cameraUI.api.Cam.last,null);assert(uiElement('#camAdd').disabled);
+posture.value='seated';cameraTime=2800;cameraUI.api.camFrame(upper,image(upper),true);
+assert.equal(cameraUI.api.Cam.last.top,'seated');assert.equal(uiElement('#camAdd').disabled,false);checks++;
+console.log(JSON.stringify({ok:true,checks,templates:library.templates.length,sourceVideos:library.sources.length,matcherMilliseconds:Number(average.toFixed(2)),nonCameraBehaviorUnchanged:true,sculptureAnimationsUnchanged:true,joinedModuleParses:true}));

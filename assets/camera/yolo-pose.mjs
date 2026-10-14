@@ -28,6 +28,13 @@ export function detectorHasBody(result) {
   return ['lsh','rsh','lhip','rhip'].every(visible)&&['lkn','rkn','lank','rank'].filter(visible).length>=3;
 }
 
+export function detectorHasTorso(result) {
+  const L=result?.landmarks;if(!L)return false;
+  const ids=L.length===17?YOLO_JOINTS:{nose:0,lsh:11,rsh:12,lel:13,rel:14,lwr:15,rwr:16,lhip:23,rhip:24};
+  const visible=key=>{const p=L[ids[key]];return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&(p.visibility??0)>=.5&&(p.presence??1)>=.5;};
+  return ['lsh','rsh'].every(visible)&&(['lhip','rhip'].every(visible)||['lel','rel','lwr','rwr'].filter(visible).length>=2);
+}
+
 export async function createYoloDetector(modelUrl,notify=()=>{}) {
   notify('正在准备增强识别，请稍等；首次加载需要更多时间。');
   const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/';

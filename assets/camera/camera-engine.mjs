@@ -1,5 +1,5 @@
-import { CameraReferenceMatcher, CameraPoseHold } from './pose-reference.mjs';
-import { YOLO_JOINTS, detectorHasBody, createYoloDetector } from './yolo-pose.mjs';
+import { CameraReferenceMatcher, CameraPoseHold } from './pose-reference.mjs?v=20261015-2';
+import { YOLO_JOINTS, detectorHasTorso, createYoloDetector } from './yolo-pose.mjs?v=20261015-2';
 const INDICES = { nose: 0, lsh: 11, rsh: 12, lel: 13, rel: 14, lwr: 15, rwr: 16, lhip: 23, rhip: 24, lkn: 25, rkn: 26, lank: 27, rank: 28 };
 
 export function cameraJoints(result) {
@@ -24,7 +24,7 @@ export function cameraJoints(result) {
   for (const [name, i] of Object.entries(INDICES)) {
     const l = L[i], w = W[i];
     if (!l || !w || ![w.x, w.y, w.z, l.x, l.y].every(Number.isFinite)) return null;
-    const visibility = Math.min(l.visibility ?? 0, l.presence ?? 1);
+    const visibility = l.x>=0&&l.x<=1&&l.y>=0&&l.y<=1?Math.min(l.visibility ?? 0, l.presence ?? 1):0;
     K[name] = { x: w.x, y: -w.y, z: -w.z, v: visibility };
     P2[name] = visibility >= .5 ? [l.x, l.y] : null;
   }
@@ -33,14 +33,14 @@ export function cameraJoints(result) {
 
 async function mainThreadDetector(modelUrl,yoloModelUrl,notify) {
   const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
-  const options = { baseOptions: { modelAssetPath: modelUrl, delegate: 'GPU' }, runningMode: 'VIDEO', numPoses: 1,
+  const options = { baseOptions: { modelAssetPath: modelUrl, delegate: 'CPU' }, runningMode: 'VIDEO', numPoses: 1,
     minPoseDetectionConfidence: .45, minPosePresenceConfidence: .45, minTrackingConfidence: .45 };
-  let lm, yolo, yoloLoading, closed=false;
+  let lm, yolo, yoloLoading, closed=false, preferYoloUntil=0;
   try {
     const mod = await import(`${base}/vision_bundle.mjs`);
     const fileset = await mod.FilesetResolver.forVisionTasks(`${base}/wasm`);
     try { lm = await mod.PoseLandmarker.createFromOptions(fileset, options); }
-    catch (_) { options.baseOptions.delegate = 'CPU'; lm = await mod.PoseLandmarker.createFromOptions(fileset, options); }
+    catch (_) { options.baseOptions.delegate = 'GPU'; lm = await mod.PoseLandmarker.createFromOptions(fileset, options); }
   } catch (_) {}
   const ensureYolo=()=>yoloLoading ||= createYoloDetector(yoloModelUrl,notify).then(value=>{
     if(closed){value.close();throw new Error('camera closed');}return yolo=value;
@@ -49,11 +49,12 @@ async function mainThreadDetector(modelUrl,yoloModelUrl,notify) {
   let timestamp = 0;
   return { strategy: 'main-thread-fallback', async detect(source, now) {
     if(closed)throw new Error('camera closed');
+    if(yolo&&now<preferYoloUntil)return cameraJoints(await yolo.detect(source));
     timestamp = Math.max(timestamp+1, now);
     let result;try{result=lm?.detectForVideo(source, timestamp);}catch(_){}
     let pose={landmarks:result?.landmarks?.[0],world:result?.worldLandmarks?.[0]};
-    if(!detectorHasBody(pose)) {
-      try {const alternative=await(await ensureYolo()).detect(source);if(alternative&&(detectorHasBody(alternative)||!pose.landmarks))pose=alternative;}
+    if(!detectorHasTorso(pose)) {
+      try {const alternative=await(await ensureYolo()).detect(source);if(alternative&&(detectorHasTorso(alternative)||!pose.landmarks)){pose=alternative;preferYoloUntil=now+5000;}}
       catch(error){if(!pose.landmarks)throw error;}
     }
     return cameraJoints(pose);
@@ -63,7 +64,7 @@ async function mainThreadDetector(modelUrl,yoloModelUrl,notify) {
 async function workerDetector(modelUrl,yoloModelUrl,notify) {
   // Classic workers allow this MediaPipe version's WASM loader to use importScripts.
   // Dynamic import of the vision module remains supported inside the classic worker.
-  const worker = new Worker(new URL('./camera-worker.mjs', import.meta.url));
+  const worker = new Worker(new URL('./camera-worker.mjs?v=20261015-2', import.meta.url));
   const pending = new Map(); let serial = 0, closed = false;
   function fail(error) {
     for (const item of pending.values()) { clearTimeout(item.timer); item.reject(error); }
