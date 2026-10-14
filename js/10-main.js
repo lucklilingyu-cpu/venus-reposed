@@ -221,6 +221,61 @@ window.__vr.Walk = Walk; window.__vr.Atlas = Atlas; window.__vr.FIGS = FIGS; Obj
 // Manual image annotation controls and gallery integration.
 $('#poseAnnotateBtn').addEventListener('click', openGalleryAnnotator);
 $('#poseAnnotatorClose').addEventListener('click', () => { $('#poseAnnotator').hidden = true; });
+(() => {
+  $('#poseAnnotateBtn').addEventListener('click', openGalleryAnnotator);
+  $('#poseAnnotatorClose').addEventListener('click', () => { $('#poseAnnotator').hidden = true; });
+  $('#poseJointSelect').addEventListener('change', setGalleryEditorPoint);
+  $('#poseAnnotatorCanvas').addEventListener('click', (e) => {
+    const canvas = e.currentTarget, rect = canvas.getBoundingClientRect(), key = $('#poseJointSelect').value;
+    if (!key || !rect.width || !rect.height) return;
+    galleryEditPoints[key] = { x: THREE.MathUtils.clamp((e.clientX - rect.left) / rect.width, 0, 1), y: THREE.MathUtils.clamp((e.clientY - rect.top) / rect.height, 0, 1) };
+    galleryEditSkipped = galleryEditSkipped.filter(k => k !== key); setGalleryEditorPoint();
+  });
+  $('#poseJointSkip').addEventListener('click', () => {
+    const key = $('#poseJointSelect').value; if (!key) return;
+    delete galleryEditPoints[key]; if (!galleryEditSkipped.includes(key)) galleryEditSkipped.push(key); setGalleryEditorPoint();
+  });
+  $('#poseJointClear').addEventListener('click', () => {
+    const key = $('#poseJointSelect').value; delete galleryEditPoints[key]; galleryEditSkipped = galleryEditSkipped.filter(k => k !== key); setGalleryEditorPoint();
+  });
+  $('#poseAnnotationSave').addEventListener('click', async () => {
+    const item = poseGalleryItems?.find(x => x.id === gallerySelectedId); if (!item) return;
+    const missing = GALLERY_JOINTS.find(([key]) => !galleryEditPoints[key] && !galleryEditSkipped.includes(key));
+    if (missing) { $('#poseJointSelect').value = missing[0]; setGalleryEditorPoint(); $('#poseAnnotatorStatus').textContent = '请标记或明确跳过「' + missing[1] + '」，再保存。'; return; }
+    const cls = $('#poseClassSelect').value, g = $('#poseGestureSelect').value || null;
+    galleryAnnotations[item.id] = { cls, g, points: { ...galleryEditPoints }, skipped: [...galleryEditSkipped] };
+    if (!saveGalleryAnnotations()) return;
+    const preview = $('#frames canvas'); if (preview) drawGalleryPoints(preview, galleryEditPoints);
+    await updateHallFromGalleryAnnotation(item, galleryAnnotations[item.id]);
+    $('#poseAnnotatorStatus').textContent = '已保存 ' + item.id + ' 的 ' + CLASS[cls].zh + ' 姿势；展厅已按校正类别更新。';
+    $('#poseGalleryStatus').textContent = item.title + '：已使用人工校正姿势更新展厅。';
+  });
+  $('#poseExportBtn').addEventListener('click', exportGalleryAnnotations);
+  $('#poseImportFile').addEventListener('change', (e) => { const f = e.target.files?.[0]; if (f) importGalleryAnnotations(f); e.target.value = ''; });
+  $('#poseGallery').addEventListener('click', async (e) => {
+    const button = e.target.closest('[data-pose-gallery]'); if (!button) return;
+    const id = button.dataset.poseGallery; gallerySelectedId = id; $('#poseAnnotateBtn').disabled = false;
+    const saved = galleryAnnotations[id]; if (!saved) return;
+    e.stopImmediatePropagation(); if (Vid.busy) return; Vid.busy = true;
+    const status = $('#poseGalleryStatus'), box = $('#frames');
+    $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
+    try {
+      const item = poseGalleryItems.find(x => x.id === id), img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
+      const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; canvas.getContext('2d').drawImage(img, 0, 0); drawGalleryPoints(canvas, saved.points || {});
+      box.replaceChildren(); const fig = document.createElement('figure'), cap = document.createElement('figcaption'); cap.textContent = item.title; fig.append(canvas, cap); box.appendChild(fig);
+      await updateHallFromGalleryAnnotation(item, saved); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
+    } catch (_) { status.textContent = '图片载入失败，请稍后再试。'; }
+    finally { Vid.busy = false; $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; }); }
+  }, true);
+  (function waitForPoseGallery() {
+    if (poseGalleryItems) {
+      galleryAnnotationCount(); const jointSelect = $('#poseJointSelect');
+      if (!jointSelect.options.length) jointSelect.innerHTML = GALLERY_JOINTS.map(([key, name]) => '<option value="' + key + '">' + name + '</option>').join('');
+      $('#poseAnnotateBtn').disabled = !poseGalleryItems.length; return;
+    }
+    setTimeout(waitForPoseGallery, 100);
+  })();
+})();
 
 (() => {
   $('#poseAnnotateBtn').addEventListener('click', openGalleryAnnotator);
