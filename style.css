@@ -420,8 +420,8 @@ body.walking .panel,body.walking .strip,body.walking .sheet-tabs,body.walking #v
 @keyframes intro-drift{from{transform:translate3d(-3vw,1vw,0) scale(1)}to{transform:translate3d(4vw,-2vw,0) scale(1.12)}}
 .intro-plate{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);padding:8px 18px 7px;border-radius:10px;background:var(--ink);box-shadow:0 8px 24px rgba(58,37,34,.2)}
 .intro-plate span{display:block;font-family:var(--font-display);font-weight:700;letter-spacing:.06em;font-size:14px;color:var(--cream);padding-bottom:2px;border-bottom:1px solid rgba(246,237,226,.45);white-space:nowrap}
-.intro-main{position:relative;display:flex;flex-direction:column;align-items:center;gap:22px;padding:0 24px;max-width:960px}
-.intro-title{margin:0;font-family:var(--font-display);font-weight:800;font-size:clamp(46px,9.5vw,128px);line-height:.95;letter-spacing:-.03em;display:flex;flex-direction:column;align-items:center}
+.intro-main{position:relative;display:flex;flex-direction:column;align-items:center;gap:22px;padding:0 24px;max-width:100%}
+.intro-title{margin:0;font-family:var(--font-display);font-weight:800;font-size:clamp(40px,8.2vw,112px);line-height:.95;white-space:nowrap;letter-spacing:-.03em;display:flex;flex-direction:column;align-items:center}
 .intro-title .rose{color:var(--rose)}
 .intro-title span{display:block}
 
