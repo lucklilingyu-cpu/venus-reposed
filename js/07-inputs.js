@@ -343,7 +343,7 @@ function addCamPose(r) {
 
 /* ---------- video / photos ---------- */
 const Vid = { frames: [], busy: false };
-let poseGalleryItems = null;
+let poseGalleryItems = null, lastGalleryFocus = -1;
 async function loadPoseGallery() {
   if (poseGalleryItems) return poseGalleryItems;
   const box = $('#poseGallery'), status = $('#poseGalleryStatus');
@@ -385,8 +385,8 @@ async function analyzeGalleryImage(id, button) {
     fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
     const result = enough ? classifyPose(found.K, null) : galleryPoseHint(item);
     const label = item.title.slice(0, 28) + ' · ' + CLASS[result.top].zh;
-    S.posPal = { 0: palette }; S.sel = 0;
-    await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true,
+    const slots = Array.from({ length: EXISTING.length }, (_, i) => i).filter(i => i !== lastGalleryFocus); const focusIndex = slots[Math.floor(Math.random() * slots.length)] ?? 0; lastGalleryFocus = focusIndex; S.sel = focusIndex; S.posPal = { [focusIndex]: palette };
+    await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true, focusIndex,
       onVisualComplete: seq => {
         const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
         if (i < 0) return;
