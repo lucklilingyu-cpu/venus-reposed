@@ -6,7 +6,7 @@ Reads <dist>/data/*.json, <dist>/gallery/meshes/<n>.bin and <dist>/gallery/thumb
 data/atlas.json, m/<n>.js (each mesh wrapped as base64 in a small script) and t/<n>.webp in the site folder.
 Needs numpy (pip install numpy). Commit the changed files afterwards; there is no build step.
 """
-import json, re, os, shutil, math, sys, base64
+import json, re, os, shutil, math, sys, base64, hashlib
 import numpy as np
 if len(sys.argv) < 2:
     sys.exit(__doc__)
@@ -122,7 +122,8 @@ for r in ds:
         **({'license': r.get('license_label', '') + ' (' + r.get('license_url', '') + ')',
             'credit': r.get('attribution', ''), 'skNote': '新增扫描；骨骼为局部候选，解剖对应尚未确认。' if sk else '暂无经过确认的骨骼数据。'} if r.get('acquisition') else {}),
     })
-json.dump({'source': 'Goddess Sculpture Atlas (goddess-sculpture-atlas.silkykoala4.chatgpt.site)', 'count': len(out), 'records': out}, open(os.path.join(OUT, 'atlas.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+revision = hashlib.sha256(json.dumps(gm, sort_keys=True).encode()).hexdigest()[:12]
+json.dump({'source': 'Goddess Sculpture Atlas (goddess-sculpture-atlas.silkykoala4.chatgpt.site)', 'revision': revision, 'count': len(out), 'records': out}, open(os.path.join(OUT, 'atlas.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 from collections import Counter
 print(Counter((x['kind'], x['cls']) for x in out))
 print('skeletons', Counter(x['sk']['src'] if x['sk'] else None for x in out))

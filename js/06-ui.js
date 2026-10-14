@@ -11,7 +11,7 @@ function toast(msg, ms = 2800) { const t = $('#toast'); t.textContent = msg; t.c
 function setLoading(text) { const l = $('#loading'); if (!text) { l.hidden = true; return; } l.hidden = false; $('#loadingText').textContent = text; }
 const STATUS_TXT = { keep: '保留', swap: '替换', new: '新增', beyond: '原有', manual: '手动选择' };
 function statusText(p) { if (p.status === 'beyond') return S.day.length ? '叙事之外 · 原样' : '展厅原有'; return STATUS_TXT[p.status]; }
-const thumbURL = (id) => (REC[id] && REC[id].member) ? Group.thumbFor(id) : `t/${id}.webp`;
+const thumbURL = (id) => (REC[id] && REC[id].member) ? Group.thumbFor(id) : `t/${id}.webp?v=${ATLAS.revision || ''}`;
 
 function iconCanvas(cls, size = 60, color) {
   const c = document.createElement('canvas'); c.width = size; c.height = size; c.className = 'icon';

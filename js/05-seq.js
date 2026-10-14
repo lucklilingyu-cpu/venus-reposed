@@ -33,7 +33,7 @@ function loadMeshScript(id) { // local package: meshes wrapped as scripts so the
     window.__atlasMeshWait = window.__atlasMeshWait || {};
     window.__atlasMeshLoaded = window.__atlasMeshLoaded || ((mid, b64) => { const w = window.__atlasMeshWait[mid]; if (w) { delete window.__atlasMeshWait[mid]; w(b64); } });
     window.__atlasMeshWait[id] = (b64) => { try { res(parseMeshBin(b64ToBuf(b64))); } catch (e) { rej(e); } };
-    const s = document.createElement('script'); s.src = `m/${id}.js`; s.onerror = () => rej(new Error('网格无法加载')); document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = `m/${id}.js` + (location.protocol === 'file:' ? '' : '?v=' + (ATLAS.revision || '')); s.onerror = () => rej(new Error('网格无法加载')); document.head.appendChild(s);
   });
 }
 /* make triangle winding consistent per connected component, outward by signed volume */
@@ -77,7 +77,7 @@ async function fetchMesh(id) {
   if (REC[id] && REC[id].member) return Group.fetchMemberMesh(REC[id].item);
   if (location.protocol === 'file:') return loadMeshScript(id);
   try {
-    const r = await fetch(`m/${id}.js`); if (!r.ok) throw new Error(r.status);
+    const r = await fetch(`m/${id}.js?v=${ATLAS.revision || ''}`, { cache: 'no-cache' }); if (!r.ok) throw new Error(r.status);
     const t = await r.text(), m = t.match(/"([A-Za-z0-9+\/=]{100,})"/);
     if (!m) throw new Error('mesh text');
     return parseMeshBin(b64ToBuf(m[1]));
@@ -89,7 +89,7 @@ const detailMeshCache = new Map();
 async function fetchDetailMesh(id) {
   const entry = MODEL_DETAILS[id];
   if (!entry || !/^md\/[1-9]\d*\.bin\.gz$/.test(entry.url) || typeof DecompressionStream === 'undefined') return null;
-  const r = await fetch(entry.url, { signal: AbortSignal.timeout(20000) });
+  const r = await fetch(entry.url + '?v=' + entry.sha256.slice(0, 12), { signal: AbortSignal.timeout(20000) });
   if (!r.ok) throw new Error('精细模型加载失败');
   let buf = await r.arrayBuffer();
   // Some hosts decode gzip themselves; GitHub Pages serves the compressed file.
