@@ -55,7 +55,7 @@ $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
   if (S.view === 'color') setView('both');
   toast('表皮：' + RIBBON_STYLES[S.skinStyle].zh);
 }));
-$('#ownBtn').addEventListener('click', () => { S.own = !S.own; applyView(); menu.hidden = true; toast(S.own ? '显示每件雕塑自己的姿态丝带' : '隐藏雕塑自己的丝带，只看序列丝带'); if (S.view === 'color') setView('sculpture'); });
+$('#ownBtn').addEventListener('click', () => { S.own = !S.own; menu.hidden = true; if (S.own && S.view !== 'both') setView('both'); else applyView(); toast(S.own ? '叠加视图：其他雕塑也显示自己的姿态丝带' : '叠加视图：只看序列丝带'); });
 $('#bonesBtn').addEventListener('click', () => { S.bones = !S.bones; applyView(); menu.hidden = true; toast(S.bones ? '显示骨架火柴人' : '隐藏骨架'); });
 const CAMS = {
   vault: [[-8, 14.2, 5.4], [6, 15.2, -2.2]],

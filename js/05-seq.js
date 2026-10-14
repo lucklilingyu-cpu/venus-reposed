@@ -762,8 +762,9 @@ async function applyDay(day, opts = {}) {
 let skinMesh = null, skinJob = 0, skinTimer = null, skinGrow = null;
 
 /* ---------- views ---------- */
-/* views: 雕塑序列 = sculptures with their pose ribbons; 表皮序列 = sculptures wrapped by the sequence ribbon;
-   叠加 = both kinds of ribbon; 色彩与声音 = palettes */
+/* views: 雕塑序列 = the sculptures only, no ribbons; 表皮序列 = sculptures wrapped by the sequence ribbon;
+   叠加 = the sequence ribbon plus the pose ribbons of the other sculptures; 色彩与声音 = palettes.
+   Ribbons only ever show once the skin is on (表皮序列 or 叠加). */
 function applyViewTo(vp) {
   const v = S.view;
   const showFig = v !== 'color';
@@ -773,7 +774,7 @@ function applyViewTo(vp) {
   vp.colorGroup.visible = v === 'color';
   if (vp.rib) { // in 叠加 the sequence ribbon takes over from the pose ribbons of the day's sculptures
     const p = S.pos[V.indexOf(vp)], wrapped = !S.day.length || !!(p && p.act);
-    vp.rib.visible = S.own && (v === 'sculpture' || (v === 'both' && !wrapped));
+    vp.rib.visible = S.own && v === 'both' && !wrapped;
   }
   if (vp.bones) vp.bones.visible = S.bones;
 }
@@ -793,6 +794,7 @@ function setView(v) {
     if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); }
     skinGrow = growGroup(skinMesh, 3.2); // the sequence ribbon unrolls from the vault, sculpture after sculpture
   }
+  if (v === 'both' && !reduceMotion) V.forEach((vp, k) => { if (vp.rib && vp.rib.visible) { if (vp.ribTween) { const q = tweens.indexOf(vp.ribTween); if (q >= 0) tweens.splice(q, 1); } vp.ribTween = growGroup(vp.rib, 1.6, 0.3 + 0.05 * k); } });
 }
 function paletteFor(i) { const p = S.pos[i]; if (!p) return DEFAULT_PALETTES.standing; return S.posPal[i] || S.palettes[clsOf(p.work)]; }
 function updateColorView() {

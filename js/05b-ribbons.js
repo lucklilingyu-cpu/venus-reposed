@@ -9,6 +9,9 @@
    hand, a second band winds down the body and settles on the plinth. Lying
    figures get bands that drape over the body in waves and rise at the head.
 
+   Ribbons only show once the skin is on: none in 雕塑序列; 表皮序列 shows the sequence ribbon,
+   叠加 adds the pose ribbons of the sculptures outside the day.
+
    Sequence ribbon (the "表皮序列" view) — one giant ribbon with a thinner second
    strand. It comes down from the vault onto the day's first sculpture, coils
    down around it and up again, arcs high over the board to the next sculpture of

@@ -43,7 +43,7 @@
           <button data-skin="drape">褶皱丝带</button>
           <button data-skin="smooth">平滑丝带</button>
           <button data-skin="fold">折面丝带</button>
-          <button id="ownBtn">切换：每件雕塑自己的姿态丝带</button>
+          <button id="ownBtn">切换：叠加视图里每件雕塑自己的姿态丝带</button>
           <button id="bonesBtn">切换：显示骨架火柴人</button>
           <hr class="soft">
           <div class="hint">视角</div>
@@ -297,14 +297,14 @@
   <div class="modal" id="about" hidden>
     <div class="box" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
       <h2 id="aboutTitle">VENUS, RE-POSED</h2>
-      <p>Bartlett B-Pro Architectural Design · Workshop 7 · V&amp;A Cast Courts。观众用一段日常叙事生成一串姿势，平台拿这串姿势沿 Cast Courts 的轴线逐个比对：姿势相同的雕塑保留，不同的就从女神数据集里换一尊同类姿势的进来，每件雕塑按自己的姿势长出环绕身体的石膏丝带；在“表皮序列”里，一条巨大的丝带按动作顺序依次缠绕当天的雕塑，连成一件空间装置。</p>
+      <p>Bartlett B-Pro Architectural Design · Workshop 7 · V&amp;A Cast Courts。观众用一段日常叙事生成一串姿势，平台拿这串姿势沿 Cast Courts 的轴线逐个比对：姿势相同的雕塑保留，不同的就从女神数据集里换一尊同类姿势的进来，打开“表皮序列”后，一条巨大的石膏丝带按动作顺序依次缠绕当天的雕塑，连成一件空间装置；在“叠加”里，其余雕塑也按自己的姿势长出环绕身体的丝带。</p>
       <h3>怎么用</h3>
       <ul>
         <li><b>文字日记</b>：写下“我的一天”，点“生成姿势序列”，按关键词规则拆分活动并标注姿势。</li>
         <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则算出百分比，保持 2 秒加入序列。</li>
         <li><b>图谱</b>：浏览 118 件模型，打开任一件查看白色陶瓷渲染和骨骼。精细版按需加载，也可以把姿势已分类的雕像放到展厅里选中的位置。</li>
         <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
-        <li><b>视图</b>：雕塑序列（雕塑和各自的姿态丝带）、表皮序列（缠绕当天雕塑的巨大丝带）、两者叠加，以及按姿势显示色板与声音。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>
+        <li><b>视图</b>：雕塑序列（只有雕塑）、表皮序列（缠绕当天雕塑的巨大丝带）、叠加（再加上其余雕塑各自的姿态丝带），以及按姿势显示色板与声音。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>
         <li><b>修改</b>：序列卡片可以拖动排序、改类别、删除；复杂姿势按钮作用于选中的卡片。</li>
         <li><b>小组</b>：组员的作品汇总——图片、视频、PDF、扫描与建模的 3D 模型、声音、笔记和链接，以及每个人保存的“一天”。模型可以放到展厅的任一位置，“一天”可以在展厅中载入。</li>
       </ul>
