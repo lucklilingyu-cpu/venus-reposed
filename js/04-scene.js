@@ -151,6 +151,7 @@ for (const k of ['red', 'green', 'stone', 'dark', 'dado', 'frieze', 'floor', 'ba
 M.gold.envMapIntensity = 0.7;
 M.plaster = M.red; M.plasterDeep = M.green; // older names, kept for code that still uses them
 const hall = new THREE.Group(); scene.add(hall);
+const Architecture = createArchitectureDisplay(hall, renderer, HALL.galleryY);
 
 function addMesh(geo, mat, parent = hall, opts = {}) {
   const m = new THREE.Mesh(geo, mat);
@@ -158,8 +159,6 @@ function addMesh(geo, mat, parent = hall, opts = {}) {
   parent.add(m); return m;
 }
 /* geometry collected per material, merged into one mesh each at the end */
-const BUCKET = {};
-const put = (k, g) => (BUCKET[k] || (BUCKET[k] = [])).push(g.index ? g.toNonIndexed() : g);
 const INST = {}; // instanced parts: key -> world matrices
 const putInst = (k, m) => (INST[k] || (INST[k] = [])).push(m);
 function strut(a, b, r, segs = 5) { // a cylinder from point a to point b
@@ -178,26 +177,29 @@ function strut(a, b, r, segs = 5) { // a cylinder from point a to point b
   shape.holes.push(hole);
   const fg = new THREE.ShapeGeometry(shape); fg.rotateX(-Math.PI / 2);
   const uv = fg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 2.4, uv.getY(i) / 2.4); // world metres → tiles
-  addMesh(fg, M.floor);
+  const paving = addMesh(fg, M.floor, Architecture.lower);
+  paving.name = 'ground-paving-walk-surface';
+  paving.userData.walkSurface = true; // WALK remains the invisible analytic collision floor.
+  paving.castShadow = false; paving.receiveShadow = false;
   // grey stone bands: along the walls and around the pool, each with a thin white line
   const ring = (x0, z0, x1, z1, w) => {
     const s = new THREE.Shape(); s.moveTo(x0 - w, z0 - w); s.lineTo(x1 + w, z0 - w); s.lineTo(x1 + w, z1 + w); s.lineTo(x0 - w, z1 + w); s.lineTo(x0 - w, z0 - w);
     const h = new THREE.Path(); h.moveTo(x0, z0); h.lineTo(x0, z1); h.lineTo(x1, z1); h.lineTo(x1, z0); h.lineTo(x0, z0); s.holes.push(h);
     const g = new THREE.ShapeGeometry(s); g.rotateX(-Math.PI / 2); return g; // symmetric, so the z flip does not matter
   };
-  addMesh(ring(-15.8, -3.9, 15.8, 3.9, 0.9).translate(0, 0.004, 0), M.band);
-  addMesh(ring(-16.7, -4.8, 16.7, 4.8, 0.06).translate(0, 0.006, 0), M.bandLine);
-  addMesh(ring(HALL.x0 + 1.15, -HALL.z + 1.15, HALL.x1 - 1.15, HALL.z - 1.15, 1.15).translate(0, 0.004, 0), M.band);
-  addMesh(ring(HALL.x0 + 1.3, -HALL.z + 1.3, HALL.x1 - 1.3, HALL.z - 1.3, 0.06).translate(0, 0.006, 0), M.bandLine);
+  addMesh(ring(-15.8, -3.9, 15.8, 3.9, 0.9).translate(0, 0.004, 0), M.band, Architecture.lower);
+  addMesh(ring(-16.7, -4.8, 16.7, 4.8, 0.06).translate(0, 0.006, 0), M.bandLine, Architecture.lower);
+  addMesh(ring(HALL.x0 + 1.15, -HALL.z + 1.15, HALL.x1 - 1.15, HALL.z - 1.15, 1.15).translate(0, 0.004, 0), M.band, Architecture.lower);
+  addMesh(ring(HALL.x0 + 1.3, -HALL.z + 1.3, HALL.x1 - 1.3, HALL.z - 1.3, 0.06).translate(0, 0.006, 0), M.bandLine, Architecture.lower);
   // coping and pool walls
   for (const [x, z, w, d] of [[0, -3.75, 31.6, 0.3], [0, 3.75, 31.6, 0.3], [-15.65, 0, 0.3, 7.8], [15.65, 0, 0.3, 7.8]]) {
-    addMesh(new THREE.BoxGeometry(w, 0.16, d), M.coping, hall, { cast: true }).position.set(x, 0.02, z);
+    addMesh(new THREE.BoxGeometry(w, 0.16, d), M.coping, Architecture.pool, { cast: true }).position.set(x, 0.02, z);
   }
   const pf = new THREE.PlaneGeometry(31, 7.2); pf.rotateX(-Math.PI / 2);
-  addMesh(pf, M.poolFloor).position.y = -0.55;
+  addMesh(pf, M.poolFloor, Architecture.pool).position.y = -0.55;
   // cascade steps at the west end of the pool (sketch)
   for (let i = 0; i < 3; i++) {
-    const s = addMesh(new THREE.BoxGeometry(1.2, 0.5 + i * 0.45, 7.2), M.coping, hall, { cast: true });
+    const s = addMesh(new THREE.BoxGeometry(1.2, 0.5 + i * 0.45, 7.2), M.coping, Architecture.pool, { cast: true });
     s.position.set(-15.2 - i * 1.2, (0.5 + i * 0.45) / 2 - 0.4, 0);
   }
 })();
@@ -241,7 +243,7 @@ const water = new Reflector(new THREE.PlaneGeometry(31, 7.2), {
   textureWidth: Math.floor(window.innerWidth * 0.5), textureHeight: Math.floor(window.innerHeight * 0.5),
 });
 water.rotation.x = -Math.PI / 2; water.position.y = -0.12;
-scene.add(water);
+Architecture.pool.add(water);
 
 /* ---------- the four walls ----------
    Each wall is built as an elevation in its own frame: u along the wall, y up, w from the wall face into the room.
@@ -277,8 +279,9 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     return new THREE.ExtrudeGeometry(s, { depth: 0.42, bevelEnabled: false, curveSegments: 20 });
   };
   const m4 = new THREE.Matrix4();
-  for (const W of WALLS) {
-    const P = (k, g) => put(k, g.applyMatrix4(W.m));
+  for (const [elevation, W] of WALLS.entries()) {
+    let assembly = 'wall';
+    const P = (k, g) => Architecture.collect(k, g.applyMatrix4(W.m), elevation, assembly);
     const box = (k, sx, sy, sz, u, y, w) => P(k, new THREE.BoxGeometry(sx, sy, sz).translate(u, y, w));
     const cyl = (k, rt, rb, h, u, y, w, seg = 28) => P(k, new THREE.CylinderGeometry(rt, rb, h, seg).translate(u, y, w));
     const ring = (k, R, t, u, y, w) => P(k, new THREE.TorusGeometry(R, t, 8, 40).rotateX(Math.PI / 2).translate(u, y, w));
@@ -305,6 +308,8 @@ const BAL_W = 1.85; // balustrade distance from the wall face
         box('gold', 1.16, 0.1, 1.16, u, 6.95, cw);
       }
       // entablature: architrave, painted frieze, consoles, gallery slab (the long walls stop short of the Pórtico)
+      // The gallery floor includes its underside/consoles, regardless of centre height.
+      assembly = 'gallery-assembly';
       const [lo, hi] = W.span || [-half, half], sl = hi - lo, sc = (lo + hi) / 2;
       box('stone', sl, 0.32, 1.2, sc, 7.16, 0.6);
       box('frieze', sl, 0.4, 1.08, sc, 7.52, 0.54);
@@ -322,6 +327,7 @@ const BAL_W = 1.85; // balustrade distance from the wall face
       for (let u = b0 + 0.3; u <= b1 - 0.25; u += 0.3) if (!posts.some(q => Math.abs(q - u) < 0.3)) inst('baluster', u, 8.55, BAL_W);
       if (lo > -half) box('stone', 0.3, 0.98, BAL_W, b0, 8.9, BAL_W / 2);
       if (hi < half) box('stone', 0.3, 0.98, BAL_W, b1, 8.9, BAL_W / 2);
+      assembly = 'wall';
     } else {
       // west wall: a cornice just above the Pórtico
       box('stone', L, 0.5, 0.7, 0, lowTop - 0.25, 0.35);
@@ -348,11 +354,11 @@ const BAL_W = 1.85; // balustrade distance from the wall face
   }
   // merge everything that was collected above
   const MAT = { red: M.red, green: M.green, stone: M.stone, dark: M.dark, dado: M.dado, frieze: M.frieze, gold: M.gold };
-  for (const k in MAT) if (BUCKET[k]) addMesh(mergeGeometries(BUCKET[k]), MAT[k], hall, { cast: true });
+  Architecture.flush(MAT);
   const instMesh = (geo, mat, list) => {
     const im = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((mm, i) => im.setMatrixAt(i, mm));
-    im.castShadow = true; im.receiveShadow = true; hall.add(im); return im;
+    return Architecture.add(im, 'upper', 'balustrade-and-dentils');
   };
   instMesh(balusterGeo, M.stone, INST.baluster);
   instMesh(new THREE.BoxGeometry(0.17, 0.2, 0.16), M.stone, INST.dentil);
@@ -363,7 +369,7 @@ const BAL_W = 1.85; // balustrade distance from the wall face
   const R = HALL.vaultR, H = HALL.vaultRise, Y = HALL.wallH, Lx = HALL.x1 - HALL.x0;
   const glass = new THREE.CylinderGeometry(R, R, Lx, 96, 1, true, 0, Math.PI);
   glass.rotateZ(Math.PI / 2); glass.scale(1, H / R, 1); glass.translate(0, Y, 0);
-  addMesh(glass, M.glassRoof, hall, { receive: false });
+  Architecture.add(new THREE.Mesh(glass, M.glassRoof), 'upper', 'vault-glass');
   const ell = (phi, inset) => new THREE.Vector3(0, Y + (H - inset) * Math.sin(phi), (R - inset) * Math.cos(phi));
   const arc = (x, inset, r) => new THREE.TorusGeometry(R - inset, r, 5, 80, Math.PI).rotateY(Math.PI / 2).scale(1, (H - inset) / (R - inset), 1).translate(x, Y, 0);
   const iron = [];
@@ -389,7 +395,7 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     iron.push(new THREE.BoxGeometry(Lx, 0.08, 0.1).translate(0, c.y, c.z));
   }
   iron.push(new THREE.BoxGeometry(Lx, 0.14, 0.12).translate(0, Y + H - 0.05, 0)); // ridge
-  addMesh(mergeGeometries(iron.map(g => g.index ? g.toNonIndexed() : g)), M.iron, hall, { cast: true, receive: false });
+  Architecture.add(new THREE.Mesh(mergeGeometries(iron.map(g => g.index ? g.toNonIndexed() : g)), M.iron), 'upper', 'vault-iron');
 
   // the two end lunettes: cream frame, fan window with radiating iron bars
   const a2 = R - 0.75, b2 = H - 0.75, y0 = 0.35;
@@ -398,15 +404,15 @@ const BAL_W = 1.85; // balustrade distance from the wall face
     const frame = new THREE.Shape(); frame.moveTo(R + 0.3, 0); frame.absellipse(0, 0, R + 0.3, H + 0.3, 0, Math.PI, false); frame.lineTo(R + 0.3, 0);
     const hole = new THREE.Path(); hole.moveTo(a2, y0); hole.absellipse(0, y0, a2, b2 - y0, 0, Math.PI, false); hole.lineTo(a2, y0);
     frame.holes.push(hole);
-    addMesh(new THREE.ExtrudeGeometry(frame, { depth: 0.3, bevelEnabled: false, curveSegments: 40 }).applyMatrix4(rot), M.stone, hall, { cast: true });
+    Architecture.add(new THREE.Mesh(new THREE.ExtrudeGeometry(frame, { depth: 0.3, bevelEnabled: false, curveSegments: 40 }).applyMatrix4(rot), M.stone), 'upper', 'lunette-frame');
     const glow = new THREE.Shape(); glow.moveTo(a2, y0); glow.absellipse(0, y0, a2, b2 - y0, 0, Math.PI, false); glow.lineTo(a2, y0);
-    addMesh(new THREE.ShapeGeometry(glow, 40).applyMatrix4(rot), M.windowGlow, hall, { receive: false });
+    Architecture.add(new THREE.Mesh(new THREE.ShapeGeometry(glow, 40).applyMatrix4(rot), M.windowGlow), 'upper', 'lunette-window');
     const bars = [];
     const c0 = new THREE.Vector3(0, y0, 0.12);
     for (let k = 1; k < 8; k++) { const t = Math.PI * k / 8; bars.push(strut(c0, new THREE.Vector3(a2 * Math.cos(t), y0 + (b2 - y0) * Math.sin(t), 0.12), 0.06)); }
     for (const f of [0.38, 0.7]) bars.push(new THREE.TorusGeometry(a2 * f, 0.06, 5, 48, Math.PI).scale(1, (b2 - y0) / a2, 1).translate(0, y0, 0.12));
     bars.push(new THREE.BoxGeometry(a2 * 2, 0.14, 0.14).translate(0, y0, 0.12));
-    addMesh(mergeGeometries(bars.map(g => (g.index ? g.toNonIndexed() : g).applyMatrix4(rot))), M.iron, hall, { cast: true });
+    Architecture.add(new THREE.Mesh(mergeGeometries(bars.map(g => (g.index ? g.toNonIndexed() : g).applyMatrix4(rot))), M.iron), 'upper', 'lunette-bars');
   }
 })();
 
@@ -442,6 +448,8 @@ const BAL_W = 1.85; // balustrade distance from the wall face
 })();
 
 /* pose glyphs (used by the interface icons) */
+Architecture.apply();
+Architecture.refreshShadows();
 const floaters = [];
 function drawPoseIcon(g, cls, x, y, size, opts = {}) {
   const pose = buildPose(CANON[cls]);

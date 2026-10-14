@@ -126,6 +126,20 @@ This is the `works.data` jsonb, the same object the UI reads.
 
 ## The hall (js/04-scene.js)
 
+Architecture display update (local, 2026-10-14): `03b-architecture.js` supplies
+`Architecture`. Ground-floor building parts and exterior pool paving are retained
+in `architecture-ground-hidden`; gallery walls are clipped at the actual
+`HALL.galleryY = 8.4` boundary before material/elevation merging. The gallery
+floor includes its complete underside and consoles as one upper-floor assembly.
+Upper walls, balcony, vault and decorations use cloned materials at opacity 0.7,
+with transparency enabled, depth testing on and depth writes/shadows off. These
+settings intentionally supersede the old opaque-shell shadow rule below.
+Pool geometry, water, sequence sculptures/plinths, Trajan's Column and the
+Pórtico cast are not building supports and stay outside the policy. `WALK` keeps
+its invisible floor/obstacle boundaries. Day/night changes and `applyDay`
+(including reset and saved sequences) reapply the same policy. Do not mutate
+shared `M` materials to implement shell transparency. Deployment to GitHub Pages is authorized.
+
 - Modelled on the V&A Cast Courts: sage-green walls on both storeys (the group asked for green instead of red; the Pórtico's openings show the same green), cream columns with a red lower third and gilded capitals, a gallery balcony on consoles, an upper arcade with sage-green niches, a red chevron mosaic floor and a glazed barrel vault.
 - **Exhibits**: the sculpture sequence on a chessboard over the pool (see "The sequence board"), the two halves of Trajan's Column at the east end and the Pórtico de la Gloria on the west wall (js/04b-casts.js). The group asked for **no other sculptures, reliefs or pictures on the walls** (the concept sketch was taken down). Keep it that way unless the user asks.
 - **Casts**: modelled after the V&A originals — the Pórtico cast is 17.85 × 10.57 m (Brucciani, 1866); the column stands in two halves, the lower one on the pedestal. Carving is procedural: canvas textures drawn with `Carve` (colour + bump) and simple figure builders (`standing`, `seated`). If you add an obstacle on the floor, add its rectangle to `WALK.rects`.

@@ -383,3 +383,5 @@ $('#poseGallery').addEventListener('click', async (e) => {
   }
   setTimeout(waitForPoseGallery, 100);
 })();
+
+window.__vr.Architecture = Architecture; window.__vr.NightLighting = NightLighting;

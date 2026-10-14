@@ -27,20 +27,20 @@ const NightLighting = (() => {
     }
   });
   const fixture = new THREE.Group(); fixture.name = 'night-installation'; scene.add(fixture);
-  function line(points, color, radius = 0.035) {
+  function line(points, color, radius = 0.035, role = 'upper-architecture') {
     const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, toneMapped: false, depthWrite: false });
     const curve = new THREE.CatmullRomCurve3(points);
     const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, points.length > 2 ? 48 : 1, radius, 6, false), mat);
+    mat.userData.architectureAccent = role === 'upper-architecture';
+    mesh.userData.role = role;
     fixture.add(mesh); lines.push(mat);
   }
   // Pool-edge lights and elevated gallery rails read as a modern light installation.
   for (const side of [-1, 1]) {
     const color = side < 0 ? BLUE : PINK;
-    line([new THREE.Vector3(-15.4, 0.14, side * 3.73), new THREE.Vector3(15.4, 0.14, side * 3.73)], color, 0.045);
+    line([new THREE.Vector3(-15.4, 0.14, side * 3.73), new THREE.Vector3(15.4, 0.14, side * 3.73)], color, 0.045, 'pool-light');
     line([new THREE.Vector3(-20.5, 8.8, side * 7.35), new THREE.Vector3(22, 8.8, side * 7.35)], color);
-    for (const x of [-14.4, -4.8, 4.8, 14.4]) {
-      line([new THREE.Vector3(x, 0.4, side * 8.5), new THREE.Vector3(x, 7.5, side * 8.5)], color, 0.025);
-    }
+    // No vertical neon outlines for the now-hidden ground-floor columns.
   }
   for (const [i, x] of [-19.2, -9.6, 0, 9.6, 19.2].entries()) {
     const points = [];
@@ -82,7 +82,7 @@ const NightLighting = (() => {
     ceramic.envMapIntensity = mix(0.85, 0.22, v);
     for (const mat of beamMats) mat.opacity = 0.07 * (1 - v);
     lights.forEach((light, i) => { light.intensity = 1000 * clamp((accent - i * 0.06) / 0.8); });
-    lines.forEach((mat, i) => { mat.opacity = clamp((accent - (i % 5) * 0.035) / 0.8); });
+    lines.forEach((mat, i) => { mat.opacity = clamp((accent - (i % 5) * 0.035) / 0.8) * (mat.userData.architectureAccent ? 0.7 : 1); });
     fixture.visible = v > 0;
     water.material.uniforms.night.value = v;
     renderer.toneMappingExposure = mix(baseline.exposure, 0.86, v);
@@ -94,6 +94,7 @@ const NightLighting = (() => {
       skyContext.fillStyle = gradient; skyContext.fillRect(0, 0, 4, 256); blendSky.needsUpdate = true; scene.background = blendSky;
     }
     canvas.dataset.nightProgress = v.toFixed(3);
+    Architecture.apply(); // preserve the shell policy and sync cloned window/glass colours
     renderer.shadowMap.needsUpdate = true;
   }
   function set(night, instant = false) {

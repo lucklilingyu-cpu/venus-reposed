@@ -733,6 +733,7 @@ function computeSequence(day, prev = [], varied = false) {
 }
 let applySeq = 0;
 async function applyDay(day, opts = {}) {
+  Architecture.apply(); // diary, saved works and "展厅原状" share the same shell policy
   clearSculptureFocus();
   const animate = opts.animate !== false && !reduceMotion;
   const my = ++applySeq;
