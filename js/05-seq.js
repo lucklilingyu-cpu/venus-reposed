@@ -784,8 +784,7 @@ function setView(v) {
   document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
   applyView();
   if ((v === 'skin' || v === 'both') && skinMesh && !reduceMotion && !had) {
-    if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); }
-    skinGrow = growGroup(skinMesh, 3.2); // the sequence ribbon unrolls from the vault, sculpture after sculpture
+    growSilk(); // the sequence ribbon unrolls from the vault, sculpture after sculpture
   }
   if ((v === 'both' || v === 'ribbons') && v !== prev && !reduceMotion) V.forEach((vp, k) => { if (vp.rib && vp.rib.visible) { if (vp.ribTween) { const q = tweens.indexOf(vp.ribTween); if (q >= 0) tweens.splice(q, 1); } vp.ribTween = growGroup(vp.rib, 1.6, 0.3 + 0.05 * k); } });
 }

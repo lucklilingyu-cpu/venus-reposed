@@ -36,7 +36,8 @@ const RIB_UP = new THREE.Vector3(0, 1, 0);
 const rv3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 
-/* ctrl: [{ p, w, roll, amp, col (THREE.Color), up? }] → BufferGeometry (or null) */
+/* ctrl: [{ p, w, roll, amp, col (THREE.Color), up?, free? }] → BufferGeometry (or null).
+   o.silk adds the attributes the silk shader needs (aU, aS, aL, aC, aB); o.keep stores the sampled frames in userData.samples. */
 function sweepRibbon(ctrl, o = {}) {
   const n = ctrl.length;
   if (n < 2) return null;
@@ -47,7 +48,9 @@ function sweepRibbon(ctrl, o = {}) {
   if (!(L > 0.02)) return null;
   const N = Math.max(10, Math.min(o.maxN || 2600, Math.round(L * (o.perMetre || 26))));
   const C = M + 1, half = N * C;
-  const pos = new Float32Array(half * 6), col = new Float32Array(half * 6);
+  const pos = new Float32Array(half * 6), col = new Float32Array(half * 6), wob = o.wobble == null ? 1 : o.wobble, ampK = o.ampScale == null ? st.ruffle : o.ampScale;
+  const silk = !!o.silk, aU = silk ? new Float32Array(half * 2) : null, aS = silk ? new Float32Array(half * 2) : null, aL = silk ? new Float32Array(half * 2) : null;
+  const aC = silk ? new Float32Array(half * 6) : null, aB = silk ? new Float32Array(half * 6) : null, samples = o.keep ? [] : null;
   const P = rv3(), Pp = rv3(), T = rv3(), A = rv3(), Au = rv3(), Ap = rv3(), R = rv3(), B = rv3(), X = rv3(), Uc = rv3(), c = new THREE.Color();
   let hasPrev = false, s = 0;
   for (let k = 0; k < N; k++) {
@@ -55,8 +58,8 @@ function sweepRibbon(ctrl, o = {}) {
     curve.getPoint(t, P); curve.getTangent(t, T).normalize();
     if (k) s += P.distanceTo(Pp); Pp.copy(P);
     const f = t * (n - 1), i = Math.min(n - 2, Math.floor(f)), a = f - i, c0 = ctrl[i], c1 = ctrl[i + 1];
-    const w = (c0.w + (c1.w - c0.w) * a) * (1 + 0.07 * Math.sin(s * 2.3 + ph) + 0.035 * Math.sin(s * 5.3 + 2 * ph));
-    const roll = c0.roll + (c1.roll - c0.roll) * a, amp = (c0.amp + (c1.amp - c0.amp) * a) * st.ruffle;
+    const w = (c0.w + (c1.w - c0.w) * a) * (1 + wob * (0.07 * Math.sin(s * 2.3 + ph) + 0.035 * Math.sin(s * 5.3 + 2 * ph)));
+    const roll = c0.roll + (c1.roll - c0.roll) * a, amp = (c0.amp + (c1.amp - c0.amp) * a) * ampK;
     c.copy(c0.col).lerp(c1.col, a);
     Uc.copy(c0.up || RIB_UP).lerp(c1.up || RIB_UP, a);
     // frame: the band's width follows the "up" vector (world up, or the limb / body axis); where the line runs along it, carry the last frame
@@ -70,6 +73,7 @@ function sweepRibbon(ctrl, o = {}) {
     Ap.copy(A); hasPrev = true;
     R.copy(A).multiplyScalar(Math.cos(roll)).addScaledVector(X.crossVectors(T, A), Math.sin(roll));
     B.crossVectors(T, R).normalize();
+    if (samples) samples.push({ p: P.clone(), R: R.clone(), B: B.clone(), T: T.clone(), w, s, free: (c0.free || 0) + ((c1.free || 0) - (c0.free || 0)) * a, g: (c0.g == null ? 1 : c0.g) + ((c1.g == null ? 1 : c1.g) - (c0.g == null ? 1 : c0.g)) * a, col: c.clone() });
     for (let j = 0; j < C; j++) {
       const v = -1 + 2 * j / M, av = Math.abs(v);
       const d = amp * (Math.sin(6.283 * freq * s + 2.2 * v + ph) * (0.3 + 0.7 * Math.pow(av, 1.6)) + 0.45 * Math.sin(6.283 * freq * 1.83 * s - 1.4 * v + 2 * ph) * v * v);
@@ -79,6 +83,7 @@ function sweepRibbon(ctrl, o = {}) {
         const q = (side * half + k * C + j) * 3, nn = off + (side ? -0.5 : 0.5) * th;
         pos[q] = P.x + R.x * lat + B.x * nn; pos[q + 1] = P.y + R.y * lat + B.y * nn; pos[q + 2] = P.z + R.z * lat + B.z * nn;
         col[q] = c.r * shade; col[q + 1] = c.g * shade; col[q + 2] = c.b * shade;
+        if (silk) { const r1 = q / 3; aU[r1] = k / (N - 1); aS[r1] = s; aL[r1] = v; aC[q] = P.x; aC[q + 1] = P.y; aC[q + 2] = P.z; aB[q] = B.x; aB[q + 1] = B.y; aB[q + 2] = B.z; }
       }
     }
   }
@@ -104,8 +109,14 @@ function sweepRibbon(ctrl, o = {}) {
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setIndex(new THREE.BufferAttribute(idx, 1));
+  if (silk) {
+    g.setAttribute('aU', new THREE.BufferAttribute(aU, 1)); g.setAttribute('aS', new THREE.BufferAttribute(aS, 1)); g.setAttribute('aL', new THREE.BufferAttribute(aL, 1));
+    g.setAttribute('aC', new THREE.BufferAttribute(aC, 3)); g.setAttribute('aB', new THREE.BufferAttribute(aB, 3));
+  }
   g.computeVertexNormals(); g.computeBoundingSphere(); g.computeBoundingBox();
   g.userData.grow = { cap0, seg, segs: N - 1, total: m };
+  g.userData.length = L;
+  if (samples) g.userData.samples = samples;
   return g;
 }
 function growRibbon(g, f) {
@@ -325,74 +336,221 @@ function setRibbonStyle(style) {
   ribbonMat.flatShading = ribbonStyle().flat; ribbonMat.needsUpdate = true;
   scheduleSkin(0, { own: true });
 }
-/* the giant ribbon's centre line through the day's sculptures, with a second strand */
+/* ---------- silk: the sequence ribbon's material ----------
+   Satin-like (sheen, soft highlights) instead of matt plaster. A shader grows the ribbon: its tip narrows to a point
+   and travels along the sequence (uGrow 0 → 1), and a slow wave runs down the silk while it is shown. */
+const SILK_WHITE = new THREE.Color(0xf3ede4), STRAND_TONE = new THREE.Color(0xe6d8c2);
+const SILK_GAP = [0.08, 0.16], SILK_FACE = [0.04, 0.08]; // the two strands: beyond the band's edges, and off its faces inside a loop
+const silkU = { uGrow: { value: 1 }, uTime: { value: 0 } };
+function silkPatch(sh) {
+  sh.uniforms.uGrow = silkU.uGrow; sh.uniforms.uTime = silkU.uTime;
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', `#include <common>
+      attribute float aU; attribute float aS; attribute float aL; attribute vec3 aC; attribute vec3 aB;
+      uniform float uGrow; uniform float uTime; varying float vRibU;`)
+    .replace('#include <begin_vertex>', `#include <begin_vertex>
+      float ribK = clamp((uGrow - aU) / 0.035, 0.0, 1.0); ribK = ribK * ribK * (3.0 - 2.0 * ribK);
+      transformed = aC + (transformed - aC) * ribK;
+      transformed += aB * sin(6.2831853 * (aS / 6.0 - uTime * 0.075) + aL * 0.6) * (0.035 + 0.045 * abs(aL)) * ribK;
+      vRibU = aU;`);
+  sh.fragmentShader = sh.fragmentShader
+    .replace('#include <common>', '#include <common>\nuniform float uGrow; varying float vRibU;')
+    .replace('void main() {', 'void main() {\n  if (vRibU > uGrow + 0.0005) discard;');
+}
+const silkMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0, sheen: 1, sheenRoughness: 0.32, sheenColor: new THREE.Color(0xfff3e2), clearcoat: 0.2, clearcoatRoughness: 0.45, side: THREE.DoubleSide, envMapIntensity: 0.75 });
+silkMat.onBeforeCompile = silkPatch;
+const silkDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide });
+silkDepth.onBeforeCompile = silkPatch;
+function silkMesh(geo) { const m = new THREE.Mesh(geo, silkMat); m.customDepthMaterial = silkDepth; m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; return m; }
+/* unroll the sequence ribbon from the vault, sculpture after sculpture */
+function growSilk(dur) {
+  if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); skinGrow = null; }
+  if (!skinMesh || reduceMotion) { silkU.uGrow.value = 1; return; }
+  const L = skinMesh.geometry.userData.length || 60;
+  silkU.uGrow.value = 0;
+  skinGrow = tween(dur || THREE.MathUtils.clamp(L * 0.055, 5, 10), (e, raw) => { silkU.uGrow.value = raw < 1 ? raw * raw * (3 - 2 * raw) * 1.02 : 1.05; });
+}
+
+/* how far a figure reaches from its plinth's axis in 32 directions, at any height (cached per work and geometry) */
+const footCache = new Map();
+function footprintOf(vp) {
+  const geo = vp.fig && vp.fig.geometry;
+  if (!geo) { const r = vp.bounds ? Math.max(vp.bounds.max.x - vp.bounds.min.x, vp.bounds.max.z - vp.bounds.min.z) / 2 : 0.5; return () => r; }
+  const key = vp.work + '|' + geo.uuid;
+  if (footCache.has(key)) return footCache.get(key);
+  const K = 32, r = new Float32Array(K), P = geo.attributes.position.array;
+  for (let i = 0; i < P.length; i += 3) {
+    const x = P[i], z = P[i + 2], d = Math.hypot(x, z), q = Math.floor(((Math.atan2(z, x) + 2 * Math.PI) % (2 * Math.PI)) / (2 * Math.PI) * K) % K;
+    if (d > r[q]) r[q] = d;
+  }
+  const o = Float32Array.from(r), step = 2 * Math.PI / K;
+  for (let q = 0; q < K; q++) r[q] = Math.max(o[q], o[(q + 1) % K] * Math.cos(step), o[(q + K - 1) % K] * Math.cos(step), o[(q + 2) % K] * Math.cos(2 * step), o[(q + K - 2) % K] * Math.cos(2 * step), 0.12);
+  const f = (th) => { const g = (((th / (2 * Math.PI)) % 1 + 1) % 1) * K, q0 = Math.floor(g) % K, q1 = (q0 + 1) % K, b = g - Math.floor(g); return r[q0] * (1 - b) + r[q1] * b; };
+  footCache.set(key, f);
+  return f;
+}
+/* the sequence ribbon's centre line: for each sculpture of the day a banked loop (entering high and leaving low, or the
+   other way round, alternately), and between them a ribbon that rises over sculptures and dips into the gaps */
 function sequencePath(T, meshes) {
-  const main = [], second = [], tint = (i, k) => RIBBON_WHITE.clone().lerp(new THREE.Color(paletteFor(i)[2]), 0.24 + 0.04 * (k % 2));
+  const tint = (i) => SILK_WHITE.clone().lerp(new THREE.Color(paletteFor(i)[2]), 0.2);
+  // each figure's footprint: how far it reaches in 32 directions (all heights), so a loop can hug it closely
+  const feet = V.map(vp => footprintOf(vp));
+  const coilOf = new Map(), K = 32, sec = (q) => q / K * 2 * Math.PI, sm = (u) => u * u * (3 - 2 * u);
+  const lerpK = (arr) => (th) => { const g = (((th / (2 * Math.PI)) % 1 + 1) % 1) * K, q0 = Math.floor(g) % K, b = g - Math.floor(g); return arr[q0] * (1 - b) + arr[(q0 + 1) % K] * b; };
   const coils = T.map((i, k) => {
-    const vp = V[i], mesh = meshes[k], bb = mesh ? mesh.bounds : { min: rv3(-0.4, 0, -0.3), max: rv3(0.4, 1.6, 0.3) };
-    const H = bb.max.y, p = S.pos[i], hours = p.act ? (p.act.hours || CLASS[p.act.cls].dur) : 1;
-    // the coil hugs the figure (its own pose ribbons give way to it) and keeps clear of the neighbouring sculptures
-    let room = 9;
-    V.forEach((o) => { if (o === vp || !o.bounds) return; const r = Math.max(o.bounds.max.x - o.bounds.min.x, o.bounds.max.z - o.bounds.min.z) / 2; room = Math.min(room, Math.hypot(o.x - vp.x, o.z - vp.z) - r - 0.32); });
-    const rx = Math.max((bb.max.x - bb.min.x) / 2 + 0.2, vp.scaleX + 0.1), rz = Math.max((bb.max.z - bb.min.z) / 2 + 0.2, vp.scaleZ + 0.1);
-    const out = THREE.MathUtils.clamp(room - Math.max(rx, rz) - 0.15, 0.16, 0.36);
-    return { i, x: vp.x, z: vp.z, H, s: k % 2 ? -1 : 1, w: THREE.MathUtils.clamp(0.26 + 0.08 * Math.log2(1 + hours), 0.26, 0.5), rx, rz, out, top: PT + H + 0.3, bot: PT + 0.24, col: tint(i, k) };
-  });
-  const tallest = (ax, az, bx, bz, skip) => { // the highest sculpture (with its pose ribbons) under the line a → b
-    let y = 0; const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1;
-    V.forEach((vp, j) => {
-      if (skip.includes(j) || !vp.fig) return;
-      const t = Math.max(0, Math.min(1, ((vp.x - ax) * dx + (vp.z - az) * dz) / l2)), d = Math.hypot(ax + dx * t - vp.x, az + dz * t - vp.z);
-      if (d < Math.max(vp.scaleX, vp.scaleZ) + 1.0) y = Math.max(y, PT + Math.max(vp.bounds ? vp.bounds.max.y : 1.8, vp.ribTop || 0) + 0.5);
+    const vp = V[i], mesh = meshes[k], H = mesh ? mesh.bounds.max.y : (vp.bounds ? vp.bounds.max.y : 1.6), p = S.pos[i], foot = feet[i];
+    const hours = p.act ? (p.act.hours || CLASS[p.act.cls].dur) : 1;
+    const w = THREE.MathUtils.clamp(0.66 + 0.1 * Math.log2(1 + hours), 0.66, 1.0); // the main ribbon, wide like a silk sash
+    // it arrives from the previous sculpture, turns round this one (0.75–1.75 turns, alternating direction) and leaves towards the next
+    const s = k % 2 ? -1 : 1, pv = k ? V[T[k - 1]] : null, nx = k < T.length - 1 ? V[T[k + 1]] : null;
+    const thIn = pv ? Math.atan2(pv.z - vp.z, pv.x - vp.x) : (nx ? Math.atan2(nx.z - vp.z, nx.x - vp.x) + Math.PI * 0.8 : 0.5);
+    const thOut = nx ? Math.atan2(nx.z - vp.z, nx.x - vp.x) : thIn + Math.PI * 0.9;
+    const dd = ((s * (thOut - thIn)) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI), sweep = dd < 1.5 * Math.PI ? dd + 2 * Math.PI : dd, turns = sweep / (2 * Math.PI);
+    // the loop keeps clear of the neighbours: of their figure, or half the way to a neighbour that has its own loop (a half-plane each)
+    const limits = [];
+    V.forEach((o, j) => {
+      if (j === i || !o.bounds) return;
+      const d = Math.hypot(o.x - vp.x, o.z - vp.z), th = Math.atan2(o.z - vp.z, o.x - vp.x);
+      if (d > 6) return;
+      limits.push({ th, max: T.includes(j) ? d / 2 - 0.04 : d - feet[j](th + Math.PI) - 0.26 });
     });
+    // room in each direction for the silk's sideways extent (twice, as the loop runs at foot + 0.12 + e)
+    const room = new Float32Array(K);
+    for (let q = 0; q < K; q++) { let a = 1e9; for (const l of limits) { const cs = Math.cos(sec(q) - l.th); if (cs > 0.05) a = Math.min(a, l.max / cs); } room[q] = a - foot(sec(q)) - 0.18; }
+    // half extents of the banked silk with its strands (which hug the band inside a loop): e sideways, v up;
+    // the extra 0.1 covers the cupped section, the travelling wave and the strands' own width
+    const W0 = w * 0.9, B0 = 0.2;
+    const ext = (b, wq, g) => { const rR = wq * 0.515 + SILK_GAP[1] * g, rB = 0.05 + SILK_FACE[1] * g; return [Math.hypot(rR * Math.sin(b), rB * Math.cos(b)) + 0.1, Math.hypot(rR * Math.cos(b), rB * Math.sin(b)) + 0.1]; };
+    // per direction the silk lies as flat as the room allows; where even standing up it does not fit, it narrows there
+    // (but first the strands come closer, if that keeps it wide)
+    const bet = new Float32Array(K), wid = new Float32Array(K);
+    const fit = (g) => {
+      let narrowest = W0;
+      const rB = 0.05 + SILK_FACE[1] * g, rR = W0 * 0.515 + SILK_GAP[1] * g;
+      for (let q = 0; q < K; q++) {
+        const m = room[q] / 2 - 0.1;
+        let b = m > rB ? Math.asin(Math.min(1, Math.sqrt(Math.max(0, m * m - rB * rB) / (rR * rR - rB * rB)))) : 0, wq = W0;
+        if (b < B0) { b = B0; const rmax = Math.sqrt(Math.max(0, m * m - (rB * Math.cos(B0)) ** 2)) / Math.sin(B0); wq = Math.max(0.3, Math.min(W0, (rmax - SILK_GAP[1] * g) / 0.515)); }
+        bet[q] = Math.min(1.05, b); wid[q] = wq; narrowest = Math.min(narrowest, wq);
+      }
+      return narrowest;
+    };
+    let gk = 1;
+    for (const g of [1, 0.8, 0.6, 0.4]) { gk = g; if (fit(g) >= W0 - 1e-6) break; }
+    // smooth bank and width round the loop so the silk turns and narrows gradually (min, then mean over ±2 directions:
+    // never more than the room allows)
+    const soften = (a) => { const er = a.map((_, q) => Math.min(...[-2, -1, 0, 1, 2].map(o => a[(q + o + K) % K]))); return er.map((_, q) => [-2, -1, 0, 1, 2].reduce((t, o) => t + er[(q + o + K) % K], 0) / 5); };
+    const beta = soften(bet), width = soften(wid);
+    const eK = beta.map((b, q) => ext(b, width[q], gk)[0]), vext = Math.max(...Array.from(beta, (b, q) => ext(b, width[q], gk)[1]));
+    const radK = eK.map((e, q) => foot(sec(q)) + 0.12 + e);
+    const lo = PT + vext + 0.08;
+    // turns of the loop must not stack on each other: one turn apart they are at least 2·vext + 0.1 apart in height
+    const hi = Math.max(PT + H + 0.45, turns > 1 ? lo + (2 * vext + 0.1) / sm(1 / turns) : 0);
+    const c = { i, x: vp.x, z: vp.z, H, foot, s, w, wc: Math.min(...width), gk, vext, thIn, thOut, sweep, turns, hi, lo, high: k % 2 === 0, col: tint(i) };
+    c.rad = lerpK(radK); c.e = lerpK(eK); c.beta = lerpK(beta); c.width = lerpK(width); c.bank = (th) => s * c.beta(th);
+    c.at = (th, y, f = 1) => { const r = c.rad(th) * f; return rv3(c.x + r * Math.cos(th), y, c.z + r * Math.sin(th)); };
+    c.tan = (th) => c.at(th + c.s * 0.01, 0).sub(c.at(th, 0)).setY(0).normalize();
+    let outer = 0; for (let q = 0; q < K; q++) outer = Math.max(outer, radK[q] + eK[q]); c.outer = outer + 0.08;
+    coilOf.set(i, c);
+    return c;
+  });
+  // what a free stretch of ribbon must stay above: every sculpture with its pose ribbons, and the loops of the day
+  const obstacles = V.map((vp, j) => {
+    const c = coilOf.get(j);
+    if (c) return { j, x: c.x, z: c.z, r: c.outer, top: c.hi + c.vext + 0.25 };
+    const b = vp.bounds; let r = 0; for (let q = 0; q < 32; q++) r = Math.max(r, feet[j](q / 32 * 2 * Math.PI));
+    return { j, x: vp.x, z: vp.z, r: Math.max(r + 0.3, Math.max(vp.scaleX, vp.scaleZ) + 0.1), top: PT + Math.max(b ? b.max.y : 1.8, vp.ribTop || 0) + 0.35 };
+  });
+  const reach = (w) => w / 2 + 0.48; // half the main silk plus the strands winding round it
+  const plinths = V.map(vp => ({ x: vp.x, z: vp.z, r: Math.max(vp.scaleX, vp.scaleZ) * 1.32 + 0.05 })); // never skipped, not even a loop's own
+  const clearance = (x, z, w, skip) => {
+    let y = 0.45 + reach(w);
+    for (const o of obstacles) { if (skip.includes(o.j)) continue; if (Math.hypot(x - o.x, z - o.z) < o.r + reach(w)) y = Math.max(y, o.top + reach(w)); }
+    for (const o of plinths) if (Math.hypot(x - o.x, z - o.z) < o.r + reach(w)) y = Math.max(y, PT + 0.05 + reach(w));
     return y;
   };
-  let roll = 0;
-  const push = (p, w, rl, amp, col, coil, kind) => {
-    main.push({ p, w, roll: rl, amp, col });
-    // second strand: just outside the coil, or below and beside the arc
-    let q;
-    if (coil) { const d = rv3(p.x - coil.x, 0, p.z - coil.z).normalize(); q = p.clone().addScaledVector(d, coil.out * 0.45).add(rv3(0, -0.12, 0)); }
-    else q = p.clone().add(rv3(0, kind === 'tail' ? -0.4 : -0.55, 0));
-    second.push({ p: q, w: w * 0.38, roll: rl + 0.7, amp: amp * 1.4, col });
-  };
-  const ang = (c, x, z) => Math.atan2(z - c.z, x - c.x);
+  const ctrl = [];
+  const P = (p, w, roll, col, free, skip, g = 1) => ctrl.push({ p, w, roll, amp: 0.006, col, free, skip, g });
   coils.forEach((c, k) => {
     const prev = coils[k - 1], next = coils[k + 1];
-    const thIn = prev ? ang(c, prev.x, prev.z) : ang(c, c.x + 0.6, c.z + 2), thOut = next ? ang(c, next.x, next.z) : thIn + Math.PI;
-    const at = (th, y, rr) => rv3(c.x + (c.rx + rr) * Math.cos(th), y, c.z + (c.rz + rr) * Math.sin(th));
-    if (!prev) { // the ribbon comes down from the vault
-      const o = rv3(Math.cos(thIn), 0, Math.sin(thIn)), I = at(thIn, c.top, 0);
-      push(I.clone().addScaledVector(o, 2.6).setY(7.4), 0.04, -1.8, 0.05, c.col, null, 'tail');
-      push(I.clone().addScaledVector(o, 2.1).add(rv3(0.4 * c.s, 0, 0)).setY(5.9), c.w * 0.7, -1.2, 0.06, c.col, null, 'tail');
-      push(I.clone().addScaledVector(o, 1.1).setY(c.top + 1.3), c.w, -0.5, 0.05, c.col, null, 'tail');
-      roll = 0;
+    const thIn = c.thIn, thOut = c.thOut, sweep = c.sweep, bIn = c.bank(thIn), bOut = c.bank(thOut);
+    const at = c.at, tan = c.tan;
+    const yIn = c.high ? c.hi : c.lo, yOut = c.high ? c.lo : c.hi;
+    if (!prev) { // the silk comes down from the vault
+      const away = rv3(Math.cos(thIn), 0, Math.sin(thIn)), I = at(thIn, yIn), t0 = tan(thIn);
+      P(I.clone().addScaledVector(away, 3.2).addScaledVector(t0, -2.2).setY(7.6), 0.12, bIn - 1.6, c.col, 1, [c.i]);
+      P(I.clone().addScaledVector(away, 2.4).addScaledVector(t0, -1.7).setY(5.6), c.w * 0.7, bIn - 1.0, c.col, 1, [c.i]);
+      P(I.clone().addScaledVector(away, 1.3).addScaledVector(t0, -1.0).setY(yIn + 1.2), c.w, bIn - 0.4, c.col, 1, [c.i]);
+    } else { // arrive along the loop's own direction
+      P(at(thIn, yIn).addScaledVector(tan(thIn), -0.9).setY(yIn + (c.high ? 0.25 : 0.1)), c.width(thIn), bIn, c.col, 0.01, [c.i], c.gk);
     }
-    // coil down (inner), turn at the bottom, coil up (outer) and leave towards the next sculpture
-    const nd = c.H > 1.3 ? 1.25 : 1, nD = Math.round(14 * nd);
-    for (let j = 0; j <= nD; j++) { const u = j / nD; push(at(thIn + c.s * 2 * Math.PI * nd * u, c.top - (c.top - c.bot) * u, 0), c.w, roll + 0.22 * Math.sin(u * 7), 0.022, c.col, c, 'coil'); }
-    const thB = thIn + c.s * 2 * Math.PI * nd, d = ((c.s * (thOut - thB)) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI), sweep = d < Math.PI ? d + 2 * Math.PI : d, nU = Math.max(10, Math.round(14 * sweep / (2 * Math.PI)));
-    for (let j = 1; j <= nU; j++) { const u = j / nU, ramp = THREE.MathUtils.smoothstep(u, 0, 0.22); push(at(thB + c.s * sweep * u, c.bot + (c.top + 0.1 - c.bot) * u, c.out * ramp), c.w * 0.92, roll - 0.2 * Math.sin(u * 6), 0.022, c.col, c, 'coil'); }
-    const E = main[main.length - 1].p, oE = rv3(Math.cos(thOut), 0, Math.sin(thOut));
-    if (next) { // a high arc over the board, a half twist on the way
-      const I = rv3(next.x + (next.rx) * Math.cos(ang(next, c.x, c.z)), next.top, next.z + (next.rz) * Math.sin(ang(next, c.x, c.z)));
-      const yA = Math.max(c.top, next.top) + 0.55 + 0.38 * (k % 3), yB = Math.max(yA, tallest(c.x, c.z, next.x, next.z, [c.i, next.i]));
-      const perp = rv3(-(I.z - E.z), 0, I.x - E.x).normalize().multiplyScalar(0.55 * c.s), dist = Math.hypot(I.x - E.x, I.z - E.z);
-      const wB = (c.w + next.w) * 0.58, colM = c.col.clone().lerp(next.col, 0.5), oI = rv3(Math.cos(ang(next, c.x, c.z)), 0, Math.sin(ang(next, c.x, c.z)));
-      push(E.clone().addScaledVector(oE, 0.6).setY(E.y + 0.5), c.w * 1.05, roll + Math.PI * 0.15, 0.035, c.col, null, 'arc');
-      const mids = dist > 9 ? [0.3, 0.5, 0.7] : [0.36, 0.64];
-      mids.forEach((t, j) => push(E.clone().lerp(I, t).add(perp.clone().multiplyScalar(Math.sin(Math.PI * t))).setY(yB + 0.25 * Math.sin(Math.PI * t) + (j % 2 ? -0.12 : 0.12)), wB, roll + Math.PI * (0.25 + 0.5 * t), 0.045, colM, null, 'arc'));
-      push(I.clone().addScaledVector(oI, 0.6).setY(I.y + 0.5), next.w * 1.05, roll + Math.PI * 0.85, 0.035, next.col, null, 'arc');
-      roll += Math.PI;
-    } else { // and rises away towards the vault
-      push(E.clone().addScaledVector(oE, 1.0).setY(E.y + 1.0), c.w, roll + 0.4, 0.03, c.col, null, 'tail');
-      push(E.clone().addScaledVector(oE, 1.9).add(rv3(0, 0, 0.5 * c.s)).setY(E.y + 2.4), c.w * 0.8, roll + 0.9, 0.03, c.col, null, 'tail');
-      push(E.clone().addScaledVector(oE, 2.3).add(rv3(0.3 * c.s, 0, 1.0 * c.s)).setY(E.y + 3.7), c.w * 0.5, roll + 1.4, 0.025, c.col, null, 'tail');
-      push(E.clone().addScaledVector(oE, 1.8).add(rv3(0.5 * c.s, 0, 1.4 * c.s)).setY(E.y + 4.4), 0.03, roll + 1.8, 0.02, c.col, null, 'tail');
+    // the loop: banked (flatter where there is room, standing up towards close neighbours), easing from one height to the other
+    const nC = Math.max(12, Math.round(16 * c.turns));
+    for (let j = 0; j <= nC; j++) { const u = j / nC, th = thIn + c.s * sweep * u; P(at(th, yIn + (yOut - yIn) * sm(u), 1 + 0.03 * Math.sin(2 * Math.PI * u)), c.width(th), c.bank(th), c.col, 0, [c.i], c.gk); }
+    const E = at(thOut, yOut), tE = tan(thOut);
+    if (next) { // the free stretch to the next sculpture: leave along the loop, rise over what is in the way, dip into the gaps
+      const nThIn = next.thIn, nB0 = next.bank(nThIn), nYIn = next.high ? next.hi : next.lo;
+      const I = next.at(nThIn, nYIn), tI = next.tan(nThIn);
+      const A = E.clone().addScaledVector(tE, 0.9), Bp = I.clone().addScaledVector(tI, -0.9);
+      P(A.clone().setY(yOut + (c.high ? 0.1 : 0.25)), c.width(thOut), bOut, c.col, 0.01, [c.i], c.gk);
+      const dist = Math.hypot(Bp.x - A.x, Bp.z - A.z), nB = Math.max(3, Math.round(dist / 1.0)), waves = Math.max(1, Math.round(dist / 5.5));
+      const perp = rv3(-(Bp.z - A.z), 0, Bp.x - A.x).normalize().multiplyScalar(0.45 * c.s), wB = (c.w + next.w) / 2;
+      for (let j = 1; j <= nB; j++) {
+        const t = j / (nB + 1), q = A.clone().lerp(Bp, t).addScaledVector(perp, Math.sin(Math.PI * t));
+        const base = yOut + (nYIn - yOut) * sm(t) + (c.high ? -0.15 : 0.55 + 0.04 * dist) * Math.sin(Math.PI * t) + 0.32 * Math.sin(2 * Math.PI * waves * t + k);
+        q.y = base;
+        const fr = sm(Math.min(1, Math.min(j, nB + 1 - j) / 2)); // strands open out gradually away from the loops
+        const wc0 = c.width(thOut) + (next.width(nThIn) - c.width(thOut)) * t;
+        P(q, (wc0 + (wB - wc0) * fr) * (1 + 0.12 * Math.sin(Math.PI * t)), bOut + (nB0 - bOut) * sm(t) + 0.3 * Math.sin(2 * Math.PI * t), c.col.clone().lerp(next.col, t), fr, [c.i, next.i], c.gk + (next.gk - c.gk) * t + (1 - Math.max(c.gk, next.gk)) * fr);
+      }
+      P(Bp.clone().setY(nYIn + (next.high ? 0.25 : 0.1)), next.width(nThIn), nB0, next.col, 0.01, [next.i], next.gk);
+    } else { // and rises back to the vault in a slow curl
+      const away = rv3(E.x - c.x, 0, E.z - c.z).normalize();
+      P(E.clone().addScaledVector(tE, 1.0).setY(yOut + 0.5), c.w, bOut + 0.3, c.col, 1, [c.i]);
+      P(E.clone().addScaledVector(tE, 1.8).addScaledVector(away, 1.0).setY(yOut + 1.9), c.w * 0.95, bOut + 0.8, c.col, 1, [c.i]);
+      P(E.clone().addScaledVector(tE, 1.6).addScaledVector(away, 2.4).setY(Math.max(yOut + 3.4, 4.6)), c.w * 0.7, bOut + 1.4, c.col, 1, [c.i]);
+      P(E.clone().addScaledVector(tE, 0.5).addScaledVector(away, 2.9).setY(Math.max(yOut + 4.6, 6.2)), c.w * 0.35, bOut + 2.0, c.col, 1, [c.i]);
+      P(E.clone().addScaledVector(tE, -0.6).addScaledVector(away, 2.4).setY(Math.max(yOut + 5.2, 7.0)), 0.1, bOut + 2.4, c.col, 1, [c.i]);
     }
   });
-  main[0].w = second[0].w = 0.02;
-  return { main, second };
+  // free stretches keep off the sculptures they come from and go to (sideways), and stay above whatever else is under them;
+  // then the heights are smoothed into soft swells (never below the clearance)
+  for (const q of ctrl) {
+    if (!(q.free > 0)) continue;
+    const rch = q.w / 2 + 0.24 + 0.24 * q.free; // the band and its strands, sideways
+    for (const j of q.skip) {
+      const vp = V[j]; if (!vp || !vp.bounds || q.p.y - rch > PT + vp.bounds.max.y) continue;
+      const dx = q.p.x - vp.x, dz = q.p.z - vp.z, d = Math.hypot(dx, dz) || 1e-6, need = feet[j](Math.atan2(dz, dx)) + 0.12 + rch;
+      if (d < need) { q.p.x = vp.x + dx / d * need; q.p.z = vp.z + dz / d * need; }
+    }
+  }
+  const clr = ctrl.map(q => (q.free > 0 ? clearance(q.p.x, q.p.z, q.w, q.skip) : -1e9));
+  for (let i = 0; i < ctrl.length; i++) if (clr[i] > ctrl[i].p.y) ctrl[i].p.y = clr[i];
+  for (let pass = 0; pass < 4; pass++) {
+    const y = ctrl.map(q => q.p.y);
+    for (let i = 1; i < ctrl.length - 1; i++) if (ctrl[i].free > 0) ctrl[i].p.y = Math.max(clr[i], (y[i - 1] + 2 * y[i] + y[i + 1]) / 4);
+  }
+  ctrl[0].w = 0.1;
+  return ctrl;
+}
+/* thin strands that wind round the main silk, each at its own pace: inside a loop they hug the band's faces
+   (SILK_FACE off the surface, SILK_GAP beyond its edges); over the free stretches they open out into round spirals */
+function silkStrands(samples) {
+  const defs = [
+    { gap: SILK_GAP[0], face: SILK_FACE[0], extra: 0.12, lambda: 11, dir: 1, ph: 0.3, w: 0.1 },
+    { gap: SILK_GAP[1], face: SILK_FACE[1], extra: 0.22, lambda: 14, dir: -1, ph: 2.6, w: 0.07 },
+  ];
+  const L = samples[samples.length - 1].s;
+  return defs.map((d) => {
+    const ctrl = []; let last = -1e9;
+    samples.forEach((q, k) => {
+      if (q.s - last < 0.5 && k !== samples.length - 1) return; last = q.s;
+      const rR = q.w / 2 + (d.gap + d.extra * q.free) * q.g, rB0 = 0.05 + d.face * q.g, rB = rB0 + (rR - rB0) * q.free, ph = d.ph + d.dir * 2 * Math.PI * q.s / d.lambda;
+      const taper = Math.min(1, q.s / 2.5, (L - q.s) / 2.5);
+      ctrl.push({ p: q.p.clone().addScaledVector(q.R, rR * Math.cos(ph)).addScaledVector(q.B, rB * Math.sin(ph)), w: Math.max(0.01, d.w * taper), roll: ph * 0.5, amp: 0, col: q.col.clone().lerp(STRAND_TONE, 0.5) });
+    });
+    return ctrl;
+  });
 }
 async function buildSkin() {
   const job = ++skinJob;
@@ -401,16 +559,19 @@ async function buildSkin() {
   if (!T.length) return;
   const meshes = await Promise.all(T.map(i => meshOf(S.pos[i].work).catch(() => null)));
   if (job !== skinJob) return;
-  const { main, second } = sequencePath(T, meshes), st = ribbonStyle();
-  const g1 = sweepRibbon(main, { thick: 0.03, perMetre: st.flat ? 8 : 17, maxN: 3600, freq: 0.75, cup: 0.18, phase: 0.4 });
-  const g2 = sweepRibbon(second, { M: Math.max(3, st.M - 3), thick: 0.018, perMetre: st.flat ? 8 : 14, maxN: 3000, freq: 1.1, cup: 0.1, phase: 2.2 });
-  if (!g1) return;
+  const main = sweepRibbon(sequencePath(T, meshes), { silk: true, keep: true, M: 12, thick: 0.022, perMetre: 12, maxN: 3200, cup: 0.07, freq: 0.35, phase: 0.4, wobble: 0.25, ampScale: 1 });
+  if (!main) return;
   if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); skinGrow = null; }
   if (skinMesh) { scene.remove(skinMesh); skinMesh.geometry.dispose(); skinMesh.children.forEach(m => m.geometry.dispose()); }
-  skinMesh = ribbonMesh(g1);
-  if (g2) skinMesh.add(ribbonMesh(g2));
+  skinMesh = silkMesh(main);
+  for (const ctrl of silkStrands(main.userData.samples)) {
+    const g = sweepRibbon(ctrl, { silk: true, M: 3, thick: 0.01, perMetre: 9, maxN: 2600, cup: 0.15, wobble: 0.2, ampScale: 0 });
+    if (g) skinMesh.add(silkMesh(g));
+  }
+  delete main.userData.samples;
+  skinMesh.onBeforeRender = () => { silkU.uTime.value = performance.now() / 1000; };
   skinMesh.userData.ready = true;
   scene.add(skinMesh);
   applyView();
-  if (S.view === 'skin' || S.view === 'both') skinGrow = growGroup(skinMesh, 3.6);
+  if (S.view === 'skin' || S.view === 'both') growSilk(); else silkU.uGrow.value = 1;
 }

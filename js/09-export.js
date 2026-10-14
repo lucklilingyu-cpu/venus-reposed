@@ -10,7 +10,7 @@ function sequenceData() {
     source: S.source,
     units: 'metres, Y up; sequence runs along X; figures face +Z; plinth top at y = ' + PT,
     atlas: 'Goddess Sculpture Atlas (group research site); meshes are its display copies, scaled per pose class',
-    skin: { form: 'cast-plaster ribbons', style: S.skinStyle, poseRibbons: S.own, sequenceRibbon: 'one ribbon + second strand: coils down and up around each sculpture of the day in order, high arcs between them', widthByDuration: true },
+    skin: { form: 'cast-plaster ribbons', style: S.skinStyle, poseRibbons: S.own, sequenceRibbon: 'silk: one wide main ribbon + two thin strands; coils round each sculpture of the day in order, rising and falling between them', widthByDuration: true },
     positions: S.pos.map((p, i) => {
       const r = REC[p.work];
       return {
@@ -60,7 +60,7 @@ function blenderPrompt() {
 The sequence runs along the X axis of the Cast Court model; each position names a Goddess Atlas model (atlas_id), its pose_class and a duration in hours.
 For each position, import that atlas model's original OBJ from the research folder, scale it to the same height, and place it on a plinth whose top is at y = ${PT}.
 skin.obj holds cast-plaster ribbons in world coordinates:
-- sequence_ribbon (and its second strand): one continuous ribbon that comes down from the vault, coils down and up around each sculpture of the day in sequence order, and arcs high over the board from one sculpture to the next; its width grows with the duration of each activity
+- sequence_ribbon (and its two thin strands): one continuous wide silk ribbon, smooth with few folds (think of the Dove chocolate silk adverts), that comes down from the vault, sweeps round each sculpture of the day in sequence order, and rises and falls in waves from one sculpture to the next; its width grows with the duration of each activity
 - pose_ribbon_NN_k: each sculpture's own ribbons — a band wrapping the body a little off its silhouette and leaving the shoulders in a scroll, ribbons flying off raised hands, or a band settling on the plinth
 Refine them as cast plaster drapery: keep the centre lines, give the ribbons 2–4 cm thickness with softened edges and deeper folds where the edges ruffle, and keep every ribbon at least 5 cm away from the sculptures and from each other.
 Give the sculptures a white glazed-ceramic material and the ribbons a matt white plaster with a light tint of each pose's palette. Put the result in a new collection "Skin". Report what you created.

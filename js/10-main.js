@@ -251,7 +251,7 @@ function frame() {
   })();
 })();
 /* DEBUG */
-window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, composer, bloom, renderer, hall, THREE, V, S, scene, camera, controls, get skin() { return skinMesh; }, flyToPosition, setView, applyDay, poseRecipe, sweepRibbon, skinOBJ };
+window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, composer, bloom, renderer, hall, THREE, V, S, scene, camera, controls, get skin() { return skinMesh; }, flyToPosition, setView, applyDay, poseRecipe, sweepRibbon, skinOBJ, rebuildSkin: buildSkin };
 window.__vr.showWorks = async (ids) => {
   S.day = ids.map(id => ({ cls: REC[id].cls || 'standing', g: null, label: '#' + id, time: null, hours: 1 }));
   S.pos = ids.map((id, k) => ({ orig: null, act: S.day[k], work: id, status: 'keep' }));
