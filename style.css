@@ -45,28 +45,26 @@ html[data-lighting="night"] .sculpture-year{color:#eee2cc}
 @media(prefers-reduced-motion:reduce){.sculpture-caption{transition:none}}
 
 /* Pose-reference carousel: matching studies orbit the focused sculpture together. */
-.pose-slideshow{position:absolute;z-index:2;width:0;height:0;pointer-events:none;opacity:1;transition:opacity .7s ease;--orbit-radius:190px;}
+.pose-slideshow{position:absolute;z-index:2;width:0;height:0;perspective:920px;perspective-origin:center center;pointer-events:none;opacity:1;transition:opacity .7s ease;--orbit-radius:248px;}
 .pose-slideshow.hidden{opacity:0}
-.pose-orbit{position:absolute;left:0;top:0;width:0;height:0;animation:pose-carousel-turn 24s linear infinite;}
-.pose-orbit-slot{position:absolute;left:0;top:0;transform:rotate(var(--slot-angle)) translateY(calc(0px - var(--orbit-radius)));transform-origin:0 0;}
+.pose-orbit{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;animation:pose-carousel-turn 28s linear infinite;}
+.pose-orbit-slot{position:absolute;left:0;top:0;transform:rotateY(var(--slot-angle)) translateZ(var(--orbit-radius));transform-style:preserve-3d;transform-origin:0 0;}
 .pose-orbit-slot[hidden]{display:none}
-.pose-orbit-card{position:absolute;left:0;top:0;width:clamp(88px,8.2vw,116px);margin:0;padding:5px 5px 22px;box-sizing:border-box;border:1px solid rgba(255,255,255,.72);border-radius:3px;background:rgba(248,245,237,.42);box-shadow:0 12px 35px rgba(33,29,23,.14);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:.62;transform:translate(-50%,-50%) rotate(var(--counter-angle));transition:opacity .7s ease;}
-.pose-orbit-face{animation:pose-carousel-counterturn 24s linear infinite;}
-.pose-orbit-card img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;filter:saturate(.72) contrast(.96);opacity:.76;transition:opacity .65s ease;}
+.pose-orbit-card{position:absolute;left:0;top:0;width:clamp(100px,10vw,138px);margin:0;padding:5px 5px 22px;box-sizing:border-box;border:1px solid rgba(255,255,255,.68);border-radius:3px;background:rgba(248,245,237,.3);box-shadow:0 12px 35px rgba(33,29,23,.12);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:.56;transform:translate(-50%,-50%);backface-visibility:hidden;transition:opacity .7s ease;}
+.pose-orbit-card img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;filter:saturate(.68) contrast(.96);opacity:.72;}
 .pose-orbit-card figcaption{position:absolute;left:7px;right:7px;bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:9px/1.4 var(--font-serif);color:rgba(35,35,35,.72);}
 .pose-orbit-card.is-current{opacity:.76;z-index:2;}
-.pose-slideshow.changing .pose-orbit-card img{opacity:.28;}
+.pose-slideshow.changing .pose-orbit-card img{opacity:.3;transition:opacity .65s ease;}
 .pose-slide-note{position:absolute;left:-72px;top:calc(var(--orbit-radius) + 36px);display:flex;gap:10px;align-items:center;padding:3px 8px;border:1px solid rgba(255,255,255,.48);border-radius:999px;background:rgba(248,245,237,.38);backdrop-filter:blur(8px);font:9px/1.4 var(--font-mono);letter-spacing:.06em;color:rgba(35,35,35,.7);white-space:nowrap;}
 .pose-slide-kicker{font-family:var(--font-serif);letter-spacing:.08em;}
-@keyframes pose-carousel-turn{to{transform:rotate(1turn)}}
-@keyframes pose-carousel-counterturn{to{transform:rotate(-1turn)}}
+@keyframes pose-carousel-turn{to{transform:rotateY(1turn)}}
 @media(max-width:760px){
-  .pose-slideshow{--orbit-radius:132px;}
-  .pose-orbit-card{width:clamp(68px,17vw,92px);padding:4px 4px 19px;}
+  .pose-slideshow{perspective:720px;--orbit-radius:164px;}
+  .pose-orbit-card{width:clamp(78px,19vw,98px);padding:4px 4px 19px;}
   .pose-orbit-card figcaption{font-size:8px;}
   .pose-slide-note{left:-58px;top:calc(var(--orbit-radius) + 28px);padding:2px 6px;font-size:8px;}
 }
-@media(prefers-reduced-motion:reduce){.pose-slideshow,.pose-orbit,.pose-orbit-face,.pose-orbit-card,.pose-orbit-card img{transition:none;animation:none}}
+@media(prefers-reduced-motion:reduce){.pose-slideshow,.pose-orbit,.pose-orbit-card,.pose-orbit-card img{transition:none;animation:none}}
 
 .topbar{position:absolute;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;pointer-events:none}
 .topbar>*{pointer-events:auto}
