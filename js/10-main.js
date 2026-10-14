@@ -250,7 +250,7 @@ function frame() {
     setTimeout(waitForPoseGallery, 100);
   })();
 })();
-VAHallScan.load().then(group => { ExhibitionEnvelope.fitScan(group); renderer.shadowMap.needsUpdate = true; }).catch(() => {});
+VAHallScan.load().then(group => { ExhibitionEnvelope.fitScan(group); Architecture.apply(); renderer.shadowMap.needsUpdate = true; }).catch(() => {});
 
 /* DEBUG */
 window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, composer, bloom, renderer, hall, THREE, V, S, scene, camera, controls, get skin() { return skinMesh; }, flyToPosition, setView, applyDay, poseRecipe, sweepRibbon, skinOBJ, rebuildSkin: buildSkin };
