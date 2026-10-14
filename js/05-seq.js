@@ -433,8 +433,7 @@ function boardMotion(position, from, to, xFirst, straight, raw, y0 = 0) {
    - Sculptures outside the day randomly exchange free track squares when generating a sequence.
    - Plinths whose sculpture leaves are emptied (the sculpture shatters) and go to the nearest square that needs one;
      extra plinths sink into the water, missing ones rise out of it.
-   - Moves happen one after another in the order of the sequence (01, 02, …); a plinth waits until its square has been
-     cleared. Each move lifts the plinth, slides it along a rank or file, turns once, slides on and sets it down (2–3 s).
+   - All plinths start together and land together after 4.5 s, including a lift for unchanged positions.
    Returns, for each position, the time (ms from now) when its plinth has landed. */
 let lastMoves = [], boardFinishTimer = 0; // latest plan and completion marker
 function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
@@ -476,23 +475,14 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
     const c = target[i], g = vp.g; vp.x = c.x; vp.z = c.z;
     if (!animate) { g.position.set(c.x, 0, c.z); g.scale.setScalar(1); vp.fresh = false; return; }
     const dist = Math.abs(c.x - g.position.x) + Math.abs(c.z - g.position.z);
-    if (!vp.fresh && dist < 0.01 && Math.abs(g.position.y) < 0.01 && g.scale.x > 0.99) { arrive[i] = delay + 250; return; }
-    moves.push({ i, vp, from: at(vp), to: c, dist, fresh: vp.fresh, dur: vp.fresh ? 1.6 : 2 + Math.min(1, dist / 14) });
+    moves.push({ i, vp, from: at(vp), to: c, dist, fresh: vp.fresh, dur: 4.5 });
   });
   if (!animate) { lastMoves = []; canvas.dataset.movePlan = '[]'; return arrive; }
-  // order: sequence order, but a plinth waits for the one standing on its square to leave first
-  const near = (a, b) => d2(a, b) < 0.5, order = [], rem = moves.slice();
-  while (rem.length) {
-    let k = rem.findIndex(a => !rem.some(b => b !== a && !b.fresh && near(b.from, a.to)));
-    if (k < 0) k = 0; // two plinths trading squares: the first one goes
-    order.push(rem.splice(k, 1)[0]);
-  }
-  const STEP = Math.min(450, 5600 / Math.max(1, order.length)), still = V.filter((vp, i) => !moves.some(mv => mv.i === i));
-  let t = delay; const done = [];
+  // One shared start and duration: no sequence or occupied-square staggering.
+  const order = moves;
   for (const mv of order) {
-    let s = t;
-    for (const o of done) if (!o.fresh && near(o.from, mv.to)) s = Math.max(s, o.start + o.dur * 180); // the piece on my square has lifted and started to leave
-    mv.start = s; t = s + STEP; done.push(mv);
+    const s = delay;
+    mv.start = s;
     arrive[mv.i] = s + mv.dur * 1000;
     const { vp } = mv, g = vp.g, { x: x0, z: z0 } = mv.from, { x: x1, z: z1 } = mv.to, y0 = g.position.y, s0 = g.scale.x;
     if (mv.fresh) { // a new plinth rises out of the water on its square
@@ -500,10 +490,8 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
       vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { vp.moveTween = null; }); }, s);
       continue;
     }
-    // rook-like path: along the longer line first, unless a standing plinth is on that corner
-    const busy = (x, z) => still.some(o => (o.x - x) ** 2 + (o.z - z) ** 2 < 1.2);
-    let xFirst = Math.abs(x1 - x0) >= Math.abs(z1 - z0);
-    if (xFirst && busy(x1, z0) && !busy(x0, z1)) xFirst = false; else if (!xFirst && busy(x0, z1) && !busy(x1, z0)) xFirst = true;
+    // Rook-like path along the longer line first; all pieces are moving together.
+    const xFirst = Math.abs(x1 - x0) >= Math.abs(z1 - z0);
     const straight = Math.abs(x1 - x0) < 0.01 || Math.abs(z1 - z0) < 0.01;
     vp.moveTimer = setTimeout(() => {
       vp.moveTween = tween(mv.dur, (e, raw) => {
@@ -663,7 +651,7 @@ async function applyDay(day, opts = {}) {
   // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq) return;
-  const arrive = arrangeBoard(seq, animate, animate ? 600 : 0, previous.length > 0 && S.day.length > 0), t0 = performance.now();
+  const arrive = arrangeBoard(seq, animate, animate ? 350 : 0, previous.length > 0 && S.day.length > 0), t0 = performance.now();
   canvas.dataset.sequenceWorks = JSON.stringify(seq.map(p => ({ work: p.work, cls: p.act ? p.act.cls : null, background: !p.act, manual: p.status === 'manual' })));
   renderStrip(); renderData(); renderBars();
   const late = performance.now() - t0;

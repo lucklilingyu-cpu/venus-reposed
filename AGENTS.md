@@ -148,7 +148,7 @@ Movement update: green-tile bounds are `GREEN_BOUNDS` (x ±16.7, z ±4.8). The 3
 - **Chess moves**: `arrangeBoard(seq, animate, delay, shuffleRest)` puts the plinths of a sequence on the board and reorders `V` to match `seq`:
   - a sculpture already on the board keeps its plinth and travels with it; sculptures outside the day randomly exchange free track squares on generation (Hungarian assignment with a high stationary cost); ordinary relayout keeps nearest assignment;
   - plinths whose sculpture leaves are emptied (shard burst) and go to the nearest open square; extra plinths sink, missing ones rise out of the water;
-  - moves run one after another in sequence order (01, 02, …, `STEP` ≤ 450 ms apart); a plinth whose square is still occupied waits until that plinth has lifted; each move lifts, slides along a rank or file, turns once and sets down, 2–3 s (`2 + dist/14`);
+  - all plinths start together with the same 4.5 s duration, including unchanged positions lifting in place; generation uses a 350 ms shared preparation delay and all land at 4850 ms. Never add sequence staggering or occupied-square waiting;
   - it returns the landing time of each position; `applyDay` waits for it before `setFigure` grows the new sculpture (shard/rise effect — keep it). `relayout()` re-plans after the track changes. `?debug` exposes the last plan as `__vr.moves`.
 - Each `V[i]` has `x`, `z`; anything that places things at a position (labels, picking, camera moves, export, walk collisions) must use both.
 - **Skin**: grows only through the day's positions (in track order), bridges stretched along the track tangent. The cut view (`S.cut`) is a horizontal plane at `PT + 1.1`, so you look down into the poses.

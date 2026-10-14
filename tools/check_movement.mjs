@@ -36,7 +36,10 @@ for (let run = 0; run < 50; run++) {
     assert(context.fitsCls(REC[next[i].work], act.cls), 'Same pose class retained');
     assert.notEqual(next[i].work, seq[i].work, 'Use another sculpture where alternatives exist');
   });
-  api.arrangeBoard(next, true, 0, true);
+  const arrivals = api.arrangeBoard(next, true, 350, true);
+  assert.equal(api.moves.length, next.length, 'All sculptures participate, including unchanged positions');
+  assert(api.moves.every(m => m.start === 350 && m.dur === 4.5), 'All moves share a 4.5 second timeline');
+  assert(arrivals.every(t => t === 4850), 'All plinths land within 5 seconds together');
   assert.equal(api.moves.filter(m => m.background).length, next.length - day.length, 'Every background sculpture moves');
   const plan = api.planLayout(next.length);
   day.forEach((_, i) => { assert.equal(context.V[i].x, plan.day[i].x); assert.equal(context.V[i].z, plan.day[i].z); });
