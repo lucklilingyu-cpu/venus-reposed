@@ -56,8 +56,9 @@ const ExhibitionEnvelope = (() => {
   }
   const width = bounds.x1 - bounds.x0, depth = bounds.z1 - bounds.z0, height = bounds.height;
   box('glass-roof', width, 0.14, depth, 0, height + 0.07, 0, glassMaterial, false);
-  const day = new THREE.Color(0xb4bec2), night = new THREE.Color(0x111b2b), background = day.clone();
-  function setNight(value) { background.copy(day).lerp(night, value); }
+  // Fixed white surroundings, including after compositor tone mapping.
+  const background = new THREE.Color().setRGB(8, 8, 8);
+  function setNight() { /* Surroundings stay white in both lighting modes. */ }
   scene.add(group); scene.background = background; renderer.setClearColor(background, 1);
   canvas.dataset.enclosureHeight = String(height);
   let fitted = false;
