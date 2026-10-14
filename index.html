@@ -116,6 +116,36 @@
         <p class="small muted" style="margin:0">点选图片可识别骨架并更新展厅雕塑。识别在浏览器本地运行；遮挡、侧身或多人画面可能导致关节不完整。</p>
         <div class="pose-gallery" id="poseGallery" aria-label="骨骼识别图片图集"></div>
         <div class="status" id="poseGalleryStatus" aria-live="polite">正在载入图片图集…</div>
+        <div class="row pose-annotation-actions">
+          <button class="btn" id="poseAnnotateBtn" type="button" disabled>校正所选图片</button>
+          <button class="btn" id="poseExportBtn" type="button">导出标注</button>
+          <label class="btn" for="poseImportFile">导入标注</label>
+          <input id="poseImportFile" type="file" accept="application/json,.json" hidden>
+          <span class="small muted" id="poseAnnotationCount">0 / 77 已校正</span>
+        </div>
+        <p class="small muted" style="margin:4px 0 0">标注只保存在当前浏览器；导出 JSON 可备份或转移到另一台设备，导入后即可继续使用。</p>
+        <section class="pose-annotator" id="poseAnnotator" hidden aria-label="手动校正骨骼姿势">
+          <div class="row pose-annotation-head">
+            <h3 class="ph" id="poseAnnotatorTitle">校正姿势标注</h3>
+            <button class="btn" id="poseAnnotatorClose" type="button">关闭</button>
+          </div>
+          <p class="small muted">依次选择关节点，再点击图片放置。按人物自身左右标注；遮挡点可以跳过。设置动作类别后保存，展厅会按校正结果更新。</p>
+          <div class="pose-annotator-stage" id="poseAnnotatorStage">
+            <img id="poseAnnotatorImage" alt="正在校正的骨骼图集图片">
+            <canvas id="poseAnnotatorCanvas" aria-label="点击图片设置当前关节点"></canvas>
+          </div>
+          <div class="row pose-annotation-controls">
+            <label class="small">当前点 <select id="poseJointSelect"></select></label>
+            <button class="btn" id="poseJointSkip" type="button">标记为遮挡</button>
+            <button class="btn" id="poseJointClear" type="button">清除此点</button>
+            <label class="small">动作 <select id="poseClassSelect">
+              <option value="standing">站立</option><option value="walking">行走</option><option value="seated">坐姿</option><option value="crouching">蹲姿</option><option value="reclining">斜倚</option><option value="horizontal">躺姿</option>
+            </select></label>
+            <label class="small">复杂姿势 <select id="poseGestureSelect"><option value="">无</option><option value="hair">举手</option><option value="oneleg">单腿</option><option value="cover">遮挡</option><option value="lookback">回眸</option></select></label>
+            <button class="btn primary" id="poseAnnotationSave" type="button">保存并更新展厅</button>
+          </div>
+          <div class="status" id="poseAnnotatorStatus" aria-live="polite"></div>
+        </section>
       </section>
 
       <section class="dcard">
