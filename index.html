@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=intro-20261018">
+<link rel="stylesheet" href="style.css?v=immersive-20261019">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -365,6 +365,23 @@
     btn.addEventListener('click', enter);
     document.addEventListener('keydown', onKey, true);
     btn.focus({ preventScroll: true });
+  })();
+</script>
+<script>
+  // 沉浸模式：序列/数据面板不再常驻；双击雕塑后才在右侧弹出这件雕塑的介绍（点空白处、按 Esc 或点 × 关闭）
+  (function () {
+    var canvas = document.getElementById('scene'), panel = document.getElementById('dataPanel'), box = document.getElementById('dataScroll');
+    if (!canvas || !panel || !box) return;
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'info-close'; close.setAttribute('aria-label', '关闭介绍'); close.textContent = '×';
+    close.addEventListener('click', function () { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); document.body.classList.remove('info-open'); });
+    panel.insertBefore(close, panel.firstChild);
+    function sync() { document.body.classList.toggle('info-open', !!canvas.dataset.focusWork); }
+    new MutationObserver(sync).observe(canvas, { attributes: true, attributeFilter: ['data-focus-work'] });
+    // 介绍里只留作品信息：姿势、骨骼、可信度这几行是分析数据，隐藏
+    var HIDE = { '姿势': 1, '骨骼': 1, '可信度': 1 };
+    function tidy() { box.querySelectorAll('dl.meta dt').forEach(function (dt) { if (HIDE[dt.textContent.trim()]) { dt.classList.add('x'); if (dt.nextElementSibling) dt.nextElementSibling.classList.add('x'); } }); }
+    new MutationObserver(tidy).observe(box, { childList: true }); tidy();
   })();
 </script>
 <script src="config.js"></script>
