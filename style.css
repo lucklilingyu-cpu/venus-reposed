@@ -339,3 +339,15 @@ body.walking .panel,body.walking .strip,body.walking .sheet-tabs,body.walking #v
   .strip-head .row{flex:1 1 100%;margin-left:0!important}
   .strip-head select.mini{flex:1 1 auto;min-width:0;max-width:none}
 }
+
+.pose-annotation-actions,.pose-annotation-controls{align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.pose-annotation-actions .btn,.pose-annotation-controls .btn,.pose-annotation-head .btn{font-size:11px;padding:6px 9px}
+.pose-annotator{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+.pose-annotation-head{justify-content:space-between;align-items:center;margin-bottom:6px}
+.pose-annotation-head .ph{font-size:13px}
+.pose-annotator-stage{position:relative;display:inline-block;max-width:100%;max-height:58vh;overflow:hidden;background:#eee;touch-action:none}
+.pose-annotator-stage img{display:block;max-width:100%;max-height:58vh;width:auto;height:auto}
+.pose-annotator-stage canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+.pose-annotation-controls label{display:flex;align-items:center;gap:4px}
+.pose-annotation-controls select{max-width:125px;padding:5px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink);font:inherit}
+.pose-annotation-controls .primary{background:var(--ink);color:#fff}
