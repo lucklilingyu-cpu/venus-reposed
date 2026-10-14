@@ -606,8 +606,8 @@ async function importGalleryAnnotations(file) {
 }
 
 
-// Ensure manually annotated atlas images also finish with a close-up of their matching sculpture.
-function updateHallFromGalleryAnnotation(item, annotation) {
+
+updateHallFromGalleryAnnotation = function (item, annotation) {
   const cls = CLS.includes(annotation.cls) ? annotation.cls : 'standing';
   const validGesture = annotation.g && GESTURES[annotation.g]?.cls.includes(cls) ? annotation.g : null;
   S.posPal = {}; S.sel = 0;
