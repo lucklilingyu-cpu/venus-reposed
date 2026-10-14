@@ -51,6 +51,15 @@ button{cursor:pointer}
 .iconbtn.strong{font-family:var(--font-display);letter-spacing:.12em;font-weight:600;font-size:13px;border-color:var(--ink)}
 .iconbtn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .iconbtn svg{width:15px;height:15px;flex:none}
+.lighting-toggle{border-color:#afbacd;background:linear-gradient(120deg,#f3e6f3,#e4f1ff);color:#303956;transition:background 1.5s,color 1.5s,box-shadow 1.5s;}
+.lighting-symbol{font-size:16px;line-height:1}
+@media(min-width:761px) and (max-width:1400px){.tools .lbl{display:none}.brand{flex-shrink:0}}
+html[data-lighting="night"] .topbar .brand,html[data-lighting="night"] .topbar .seg,html[data-lighting="night"] .topbar .iconbtn{background:rgba(13,22,43,.9);border-color:#596883;color:#dfe9ff;transition:background 1.6s,color 1.6s,border-color 1.6s}
+html[data-lighting="night"] .brand .mark{color:#e8edff}
+html[data-lighting="night"] .brand .sub,html[data-lighting="night"] .seg button{color:#b6c8e8}
+html[data-lighting="night"] .seg button[aria-selected="true"]{background:#e4ddfa;color:#1c2541}
+html[data-lighting="night"] .topbar .lighting-toggle{background:linear-gradient(120deg,#492d59,#183c61);border-color:#cb9ddd;box-shadow:0 0 18px #8b7deb44}
+@media(max-width:760px){.tools{flex-wrap:wrap;justify-content:flex-end}.lighting-toggle{padding:7px 9px}}
 .menu{position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:var(--panel-solid);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;z-index:30;max-height:75vh;overflow:auto}
 .menu button{border:0;background:transparent;text-align:left;padding:7px 10px;border-radius:2px}
 .menu button:hover{background:#f4f2ee}

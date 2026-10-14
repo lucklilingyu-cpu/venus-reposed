@@ -203,7 +203,7 @@ function strut(a, b, r, segs = 5) { // a cylinder from point a to point b
 })();
 const waterShader = {
   name: 'CastWater',
-  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, time: { value: 0 } },
+  uniforms: { color: { value: null }, tDiffuse: { value: null }, textureMatrix: { value: null }, time: { value: 0 }, night: { value: 0 } },
   vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW;
     #include <common>
     #include <logdepthbuf_pars_vertex>
@@ -213,7 +213,7 @@ const waterShader = {
     }`,
   // a still, deep pool: dark sage-green body (between the red floor and the white sculptures, echoing the green walls),
   // a mirror at grazing angles, lighter where the stone edge shows through, slow small ripples
-  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float time; varying vec4 vUv; varying vec3 vW;
+  fragmentShader: `uniform vec3 color; uniform sampler2D tDiffuse; uniform float time; uniform float night; varying vec4 vUv; varying vec3 vW;
     #include <logdepthbuf_pars_fragment>
     void main(){
       #include <logdepthbuf_fragment>
@@ -226,8 +226,11 @@ const waterShader = {
       float edge = min(15.5 - abs(vW.x), 3.6 - abs(vW.z));
       float shallow = 1.0 - smoothstep(0.05, 1.3, edge);
       vec3 deep = vec3(0.062, 0.105, 0.092), shal = vec3(0.2, 0.215, 0.165);
+      deep = mix(deep, vec3(0.012, 0.026, 0.075), night);
+      shal = mix(shal, vec3(0.09, 0.10, 0.22), night);
       vec3 body = mix(deep, shal, shallow*0.8) * (0.95 + 0.06*n);
-      vec3 c = mix(body, refl*vec3(0.6, 0.7, 0.64), fres) + vec3(0.03, 0.032, 0.026)*pow(max(n, 0.0), 4.0);
+      vec3 tint = mix(vec3(0.6, 0.7, 0.64), vec3(0.8, 0.83, 1.0), night);
+      vec3 c = mix(body, refl*tint, fres) + vec3(0.03, 0.032, 0.026)*pow(max(n, 0.0), 4.0);
       gl_FragColor = vec4(c, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -430,6 +433,7 @@ const BAL_W = 1.85; // balustrade distance from the wall face
   const len = 21 / SUN_DIR.y;
   for (const [fx, fz, w] of [[-15, -5.4, 2.6], [-6.5, -6.2, 2.0], [2.5, -5.0, 2.8], [11, -6.0, 2.2], [18, -5.2, 2.4]]) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, len), mat);
+    p.name = 'daylight-beam';
     p.quaternion.copy(q);
     p.position.set(fx, 0, fz).addScaledVector(SUN_DIR, len / 2);
     p.renderOrder = 2;

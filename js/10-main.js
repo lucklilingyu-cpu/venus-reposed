@@ -133,6 +133,7 @@ window.addEventListener('resize', onResize);
 
 /* loop */
 const clock = new THREE.Clock();
+NightLighting.init();
 const dust = hall.getObjectByName('dust');
 let shadowTick = 0; // the hall is static: shadows are redrawn while something moves, and twice a second otherwise
 const LIM = { x: [-21.4, 22.6], y: [0.4, 21.5], z: [-7.1, 7.1] }; // stay inside the colonnade and under the vault
@@ -140,6 +141,7 @@ function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta(), dt = Math.min(0.05, raw), t = clock.elapsedTime;
   runTweens(performance.now());
+  NightLighting.update(dt);
   renderer.shadowMap.needsUpdate = tweens.length > 0 || shadowTick === 0;
   shadowTick = (shadowTick + 1) % 30;
   if (Walk.active) Walk.update(Math.min(0.1, raw)); // walking keeps its pace on slower devices
