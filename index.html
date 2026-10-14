@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@500;600&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=focus-20261014">
+<link rel="stylesheet" href="style.css?v=pose-gallery-20261014">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -112,6 +112,10 @@
         </div>
         <div class="status" id="videoStatus"></div>
         <p class="small muted" style="margin:0">只读取身体姿势，不识别人脸；画面不会保存。每段的主色调会传给对应位置的表皮。</p>
+        <div class="row pose-gallery-head"><h3 class="ph">骨骼图集</h3><span class="small muted" id="poseGalleryCount">77 张</span></div>
+        <p class="small muted" style="margin:0">点选图片可识别骨架并更新展厅雕塑。识别在浏览器本地运行；遮挡、侧身或多人画面可能导致关节不完整。</p>
+        <div class="pose-gallery" id="poseGallery" aria-label="骨骼识别图片图集"></div>
+        <div class="status" id="poseGalleryStatus" aria-live="polite">正在载入图片图集…</div>
       </section>
 
       <section class="dcard">
