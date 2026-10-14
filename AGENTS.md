@@ -138,13 +138,15 @@ This is the `works.data` jsonb, the same object the UI reads.
 
 ## The sequence board (js/05-seq.js)
 
-- **Board**: `BOARD` is 13 files × 5 ranks over the pool (x = -13.2 + 2.3k, z = -4.9 + 2.45r). Only the "dark squares" (`(k + r) % 2 === 0`) are used: 33 `CELLS`. The two outer ranks (z = ±4.9) stand just beyond the water. The hall shows up to `MAX_POS` = 28 positions; `EXISTING` (01-data.js) holds the 21 default sculptures (all different).
+Movement update: green-tile bounds are `GREEN_BOUNDS` (x ±16.7, z ±4.8). The 33-cell board now spans centres x ±13.2, z ±2.5, leaving a 2.3 m footprint allowance. `figureScale` limits extreme uploaded aspect ratios to 2.1 m horizontally. On sequence generation, assign unused sculptures randomly among `plan.rest`, avoiding stationary assignments; never alter `plan.day`. Fresh input generation varies same-pose models while retained/saved overrides remain explicit. Moving plinths have a follow halo and 0.5 m lift. Run `node tools/check_movement.mjs` for these changes.
+
+- **Board**: `BOARD` is 13 files × 5 ranks over the pool (x = -13.2 + 2.2k, z = -2.5 + 1.25r). Only the "dark squares" (`(k + r) % 2 === 0`) are used: 33 `CELLS`. The full footprint stays within the green tiles. The hall shows up to `MAX_POS` = 28 positions; `EXISTING` (01-data.js) holds the 21 default sculptures (all different).
 - **Tracks** (`S.layout`, the select `#layoutSel` in the sequence strip):
   - `'skeleton'` (default): the bones of the day's first pose (`CANON[cls]` + gesture tweaks, walked from the head), laid along the pool with the head to the east.
   - `'s'`: one S-shaped sine wave along the pool.
   - `planLayout(n)` samples n points along the track and snaps each to the nearest free cell. It returns `{ day, rest }`: the day's poses spread evenly along the track (in order) and the remaining track squares.
-- **Chess moves**: `arrangeBoard(seq, animate, delay)` puts the plinths of a sequence on the board and reorders `V` to match `seq`:
-  - a sculpture already on the board keeps its plinth and travels with it; sculptures outside the day take the free track squares nearest to them (Hungarian assignment, `assignMin`/`pairUp`), so most of them stay;
+- **Chess moves**: `arrangeBoard(seq, animate, delay, shuffleRest)` puts the plinths of a sequence on the board and reorders `V` to match `seq`:
+  - a sculpture already on the board keeps its plinth and travels with it; sculptures outside the day randomly exchange free track squares on generation (Hungarian assignment with a high stationary cost); ordinary relayout keeps nearest assignment;
   - plinths whose sculpture leaves are emptied (shard burst) and go to the nearest open square; extra plinths sink, missing ones rise out of the water;
   - moves run one after another in sequence order (01, 02, …, `STEP` ≤ 450 ms apart); a plinth whose square is still occupied waits until that plinth has lifted; each move lifts, slides along a rank or file, turns once and sets down, 2–3 s (`2 + dist/14`);
   - it returns the landing time of each position; `applyDay` waits for it before `setFigure` grows the new sculpture (shard/rise effect — keep it). `relayout()` re-plans after the track changes. `?debug` exposes the last plan as `__vr.moves`.
