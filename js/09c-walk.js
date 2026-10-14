@@ -4,7 +4,7 @@
    W A S D (or the arrow keys, once walking) walk, Shift runs.
    Click the hall to steer with the mouse (Esc releases it); dragging
    also looks around, on touch screens too, where a direction pad
-   appears. The view stays level; nearby models fade instead of blocking movement.
+   appears. The view stays level; nearby foreground sculptures fade instead of blocking movement.
 ---------------------------------------------------------------- */
 const Walk = (() => {
   const EYE = 1.62, R = 0.3, SPEED = 2.4, RUN = 5.0;
@@ -12,37 +12,12 @@ const Walk = (() => {
   const btn = document.getElementById('walkBtn'), bar = document.getElementById('walkbar'), barText = document.getElementById('walkText');
   const cross = document.getElementById('walkCross'), pad = document.getElementById('walkPad');
   const MOVE = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-  const fadeStates = new Map(), scanCells = new Map();
-  const CELL = 0.75, nearBox = new THREE.Box3(), meshBox = new THREE.Box3();
-  const points = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
-  let scanIndexed = false, proximityTime = 0;
+  const fadeStates = new Map();
+  const nearBox = new THREE.Box3(), meshBox = new THREE.Box3();
+  let proximityTime = 0;
   function nearestFree(x, z) {
     const b = WALK.bounds;
     return [THREE.MathUtils.clamp(x, b.x0 + R, b.x1 - R), THREE.MathUtils.clamp(z, b.z0 + R, b.z1 - R)];
-  }
-  // Index only scan triangles crossing the walking body band, once after loading.
-  // A mesh-wide box would incorrectly fade the entire hall whenever we entered it.
-  function indexScan() {
-    if (scanIndexed || canvas.dataset.vaHallScan !== 'ready') return;
-    VAHallScan.group.updateWorldMatrix(true, true);
-    VAHallScan.group.traverse(mesh => {
-      if (!mesh.isMesh) return;
-      const geometry = mesh.geometry, positions = geometry.attributes.position, index = geometry.index;
-      const count = index ? index.count : positions.count, bounds = WALK.bounds;
-      for (let i = 0; i < count; i += 3) {
-        for (let j = 0; j < 3; j++) points[j].fromBufferAttribute(positions, index ? index.getX(i + j) : i + j).applyMatrix4(mesh.matrixWorld);
-        const [a, b, c] = points;
-        if (Math.max(a.y, b.y, c.y) < EYE - 0.8 || Math.min(a.y, b.y, c.y) > EYE + 0.7) continue;
-        const x0 = Math.max(bounds.x0, Math.min(a.x, b.x, c.x)), x1 = Math.min(bounds.x1, Math.max(a.x, b.x, c.x));
-        const z0 = Math.max(bounds.z0, Math.min(a.z, b.z, c.z)), z1 = Math.min(bounds.z1, Math.max(a.z, b.z, c.z));
-        for (let x = Math.floor(x0 / CELL); x <= Math.floor(x1 / CELL); x++) for (let z = Math.floor(z0 / CELL); z <= Math.floor(z1 / CELL); z++) {
-          const key = x + ':' + z;
-          if (!scanCells.has(key)) scanCells.set(key, new Set());
-          scanCells.get(key).add(mesh);
-        }
-      }
-    });
-    scanIndexed = true;
   }
   function fade(mesh) {
     if (fadeStates.has(mesh)) return;
@@ -68,11 +43,8 @@ const Walk = (() => {
   function updateTransparency(dt) {
     proximityTime -= dt;
     if (proximityTime <= 0) {
-      proximityTime = 0.12; indexScan();
+      proximityTime = 0.12;
       const nearby = new Set(), p = camera.position;
-      for (let x = Math.floor((p.x - 0.45) / CELL); x <= Math.floor((p.x + 0.45) / CELL); x++) for (let z = Math.floor((p.z - 0.45) / CELL); z <= Math.floor((p.z + 0.45) / CELL); z++) {
-        const meshes = scanCells.get(x + ':' + z); if (meshes) for (const mesh of meshes) nearby.add(mesh);
-      }
       nearBox.min.set(p.x - 0.55, EYE - 0.8, p.z - 0.55); nearBox.max.set(p.x + 0.55, EYE + 0.7, p.z + 0.55);
       for (const vp of V) {
         if (!vp.g.parent || !vp.g.visible) continue;
