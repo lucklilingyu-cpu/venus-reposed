@@ -76,7 +76,7 @@ const Atlas = (() => {
         if (detail.detail) m.geometry = detail.geo;
         m.userData.detail = !!detail.detail;
         $('#specCanvas').dataset.triangles = String(m.geometry.index.count / 3);
-        $('#specMeshStatus').textContent = (detail.detail ? '精细版' : '轻量版') + ' · ' + (m.geometry.index.count / 3).toLocaleString() + ' 个三角面 · 白色陶瓷';
+        $('#specMeshStatus').textContent = (detail.detail ? '精细版' : '轻量版') + ' · ' + (m.geometry.index.count / 3).toLocaleString() + ' 个三角面 · 哑光石膏';
       }).catch(() => {});
       bonesObj = skeletonObject(mesh.skel, 0.006 * Math.max(1, (mesh.bounds.max.y) / 1.6)); if (bonesObj) { bonesObj.visible = showBones; holder.add(bonesObj); }
       const b = mesh.bounds, c = new THREE.Vector3(0, b.max.y / 2, 0);
@@ -97,7 +97,7 @@ const Atlas = (() => {
         <dt>平台类别</dt><dd>${r.cls ? CLASS[r.cls].zh : r.kind === 'figure' ? '姿势待确认（暂不进入雕塑序列）' : '浮雕 / 建筑（不进入雕塑序列）'}${r.cls && r.alt && r.alt.length ? '（也可代表：' + r.alt.map(c => CLASS[c].zh).join('、') + '）' : ''}</dd>
         <dt>图谱姿势</dt><dd>${esc((r.pose || []).map(x => ZH.pose[x] || x).join('、') || '—')}</dd>
         <dt>骨骼</dt><dd>${esc(skn)}</dd>
-        <dt>模型</dt><dd id="specMeshStatus">${MODEL_DETAILS[r.id] ? '轻量预览 · 正在载入精细版' : '轻量版 · 白色陶瓷'}</dd>
+        <dt>模型</dt><dd id="specMeshStatus">${MODEL_DETAILS[r.id] ? '轻量预览 · 正在载入精细版' : '轻量版 · 哑光石膏'}</dd>
         <dt>可信度</dt><dd>${r.conf != null ? Math.round(r.conf * 100) + '%' : '—'}</dd>
       </dl>
       <div class="tags">${tagList(r.gest, ZH.gest)}${tagList(r.cloth, ZH.cloth)}</div>
@@ -123,7 +123,7 @@ const Atlas = (() => {
     };
   }
   function open(id) {
-    if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 白色陶瓷 · 精细版按需加载`; }
+    if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 哑光石膏 · 精细版按需加载`; }
     el.hidden = false; Atlas.isOpen = true;
     if (id) show(id); else { spec.hidden = true; grid.hidden = false; }
   }

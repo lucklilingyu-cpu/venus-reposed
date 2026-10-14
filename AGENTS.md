@@ -2,6 +2,8 @@
 
 Guidance for coding agents (Codex, etc.) working in this repository. The site's UI is in Chinese; keep user-facing text in Chinese unless asked otherwise.
 
+Plaster upgrade (2026-10-14): sculptures use matt cast plaster, roughness 0.87 and no clearcoat. Keep the object-space pore shader and its clone hook for rise/replacement animations. The 20 upgraded opening meshes are matched to local OBJ sources by source SHA256, never folder ordinal (catalogue IDs differ after 10). `data/plaster-upgrade-report.json` records counts; source provenance is in `data/atlas-models.json`. Detail parser caps are 24 MB, 600k vertices and 600k triangles. Refinement must invalidate the shadow map. Desktop pixel ratio is capped at 2; mobile remains 1.5.
+
 Atlas update (2026-10-14): the main catalogue now has 118 records (original 105 + 13 acquisitions). `md/<id>.bin.gz` contains 117 GGP2 detail meshes with preserved normals; `data/atlas-models.json` declares paths, counts and source hashes. Lightweight meshes remain in `m/`. All hall sculptures and Atlas specimen views load detail progressively; keep fallbacks, three concurrent loads and the bounded detail cache (MAX_POS + 6). Selecting another sculpture must not downgrade existing detail meshes. Run `node tools/check_atlas.mjs` after atlas changes and `node tools/check_hall_detail.mjs` after hall detail loading changes. IDs 106–118 are occupied; new local additions start at 119. See `docs/图谱同步.md`.
 
 ## What this is

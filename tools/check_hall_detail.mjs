@@ -16,12 +16,14 @@ assert.equal(await slot(async () => 'recovered'), 'recovered');
 
 let resolveMesh, updates = 0;
 const figures = [{ work: '3', fig: { geometry: 'preview', userData: {} } }];
-const context = { V: figures, detailedMeshOf: () => new Promise(resolve => { resolveMesh = resolve; }), updateHallQuality: () => { updates++; } };
+const renderer = { shadowMap: { needsUpdate: false } };
+const context = { renderer, V: figures, detailedMeshOf: () => new Promise(resolve => { resolveMesh = resolve; }), updateHallQuality: () => { updates++; } };
 const refine = vm.runInNewContext(source.slice(source.indexOf('async function refineFigure'), source.indexOf('/* ---------- materials')) + '; refineFigure', context);
 // No selected-position dependency: every sculpture upgrades, even if its plinth moves.
 let task = refine(0, { work: '3' }); figures.unshift({ work: '7', fig: {} });
 resolveMesh({ detail: true, geo: 'detail', bounds: {} }); await task;
 assert.equal(figures[1].fig.geometry, 'detail'); assert.equal(updates, 1);
+assert.equal(renderer.shadowMap.needsUpdate, true);
 // A superseded download must never replace a newer sculpture.
 task = refine(1, { work: '3' }); figures[1].work = '9'; figures[1].fig = { geometry: 'new-preview' };
 resolveMesh({ detail: true, geo: 'obsolete-detail' }); await task;

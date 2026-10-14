@@ -12,12 +12,12 @@ const clsOf = (id) => (REC[id] && REC[id].cls) || 'standing';
 const MESH_MAGIC = 0x31504747;
 function parseMeshBin(buf) {
   const dv = new DataView(buf);
-  if (buf.byteLength < 12 || buf.byteLength > 8000000) throw new Error('不是图谱的网格文件');
+  if (buf.byteLength < 12 || buf.byteLength > 24000000) throw new Error('不是图谱的网格文件');
   const magic = dv.getUint32(0, true), detail = magic === 0x32504747;
   if (magic !== MESH_MAGIC && !detail) throw new Error('不是图谱的网格文件');
   const vc = dv.getUint32(4, true), ic = dv.getUint32(8, true);
   const offset = detail ? 16 : 12;
-  if (!vc || vc > 300000 || !ic || ic > 1200000 || ic % 3 ||
+  if (!vc || vc > 600000 || !ic || ic > 1800000 || ic % 3 ||
       (detail && (buf.byteLength < 16 || dv.getUint32(12, true) !== 1)) ||
       buf.byteLength !== offset + vc * (detail ? 24 : 12) + ic * 4) throw new Error('网格文件长度不对');
   const pos = new Float32Array(buf.slice(offset, offset + vc * 12));
@@ -201,13 +201,46 @@ async function refineFigure(i, p) {
   // A plinth can move to another index while a network request is pending.
   if (!mesh.detail || !V.includes(vp) || vp.work !== p.work || vp.fig !== fig) return;
   fig.geometry = mesh.geo; fig.userData.detail = true; vp.bounds = mesh.bounds;
+  renderer.shadowMap.needsUpdate = true;
   updateHallQuality();
 }
 
 /* ---------- materials ---------- */
 const ceramic = new THREE.MeshPhysicalMaterial({
-  color: 0xf7f5f0, roughness: 0.3, metalness: 0, clearcoat: 0.65, clearcoatRoughness: 0.18, envMapIntensity: 0.85,
+  color: 0xf5f2eb, roughness: 0.87, metalness: 0, clearcoat: 0,
+  ior: 1.46, specularIntensity: 0.28, envMapIntensity: 0.32,
 });
+// Object-space pores need no UVs and remain attached during sculpture movement.
+// Fade subpixel grains to keep the distant hall free of shimmering.
+function plasterShader(shader) {
+  shader.vertexShader = 'varying vec3 vPlasterPosition;\n' + shader.vertexShader;
+  shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPlasterPosition = position;');
+  shader.fragmentShader = `varying vec3 vPlasterPosition;
+float plasterHash(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
+float plasterNoise(vec3 p) {
+  vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+  return mix(mix(mix(plasterHash(i),plasterHash(i+vec3(1,0,0)),f.x),mix(plasterHash(i+vec3(0,1,0)),plasterHash(i+vec3(1,1,0)),f.x),f.y),mix(mix(plasterHash(i+vec3(0,0,1)),plasterHash(i+vec3(1,0,1)),f.x),mix(plasterHash(i+vec3(0,1,1)),plasterHash(i+vec3(1,1,1)),f.x),f.y),f.z);
+}
+` + shader.fragmentShader;
+  shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+vec3 poreCoordinates = vPlasterPosition * 850.0;
+float poreVisibility = 1.0 - smoothstep(0.35, 1.2, length(fwidth(poreCoordinates)));
+float plasterGrain = (plasterNoise(poreCoordinates)-0.5) * poreVisibility;
+roughnessFactor = clamp(roughnessFactor + plasterGrain * 0.08, 0.78, 0.96);
+diffuseColor.rgb *= 1.0 + plasterGrain * 0.025;`);
+  shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+float poreHeight = plasterGrain * 0.00004;
+vec3 plasterDx=dFdx(-vViewPosition), plasterDy=dFdy(-vViewPosition);
+vec3 plasterR1=cross(plasterDy,normal), plasterR2=cross(normal,plasterDx);
+float plasterDet=dot(plasterDx,plasterR1);
+vec3 plasterGradient=sign(plasterDet)*(dFdx(poreHeight)*plasterR1+dFdy(poreHeight)*plasterR2);
+if(abs(plasterDet)>1e-12) normal=normalize(abs(plasterDet)*normal-plasterGradient);`);
+}
+ceramic.onBeforeCompile = plasterShader;
+ceramic.customProgramCacheKey = () => 'cast-plaster-v1';
+// three.js clones do not copy onBeforeCompile; animation materials need it too.
+const clonePlaster = ceramic.clone.bind(ceramic);
+ceramic.clone = () => { const material = clonePlaster(); material.onBeforeCompile = plasterShader; material.customProgramCacheKey = ceramic.customProgramCacheKey; return material; };
 const boneMat = new THREE.MeshBasicMaterial({ color: 0x2b2a2c, depthTest: false, transparent: true, opacity: 0.88 });
 const jointMat = new THREE.MeshBasicMaterial({ color: 0xc5a86c, depthTest: false, transparent: true, opacity: 0.95 });
 function skeletonObject(skel, rad = 0.0075) {
