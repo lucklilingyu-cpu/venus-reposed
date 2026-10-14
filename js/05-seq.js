@@ -335,6 +335,7 @@ function startRiseBeam(vp) {
   stopRiseBeam(vp); // removed glass-platform arrival decoration
 }
 function clearSculptureFocus() {
+  stopPoseSlideshow();
   if (focusedSculpture) focusedSculpture.tag.classList.add('hidden');
   if (focusTween) { const k = tweens.indexOf(focusTween); if (k >= 0) tweens.splice(k, 1); focusTween = null; }
   focusedSculpture = null; focusBeam.visible = false; focusLight.intensity = 0;

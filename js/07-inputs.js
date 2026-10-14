@@ -345,12 +345,80 @@ function addCamPose(r) {
 const Vid = { frames: [], busy: false };
 let poseGalleryItems = null, lastGalleryFocus = -1;
 let galleryOverviewTimer = 0;
-function showGalleryFocusThenReturn(i, status, focusedMessage, readyMessage) {
+let poseSlideshowRoot = null, poseSlideshowItems = [], poseSlideshowIndex = 0, poseSlideshowTimer = 0;
+const poseSlideshowPoint = new THREE.Vector3();
+function ensurePoseSlideshow() {
+  if (poseSlideshowRoot) return poseSlideshowRoot;
+  poseSlideshowRoot = document.createElement('div');
+  poseSlideshowRoot.id = 'poseSlideshow'; poseSlideshowRoot.className = 'pose-slideshow hidden';
+  poseSlideshowRoot.setAttribute('aria-hidden', 'true');
+  poseSlideshowRoot.innerHTML = `
+    <figure class="pose-slide pose-slide-left"><img alt=""><figcaption></figcaption></figure>
+    <figure class="pose-slide pose-slide-main"><img alt=""><figcaption></figcaption></figure>
+    <figure class="pose-slide pose-slide-right"><img alt=""><figcaption></figcaption></figure>
+    <div class="pose-slide-note"><span class="pose-slide-kicker">POSE STUDY · ${esc('姿势图集')}</span><span class="pose-slide-count"></span></div>`;
+  $('#labels').appendChild(poseSlideshowRoot);
+  return poseSlideshowRoot;
+}
+function updatePoseSlideshowFrame(animate = false) {
+  if (!poseSlideshowRoot || !poseSlideshowItems.length) return;
+  const root = poseSlideshowRoot, n = poseSlideshowItems.length;
+  const slots = [root.querySelector('.pose-slide-left'), root.querySelector('.pose-slide-main'), root.querySelector('.pose-slide-right')];
+  const indexes = [(poseSlideshowIndex + n - 1) % n, poseSlideshowIndex, (poseSlideshowIndex + 1) % n];
+  root.classList.toggle('has-two', n === 2); root.classList.toggle('has-one', n === 1);
+  slots.forEach((slot, i) => {
+    const item = poseSlideshowItems[indexes[i]];
+    slot.hidden = i === 0 ? n < 2 : i === 2 ? n < 3 : false;
+    slot.querySelector('img').src = item.file;
+    slot.querySelector('img').alt = item.title;
+    slot.querySelector('figcaption').textContent = item.title;
+    slot.classList.toggle('is-current', i === 1);
+  });
+  root.querySelector('.pose-slide-count').textContent = `${String(poseSlideshowIndex + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`;
+  if (animate) {
+    root.classList.add('changing');
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('changing')));
+  }
+}
+function startPoseSlideshow(selectedItem, cls) {
+  stopPoseSlideshow();
+  const items = poseGalleryItems || [];
+  const related = items.filter(item => (galleryAnnotations[item.id]?.cls || galleryPoseHint(item).top) === cls);
+  poseSlideshowItems = [selectedItem, ...related.filter(item => item.id !== selectedItem.id)];
+  poseSlideshowIndex = 0;
+  const root = ensurePoseSlideshow();
+  updatePoseSlideshowFrame();
+  root.classList.remove('hidden'); root.setAttribute('aria-hidden', 'false');
+  poseSlideshowTimer = setInterval(() => {
+    if (poseSlideshowItems.length > 1) poseSlideshowIndex = (poseSlideshowIndex + 1) % poseSlideshowItems.length;
+    updatePoseSlideshowFrame(true);
+  }, 1700);
+  updatePoseSlideshowAnchor();
+}
+function stopPoseSlideshow() {
+  clearInterval(poseSlideshowTimer); poseSlideshowTimer = 0;
+  if (poseSlideshowRoot) { poseSlideshowRoot.classList.add('hidden'); poseSlideshowRoot.setAttribute('aria-hidden', 'true'); }
+  poseSlideshowItems = []; poseSlideshowIndex = 0;
+}
+function updatePoseSlideshowAnchor() {
+  const root = poseSlideshowRoot, vp = typeof focusedSculpture === 'undefined' ? null : focusedSculpture;
+  if (!root || root.classList.contains('hidden') || !vp || !vp.fig || !vp.fig.visible || !vp.bounds) return;
+  const b = vp.bounds, p = poseSlideshowPoint.set((b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2, (b.min.z + b.max.z) / 2);
+  vp.fig.localToWorld(p); p.project(camera);
+  const visible = p.z > -1 && p.z < 1 && Math.abs(p.x) < 1 && Math.abs(p.y) < 1;
+  root.classList.toggle('hidden', !visible);
+  if (!visible) return;
+  root.style.left = ((p.x + 1) / 2 * window.innerWidth) + 'px';
+  root.style.top = ((1 - p.y) / 2 * window.innerHeight) + 'px';
+}
+function showGalleryFocusThenReturn(i, status, focusedMessage, readyMessage, slideshowItem, poseClass) {
   clearTimeout(galleryOverviewTimer);
   $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; });
   focusSculpture(i);
+  if (slideshowItem) startPoseSlideshow(slideshowItem, poseClass);
   status.textContent = focusedMessage;
   galleryOverviewTimer = setTimeout(() => {
+    stopPoseSlideshow();
     status.textContent = '近景展示结束，正在返回展厅全景…';
     flyHome();
     galleryOverviewTimer = setTimeout(() => {
@@ -406,7 +474,7 @@ async function analyzeGalleryImage(id, button) {
       onVisualComplete: seq => {
         const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
         if (i < 0) return;
-        Walk.exit(); showGalleryFocusThenReturn(i, status, '近景展示对应雕像；稍后将返回展厅全景。', '已回到展厅全景，可以继续选择下一张图片。');
+        Walk.exit(); showGalleryFocusThenReturn(i, status, '近景展示对应雕像；稍后将返回展厅全景。', '已回到展厅全景，可以继续选择下一张图片。', item, result.top);
         // Status is managed through the close-up and overview transition.
       }
     });
@@ -638,7 +706,7 @@ updateHallFromGalleryAnnotation = function (item, annotation) {
       const i = seq.findIndex(p => p.act && p.act.cls === cls && (p.act.g || null) === validGesture);
       if (i < 0) return;
       Walk.exit();
-      showGalleryFocusThenReturn(i, $('#poseGalleryStatus'), `校正为「${CLASS[cls].zh}」；近景展示结束后将返回展厅全景。`, '已回到展厅全景，可以继续选择下一张图片。');
+      showGalleryFocusThenReturn(i, $('#poseGalleryStatus'), `校正为「${CLASS[cls].zh}」；近景展示结束后将返回展厅全景。`, '已回到展厅全景，可以继续选择下一张图片。', item, cls);
       // Status is managed through the close-up and overview transition.
     },
   });

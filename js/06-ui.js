@@ -224,4 +224,5 @@ function updateLabels() {
     tag.style.left = ((_v.x + 1) / 2 * w) + 'px';
     tag.style.top = ((1 - _v.y) / 2 * h) + 'px';
   });
+  updatePoseSlideshowAnchor();
 }
