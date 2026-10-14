@@ -6,6 +6,8 @@ Bartlett B-Pro Architectural Design · Workshop 7（V&A Cast Courts）小组项�
 
 顶部「夜晚 / 白天」按钮可切换粉蓝夜景与日光展厅，带约 2.6 秒灯光渐变，自动记住这台设备的选择。详见 [昼夜灯光说明](docs/昼夜灯光.md)。
 
+雕塑与底座的移动范围限制在水池外围绿色地砖内。重新生成序列会换用同姿势的其他雕塑，未使用雕塑随机交换剩余位置，带抬升光圈与落地脉冲；详见 [雕塑移动说明](docs/雕塑移动.md)。
+
 - **网址**：https://lucklilingyu-cpu.github.io/venus-reposed/
   - 旧网址 venus-reposed.netlify.app 会自动跳转到这里。
 - **代码仓库**：https://github.com/lucklilingyu-cpu/venus-reposed

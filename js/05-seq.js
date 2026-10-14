@@ -84,6 +84,12 @@ async function fetchMesh(id) {
   } catch (e) { return loadMeshScript(id); }
 }
 const TARGET = { standing: ['h', 1.8], walking: ['h', 1.8], seated: ['h', 1.4], crouching: ['h', 1.12], reclining: ['l', 2.0], horizontal: ['l', 2.0] };
+function figureScale(ext, cls) {
+  const [mode, target] = TARGET[cls] || ['m', 1.6];
+  const desired = target / Math.max(1e-6, mode === 'h' ? ext[1] : mode === 'l' ? Math.max(ext[0], ext[2]) : Math.max(...ext));
+  // Extra-wide uploaded models must also fit the green-tile movement footprint.
+  return Math.min(desired, 2.1 / Math.max(1e-6, ext[0], ext[2]));
+}
 const meshCache = new Map();
 const detailMeshCache = new Map();
 let detailLoads = 0;
@@ -119,9 +125,8 @@ function figureGeometry(pos, idx, R, cls, normal = null) {
     const x = pos[i], y = pos[i + 1], z = pos[i + 2];
     for (let a = 0; a < 3; a++) { const v = R[a][0] * x + R[a][1] * y + R[a][2] * z; out[i + a] = v; if (v < mn[a]) mn[a] = v; if (v > mx[a]) mx[a] = v; }
   }
-  const [mode, target] = TARGET[cls] || ['m', 1.6];
   const ext = [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]];
-  const s = target / Math.max(1e-6, mode === 'h' ? ext[1] : mode === 'l' ? Math.max(ext[0], ext[2]) : Math.max(...ext));
+  const s = figureScale(ext, cls);
   const t = [-(mn[0] + mx[0]) / 2 * s, -mn[1] * s, -(mn[2] + mx[2]) / 2 * s];
   for (let i = 0; i < out.length; i += 3) { out[i] = out[i] * s + t[0]; out[i + 1] = out[i + 1] * s + t[1]; out[i + 2] = out[i + 2] * s + t[2]; }
   if (!normal) fixWinding(out, idx);
@@ -301,6 +306,8 @@ function makePosition() {
   const ringMat = new THREE.MeshBasicMaterial({ color: STATUS_COL.beyond, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
   const ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.035, 96), ringMat);
   ring.rotation.x = -Math.PI / 2; ring.position.y = -0.085; g.add(ring);
+  const moveHalo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1.02, 64), new THREE.MeshBasicMaterial({ color: 0x82d9ef, transparent: true, opacity: 0, toneMapped: false, side: THREE.DoubleSide, depthWrite: false }));
+  moveHalo.rotation.x = -Math.PI / 2; moveHalo.position.y = 0.015; g.add(moveHalo);
   const colorGroup = new THREE.Group(); colorGroup.visible = false; g.add(colorGroup);
   const slabs = [];
   for (let j = 0; j < 5; j++) {
@@ -314,16 +321,18 @@ function makePosition() {
   tag.innerHTML = '<span class="n"></span><span class="t"></span><span class="st"></span><span class="gw"></span>';
   tag.addEventListener('click', () => select(V.indexOf(vp), { fly: true }));
   labelsEl.appendChild(tag);
-  const vp = { g, plinth, tiers, drum, trim, ring, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
+  const vp = { g, plinth, tiers, drum, trim, ring, moveHalo, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
 }
 /* ---------- the board: plinths stand on a staggered chessboard over the water ----------
    13 files × 5 ranks; only the "dark squares" are used, so neighbours are always offset.
-   The outer ranks stand just beyond the pool's edge. The sequence follows a track over the
+   The full sculpture footprint stays inside the green perimeter. The sequence follows a track over the
    board — the skeleton of the day's first pose, or an S — and snaps to the nearest free squares.
    The day's sculptures are spread from one end of the track to the other; the sculptures outside
    the day's story fill the squares in between, so together they draw the track. */
-const BOARD = { x0: -13.2, dx: 2.3, cols: 13, z0: -4.9, dz: 2.45, rows: 5 };
+const GREEN_BOUNDS = { x0: -16.7, x1: 16.7, z0: -4.8, z1: 4.8 };
+// Leave 2.3 m around centres for the largest atlas plinth and its landing ring.
+const BOARD = { x0: -13.2, dx: 2.2, cols: 13, z0: -2.5, dz: 1.25, rows: 5 };
 const CELLS = [];
 for (let r = 0; r < BOARD.rows; r++) for (let k = 0; k < BOARD.cols; k++) if ((k + r) % 2 === 0) CELLS.push({ k, r, x: BOARD.x0 + k * BOARD.dx, z: BOARD.z0 + r * BOARD.dz });
 const MAX_POS = 28; // at most this many sculptures on the 33 squares
@@ -412,17 +421,25 @@ function pairUp(A, B, d2) {
   const r = assignMin(B.map(b => A.map(a => d2(a, b)))); return B.map((b, k) => [A[r[k]], b]);
 }
 const PH = (t, a, b) => { const k = THREE.MathUtils.clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-const cancelMove = (vp) => { clearTimeout(vp.moveTimer); if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; } };
+const cancelMove = (vp) => { clearTimeout(vp.moveTimer); vp.moveHalo.material.opacity = 0; if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; } };
+function boardMotion(position, from, to, xFirst, straight, raw, y0 = 0) {
+  const lift = PH(raw, 0, 0.14) - PH(raw, 0.86, 1);
+  const p1 = straight ? PH(raw, 0.14, 0.86) : PH(raw, 0.14, 0.52), p2 = straight ? p1 : PH(raw, 0.48, 0.86);
+  position.set(from.x + (to.x - from.x) * (xFirst ? p1 : p2), y0 * (1 - raw) + lift * 0.5,
+    from.z + (to.z - from.z) * (xFirst ? p2 : p1));
+}
 /* Put the plinths of a sequence on the board, like chess pieces.
    - A sculpture that is already on the board keeps its plinth and travels with it to its new square.
-   - Sculptures outside the day take the free track squares nearest to where they stand, so most of them stay.
+   - Sculptures outside the day randomly exchange free track squares when generating a sequence.
    - Plinths whose sculpture leaves are emptied (the sculpture shatters) and go to the nearest square that needs one;
      extra plinths sink into the water, missing ones rise out of it.
    - Moves happen one after another in the order of the sequence (01, 02, …); a plinth waits until its square has been
      cleared. Each move lifts the plinth, slides it along a rank or file, turns once, slides on and sets it down (2–3 s).
    Returns, for each position, the time (ms from now) when its plinth has landed. */
-let lastMoves = []; // the latest move plan (for testing)
-function arrangeBoard(seq, animate, delay = 0) {
+let lastMoves = [], boardFinishTimer = 0; // latest plan and completion marker
+function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
+  clearTimeout(boardFinishTimer);
+  canvas.dataset.movementState = 'complete';
   const n = seq.length, plan = planLayout(n), m = plan.day.length;
   const d2 = (a, b) => (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
   const at = (vp) => ({ x: vp.g.position.x, z: vp.g.position.z });
@@ -436,7 +453,9 @@ function arrangeBoard(seq, animate, delay = 0) {
   for (let i = 0; i < m; i++) target[i] = plan.day[i];
   const restPos = Array.from({ length: n - m }, (_, k) => m + k), kept = restPos.filter(i => next[i]);
   const freeCells = new Set(plan.rest);
-  for (const [i, c] of pairUp(kept, plan.rest, (i, c) => d2(at(next[i]), c))) { target[i] = c; freeCells.delete(c); }
+  // A very high stationary cost makes the random assignment a derangement when possible.
+  // Story targets above are never included in this assignment.
+  for (const [i, c] of pairUp(kept, plan.rest, (i, c) => shuffleRest ? (d2(at(next[i]), c) < 0.01 ? 1e6 : Math.random() * 100) : d2(at(next[i]), c))) { target[i] = c; freeCells.delete(c); }
   const left = plan.rest.filter(c => freeCells.has(c));
   restPos.filter(i => !next[i]).forEach((i, k) => { target[i] = left[k]; });
   // 3. the other plinths are emptied and go to the nearest open squares
@@ -460,7 +479,7 @@ function arrangeBoard(seq, animate, delay = 0) {
     if (!vp.fresh && dist < 0.01 && Math.abs(g.position.y) < 0.01 && g.scale.x > 0.99) { arrive[i] = delay + 250; return; }
     moves.push({ i, vp, from: at(vp), to: c, dist, fresh: vp.fresh, dur: vp.fresh ? 1.6 : 2 + Math.min(1, dist / 14) });
   });
-  if (!animate) return arrive;
+  if (!animate) { lastMoves = []; canvas.dataset.movePlan = '[]'; return arrive; }
   // order: sequence order, but a plinth waits for the one standing on its square to leave first
   const near = (a, b) => d2(a, b) < 0.5, order = [], rem = moves.slice();
   while (rem.length) {
@@ -488,15 +507,20 @@ function arrangeBoard(seq, animate, delay = 0) {
     const straight = Math.abs(x1 - x0) < 0.01 || Math.abs(z1 - z0) < 0.01;
     vp.moveTimer = setTimeout(() => {
       vp.moveTween = tween(mv.dur, (e, raw) => {
-        const lift = PH(raw, 0, 0.14) - PH(raw, 0.86, 1);
-        const p1 = straight ? PH(raw, 0.14, 0.86) : PH(raw, 0.14, 0.52), p2 = straight ? p1 : PH(raw, 0.48, 0.86);
-        const fx = xFirst ? p1 : p2, fz = xFirst ? p2 : p1;
-        g.position.set(x0 + (x1 - x0) * fx, y0 * (1 - raw) + lift * 0.28, z0 + (z1 - z0) * fz);
+        boardMotion(g.position, mv.from, mv.to, xFirst, straight, raw, y0);
+        vp.moveHalo.material.opacity = Math.sin(raw * Math.PI) * 0.65;
+        const halo = 1.32 + Math.sin(raw * Math.PI) * 0.16;
+        vp.moveHalo.scale.set(vp.scaleX * halo, vp.scaleZ * halo, 1);
         g.scale.setScalar(s0 + (1 - s0) * raw);
-      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveTween = null; pulseRing(vp); });
+      }, () => { g.position.set(x1, 0, z1); g.scale.setScalar(1); vp.moveHalo.material.opacity = 0; vp.moveTween = null; pulseRing(vp); });
     }, s);
   }
-  lastMoves = order.map(mv => ({ i: mv.i, start: Math.round(mv.start), dur: mv.dur, dist: +mv.dist.toFixed(1), fresh: mv.fresh }));
+  lastMoves = order.map(mv => ({ i: mv.i, start: Math.round(mv.start), dur: mv.dur, dist: +mv.dist.toFixed(1), fresh: mv.fresh, from: mv.from, to: { x: mv.to.x, z: mv.to.z }, background: mv.i >= m }));
+  canvas.dataset.movePlan = JSON.stringify(lastMoves);
+  if (order.length) {
+    canvas.dataset.movementState = 'running';
+    boardFinishTimer = setTimeout(() => { canvas.dataset.movementState = 'complete'; }, Math.max(...arrive) + 2200);
+  }
   return arrive;
 }
 /* re-arrange the board without changing the sculptures (e.g. another track) */
@@ -580,23 +604,24 @@ function pulseRing(vp) {
    sculptures of that class (with the gesture first), sculptures that can also stand for it (alt),
    sculptures of a neighbouring class (KIN); only when all of them are on the board already does one repeat. */
 const KIN = { standing: ['walking'], walking: ['standing'], seated: ['crouching', 'reclining'], crouching: ['seated'], reclining: ['horizontal', 'seated'], horizontal: ['reclining'] };
-function chooseWork(cls, g, prevYear, used, count = new Map()) {
+function chooseWork(cls, g, prevYear, used, count = new Map(), avoid = null, varied = false) {
   const free = (r) => !used.has(r.id);
   const key = r => (r.t ? 0 : 2e5) + ((prevYear == null || r.y == null) ? 5e4 : Math.abs(r.y - prevYear));
-  const best = (c) => c.slice().sort((a, b) => key(a) - key(b))[0];
+  const best = (c) => varied ? c[Math.floor(Math.random() * c.length)] : c.slice().sort((a, b) => key(a) - key(b))[0];
   const tiers = [
     g ? FIGS.filter(r => r.cls === cls && r.g === g && free(r)) : [],
     FIGS.filter(r => r.cls === cls && free(r)),
     FIGS.filter(r => (r.alt || []).includes(cls) && free(r)),
     FIGS.filter(r => (KIN[cls] || []).includes(r.cls) && free(r)),
   ];
+  if (varied) for (const tier of tiers.slice(0, 3)) { const c = tier.filter(r => r.id !== avoid); if (c.length) return best(c).id; }
   for (const c of tiers) if (c.length) return best(c).id;
   // everything fitting is on the board: repeat the one used least
   const c = FIGS.filter(r => fitsCls(r, cls));
   const r = c.slice().sort((a, b) => ((count.get(a.id) || 0) - (count.get(b.id) || 0)) || key(a) - key(b))[0];
   return r ? r.id : null;
 }
-function computeSequence(day, prev = []) {
+function computeSequence(day, prev = [], varied = false) {
   const n = Math.min(MAX_POS, Math.max(EXISTING.length, day.length));
   // sculptures that keep their place (outside the day, or chosen by hand) are reserved first, so a replacement never doubles them
   const used = new Set(), count = new Map(); let prevYear = null;
@@ -610,11 +635,11 @@ function computeSequence(day, prev = []) {
     let work, status;
     if (S.override[i] && REC[S.override[i]]) { work = S.override[i]; status = 'manual'; }
     else if (!act) { work = orig.id; status = 'beyond'; }
-    else if (orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g) && !used.has(orig.id)) { work = orig.id; status = 'keep'; }
+    else if (!varied && orig && REC[orig.id].cls === act.cls && (!act.g || REC[orig.id].g === act.g) && !used.has(orig.id)) { work = orig.id; status = 'keep'; }
     else {
       const pv = prev[i], pr = pv && REC[pv.work];
-      const reuse = pr && (pv.status === 'swap' || pv.status === 'new') && fitsCls(pr, act.cls) && (!act.g || pr.g === act.g) && !used.has(pv.work);
-      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used, count);
+      const reuse = !varied && pr && (pv.status === 'swap' || pv.status === 'new') && fitsCls(pr, act.cls) && (!act.g || pr.g === act.g) && !used.has(pv.work);
+      work = reuse ? pv.work : chooseWork(act.cls, act.g, prevYear, used, count, pv ? pv.work : null, varied);
       status = orig ? 'swap' : 'new';
       if (!work) { work = orig ? orig.id : FIGS[0].id; status = orig ? 'keep' : 'new'; }
     }
@@ -631,14 +656,16 @@ async function applyDay(day, opts = {}) {
   S.day = day.map(d => ({ ...d }));
   if (opts.source != null) S.source = opts.source;
   if (opts.fresh) S.override = opts.override ? { ...opts.override } : {};
-  const seq = computeSequence(S.day, opts.fresh ? [] : S.pos);
+  const previous = S.pos;
+  const seq = computeSequence(S.day, previous, !!opts.fresh || !!opts.varied);
   S.pos = seq;
   if (S.sel >= seq.length) S.sel = 0;
   // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
-  const arrive = arrangeBoard(seq, animate, animate ? 600 : 0), t0 = performance.now();
-  renderStrip(); renderData(); renderBars();
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq) return;
+  const arrive = arrangeBoard(seq, animate, animate ? 600 : 0, previous.length > 0 && S.day.length > 0), t0 = performance.now();
+  canvas.dataset.sequenceWorks = JSON.stringify(seq.map(p => ({ work: p.work, cls: p.act ? p.act.cls : null, background: !p.act, manual: p.status === 'manual' })));
+  renderStrip(); renderData(); renderBars();
   const late = performance.now() - t0;
   seq.forEach((p, i) => setTimeout(() => setFigure(i, p, animate), animate ? Math.max(0, arrive[i] + 120 - late) : 0));
   scheduleSkin(animate ? Math.max(0, ...arrive) + 1300 - late : 0);
