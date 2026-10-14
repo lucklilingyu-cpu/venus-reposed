@@ -205,10 +205,13 @@ function updateLabels() {
   const w = window.innerWidth, h = window.innerHeight;
   V.forEach((vp, i) => {
     const p = S.pos[i]; if (!p) return;
-    const top = S.view === 'color' ? PT + 2.6 : PT + (vp.bounds ? vp.bounds.max.y : 1.6) + 0.3;
-    _v.set(vp.g.position.x, top + vp.g.position.y, vp.g.position.z).project(camera);
-    const vis = vp === focusedSculpture && vp.fig && vp.fig.visible && _v.z > -1 && _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1;
     const tag = vp.tag;
+    if (vp !== focusedSculpture || !vp.fig || !vp.fig.visible || !vp.bounds) { tag.classList.add('hidden'); return; }
+    // Anchor just above this model's highest point, including its current rise and world transform.
+    const b = vp.bounds;
+    _v.set((b.min.x + b.max.x) / 2, b.max.y + 0.07, (b.min.z + b.max.z) / 2);
+    vp.fig.localToWorld(_v); _v.project(camera);
+    const vis = _v.z > -1 && _v.z < 1 && Math.abs(_v.x) < 1 && Math.abs(_v.y) < 1;
     tag.classList.toggle('hidden', !vis);
     if (!vis) return;
     const r = REC[p.work];
@@ -218,9 +221,7 @@ function updateLabels() {
       tag.querySelector('.sculpture-name').textContent = recTitle(r);
       tag.querySelector('.sculpture-year').textContent = r.d || (r.y != null ? (r.y < 0 ? '公元前 ' + Math.abs(r.y) : r.y + ' 年') : 'unknown');
     }
-    const half = tag.offsetWidth / 2;
-    tag.style.left = THREE.MathUtils.clamp((_v.x + 1) / 2 * w, half + 12, w - half - 12) + 'px';
-    const minTop = Math.max(170, (isSmall() ? 180 : 80) + tag.offsetHeight);
-    tag.style.top = Math.max(minTop, (1 - _v.y) / 2 * h) + 'px';
+    tag.style.left = ((_v.x + 1) / 2 * w) + 'px';
+    tag.style.top = ((1 - _v.y) / 2 * h) + 'px';
   });
 }
