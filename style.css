@@ -28,6 +28,10 @@ button{cursor:pointer}
 #scene{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;isolation:isolate}  /* label z-index stays under the panels */
+.sculpture-caption{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:7px;width:max-content;max-width:min(440px,80vw);text-align:center;pointer-events:none;color:#fff8eb;text-shadow:0 1px 8px rgba(18,26,29,.9),0 1px 2px #253332;transition:opacity .3s;z-index:2}
+.sculpture-caption .sculpture-name{font-family:var(--font-serif,Georgia,serif);font-size:clamp(16px,2vw,23px);font-weight:400;line-height:1.25;letter-spacing:.025em}
+.sculpture-caption .sculpture-year{font-size:11px;letter-spacing:.14em;opacity:.8}
+.sculpture-caption.hidden{opacity:0;visibility:hidden}
 .tag{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:6px;padding:2px 9px 2px 3px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid var(--line);font-size:11.5px;white-space:nowrap;pointer-events:auto;cursor:pointer;transition:opacity .3s}
 .tag .n{font-family:var(--font-mono);font-size:10px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--ink)}
 .tag.sel{border-color:var(--ink);z-index:3}

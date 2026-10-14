@@ -291,6 +291,26 @@ function updateShards(dt) {
 /* ---------- visual positions ---------- */
 const V = [];
 const labelsEl = document.getElementById('labels');
+let focusedSculpture = null;
+const focusBeamHeight = HALL.wallH + HALL.vaultRise + 8;
+const focusBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 1.15, focusBeamHeight, 48, 1, true), glowMat.clone());
+focusBeam.material.opacity = 0.035; focusBeam.visible = false; scene.add(focusBeam);
+const focusLight = new THREE.SpotLight(0xfff4e0, 1400, focusBeamHeight + 10, Math.atan(1.35 / focusBeamHeight), 0.75, 2);
+focusLight.visible = false; scene.add(focusLight); scene.add(focusLight.target);
+function clearSculptureFocus() {
+  if (focusedSculpture) focusedSculpture.tag.classList.add('hidden');
+  focusedSculpture = null; focusBeam.visible = focusLight.visible = false;
+  canvas.dataset.focusWork = '';
+}
+function focusSculpture(i) {
+  const vp = V[i]; if (!vp || !vp.fig) return;
+  clearSculptureFocus(); select(i); flyToPosition(i, true); focusedSculpture = vp;
+  focusBeam.position.set(vp.x, PT + focusBeamHeight / 2, vp.z);
+  focusLight.position.set(vp.x, PT + focusBeamHeight, vp.z);
+  focusLight.target.position.set(vp.x, PT, vp.z);
+  focusBeam.visible = focusLight.visible = true;
+  canvas.dataset.focusWork = vp.work;
+}
 const STATUS_COL = { keep: 0xb59a63, swap: 0x246d75, new: 0x6f68a0, beyond: 0xc9c4bc, manual: 0x232323 };
 function makePosition() {
   const g = new THREE.Group(); scene.add(g);
@@ -318,9 +338,8 @@ function makePosition() {
   }
   const soundRing = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.012, 8, 96), new THREE.MeshBasicMaterial({ color: 0xb59a63, transparent: true, opacity: 0.6 }));
   soundRing.rotation.x = Math.PI / 2; soundRing.position.y = PT + 0.04; colorGroup.add(soundRing);
-  const tag = document.createElement('div'); tag.className = 'tag';
-  tag.innerHTML = '<span class="n"></span><span class="t"></span><span class="st"></span><span class="gw"></span>';
-  tag.addEventListener('click', () => select(V.indexOf(vp), { fly: true }));
+  const tag = document.createElement('div'); tag.className = 'sculpture-caption hidden';
+  tag.innerHTML = '<span class="sculpture-name"></span><span class="sculpture-year"></span>';
   labelsEl.appendChild(tag);
   const vp = { g, plinth, tiers, drum, trim, ring, moveHalo, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
@@ -531,6 +550,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
 }
 /* re-arrange the board without changing the sculptures (e.g. another track) */
 function relayout() {
+  clearSculptureFocus();
   if (!S.pos.length) return;
   const arrive = arrangeBoard(S.pos, !reduceMotion);
   scheduleSkin(Math.max(0, ...arrive) + 300);
@@ -589,15 +609,12 @@ async function setFigure(i, p, animate) {
     const h = mesh.bounds.max.y + 0.05;
     const mat = ceramic.clone(); mat.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)];
     m.material = mat;
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.85, 7, 32, 1, true), glowMat.clone());
-    beam.material.opacity = 0; beam.position.set(0, PT + 3.5, 0); vp.g.add(beam);
     tween(1.6, (e, raw) => {
       m.position.y = PT - h * (1 - e);
       vp.g.updateWorldMatrix(true, false);
       mat.clippingPlanes[0].constant = -(vp.g.position.y + PT);
       mat.clippingPlanes[0].normal.set(0, 1, 0);
-      beam.material.opacity = Math.sin(raw * Math.PI) * 0.12;
-    }, () => { m.material = ceramic; mat.dispose(); vp.g.remove(beam); beam.geometry.dispose(); pulseRing(vp); });
+    }, () => { m.material = ceramic; mat.dispose(); pulseRing(vp); });
   } else { m.position.set(0, PT, 0); }
   applyViewTo(vp);
 }
@@ -657,6 +674,7 @@ function computeSequence(day, prev = [], varied = false) {
 }
 let applySeq = 0;
 async function applyDay(day, opts = {}) {
+  clearSculptureFocus();
   const animate = opts.animate !== false && !reduceMotion;
   const my = ++applySeq;
   S.day = day.map(d => ({ ...d }));
@@ -824,15 +842,17 @@ function flyTo(pos, target, dur = 1.4) {
   const p0 = camera.position.clone(), t0 = controls.target.clone();
   camTween = tween(dur, (e) => { camera.position.lerpVectors(p0, pos, e); controls.target.lerpVectors(t0, target, e); });
 }
-function flyToPosition(i) {
+function flyToPosition(i, captionRoom = false) {
   const vp = V[i]; if (!vp || !vp.bounds) return;
   const b = vp.bounds, h = b.max.y, wdt = b.max.x - b.min.x;
   const d = 1.5 + Math.max(h, wdt * 0.8) * 1.15, dz = Math.max(0.8, Math.min(d, 6.9 - vp.z)), dx = Math.sqrt(Math.max(0.36, d * d - dz * dz));
-  flyTo(new THREE.Vector3(vp.x + dx, PT + h * 0.62 + 0.35, vp.z + dz), new THREE.Vector3(vp.x, PT + h * 0.5, vp.z));
+  const lift = captionRoom ? h * 0.2 : 0;
+  flyTo(new THREE.Vector3(vp.x + dx, PT + h * 0.62 + 0.35 + lift, vp.z + dz), new THREE.Vector3(vp.x, PT + h * 0.5 + lift, vp.z));
 }
 function flyHome() { const H = isSmall() ? HOME_M : HOME; flyTo(H.pos.clone(), H.target.clone(), 1.6); }
 function select(i, opts = {}) {
   if (i < 0 || i >= S.pos.length) return;
+  if (focusedSculpture && focusedSculpture !== V[i]) clearSculptureFocus();
   S.sel = i;
   renderStrip(true); renderData(); renderGestures();
   if (opts.fly) flyToPosition(i);

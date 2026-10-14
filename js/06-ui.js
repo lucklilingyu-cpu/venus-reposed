@@ -207,23 +207,18 @@ function updateLabels() {
     const p = S.pos[i]; if (!p) return;
     const top = S.view === 'color' ? PT + 2.6 : PT + (vp.bounds ? vp.bounds.max.y : 1.6) + 0.3;
     _v.set(vp.g.position.x, top + vp.g.position.y, vp.g.position.z).project(camera);
-    const vis = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1;
+    const vis = vp === focusedSculpture && vp.fig && vp.fig.visible && _v.z > -1 && _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1;
     const tag = vp.tag;
     tag.classList.toggle('hidden', !vis);
     if (!vis) return;
     tag.style.left = ((_v.x + 1) / 2 * w) + 'px';
-    tag.style.top = ((1 - _v.y) / 2 * h) + 'px';
-    const cls = p.act && fitsCls(REC[p.work], p.act.cls) ? p.act.cls : clsOf(p.work); // a sculpture chosen for the day shows the day's pose
-    const key = i + cls + p.status + (i === S.sel) + S.day.length + '|' + Group.countAt(i);
+    tag.style.top = Math.max(170, (1 - _v.y) / 2 * h) + 'px';
+    const r = REC[p.work];
+    const key = p.work + '|' + recTitle(r) + '|' + r.d;
     if (tag.dataset.k !== key) {
       tag.dataset.k = key;
-      tag.querySelector('.n').textContent = pad2(i + 1);
-      tag.querySelector('.n').style.background = CLASS[cls].color;
-      tag.querySelector('.t').textContent = CLASS[cls].zh;
-      tag.querySelector('.st').textContent = statusText(p);
-      const gw = Group.countAt(i); tag.querySelector('.gw').textContent = gw ? '＋' + gw : '';
-      tag.classList.toggle('sel', i === S.sel);
-      tag.classList.toggle('quiet', p.status === 'beyond' && S.day.length > 0 && i !== S.sel);
+      tag.querySelector('.sculpture-name').textContent = recTitle(r);
+      tag.querySelector('.sculpture-year').textContent = r.d || (r.y != null ? (r.y < 0 ? '公元前 ' + Math.abs(r.y) : r.y + ' 年') : '年代待考');
     }
   });
 }
