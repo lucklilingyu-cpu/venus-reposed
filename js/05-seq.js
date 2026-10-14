@@ -696,7 +696,7 @@ function chooseWork(cls, g, prevYear, used, count = new Map(), avoid = null, var
   const r = c.slice().sort((a, b) => ((count.get(a.id) || 0) - (count.get(b.id) || 0)) || key(a) - key(b))[0];
   return r ? r.id : null;
 }
-function computeSequence(day, prev = [], varied = false) {
+function computeSequence(day, prev = [], varied = false, focusIndex = null) {
   const n = Math.min(MAX_POS, Math.max(EXISTING.length, day.length));
   // sculptures that keep their place (outside the day, or chosen by hand) are reserved first, so a replacement never doubles them
   const used = new Set(), count = new Map(); let prevYear = null;
@@ -706,7 +706,7 @@ function computeSequence(day, prev = [], varied = false) {
   }
   const out = [];
   for (let i = 0; i < n; i++) {
-    const orig = EXISTING[i] || null, act = day[i] || null;
+    const orig = EXISTING[i] || null, act = focusIndex == null ? (day[i] || null) : (i === focusIndex ? (day[0] || null) : null);
     let work, status;
     if (S.override[i] && REC[S.override[i]]) { work = S.override[i]; status = 'manual'; }
     else if (!act) { work = orig.id; status = 'beyond'; }
@@ -734,7 +734,7 @@ async function applyDay(day, opts = {}) {
   if (opts.source != null) S.source = opts.source;
   if (opts.fresh) S.override = opts.override ? { ...opts.override } : {};
   const previous = S.pos;
-  const seq = computeSequence(S.day, previous, !!opts.fresh || !!opts.varied);
+  const seq = computeSequence(S.day, previous, !!opts.fresh || !!opts.varied, opts.focusIndex);
   S.pos = seq;
   if (S.sel >= seq.length) S.sel = 0;
   // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
