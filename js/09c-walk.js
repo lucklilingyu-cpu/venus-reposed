@@ -4,8 +4,7 @@
    W A S D (or the arrow keys, once walking) walk, Shift runs.
    Click the hall to steer with the mouse (Esc releases it); dragging
    also looks around, on touch screens too, where a direction pad
-   appears. Look up to see the glass vault.
-   Collisions use the floor plan WALK from js/04b-casts.js.
+   appears. The view stays level; nearby models fade instead of blocking movement.
 ---------------------------------------------------------------- */
 const Walk = (() => {
   const EYE = 1.62, R = 0.3, SPEED = 2.4, RUN = 5.0;
@@ -13,29 +12,89 @@ const Walk = (() => {
   const btn = document.getElementById('walkBtn'), bar = document.getElementById('walkbar'), barText = document.getElementById('walkText');
   const cross = document.getElementById('walkCross'), pad = document.getElementById('walkPad');
   const MOVE = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
-  const free = (x, z) => {
-    const b = WALK.bounds;
-    if (x < b.x0 + R || x > b.x1 - R || z < b.z0 + R || z > b.z1 - R) return false;
-    for (const [x0, z0, x1, z1] of WALK.rects) if (x > x0 - R && x < x1 + R && z > z0 - R && z < z1 + R) return false;
-    for (const vp of V) { const r = Math.max(vp.scaleX, vp.scaleZ) * 1.32 * vp.g.scale.x + R; if ((x - vp.g.position.x) ** 2 + (z - vp.g.position.z) ** 2 < r * r) return false; } // plinths beside the pool
-    return true;
-  };
+  const fadeStates = new Map(), scanCells = new Map();
+  const CELL = 0.75, nearBox = new THREE.Box3(), meshBox = new THREE.Box3();
+  const points = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  let scanIndexed = false, proximityTime = 0;
   function nearestFree(x, z) {
     const b = WALK.bounds;
-    x = THREE.MathUtils.clamp(x, b.x0 + R + 0.01, b.x1 - R - 0.01); z = THREE.MathUtils.clamp(z, b.z0 + R + 0.01, b.z1 - R - 0.01);
-    if (free(x, z)) return [x, z];
-    for (let r = 0.25; r < 40; r += 0.25) for (let a = 0; a < 24; a++) {
-      const t = a / 24 * Math.PI * 2, nx = x + Math.cos(t) * r, nz = z + Math.sin(t) * r;
-      if (free(nx, nz)) return [nx, nz];
+    return [THREE.MathUtils.clamp(x, b.x0 + R, b.x1 - R), THREE.MathUtils.clamp(z, b.z0 + R, b.z1 - R)];
+  }
+  // Index only scan triangles crossing the walking body band, once after loading.
+  // A mesh-wide box would incorrectly fade the entire hall whenever we entered it.
+  function indexScan() {
+    if (scanIndexed || canvas.dataset.vaHallScan !== 'ready') return;
+    VAHallScan.group.updateWorldMatrix(true, true);
+    VAHallScan.group.traverse(mesh => {
+      if (!mesh.isMesh) return;
+      const geometry = mesh.geometry, positions = geometry.attributes.position, index = geometry.index;
+      const count = index ? index.count : positions.count, bounds = WALK.bounds;
+      for (let i = 0; i < count; i += 3) {
+        for (let j = 0; j < 3; j++) points[j].fromBufferAttribute(positions, index ? index.getX(i + j) : i + j).applyMatrix4(mesh.matrixWorld);
+        const [a, b, c] = points;
+        if (Math.max(a.y, b.y, c.y) < EYE - 0.8 || Math.min(a.y, b.y, c.y) > EYE + 0.7) continue;
+        const x0 = Math.max(bounds.x0, Math.min(a.x, b.x, c.x)), x1 = Math.min(bounds.x1, Math.max(a.x, b.x, c.x));
+        const z0 = Math.max(bounds.z0, Math.min(a.z, b.z, c.z)), z1 = Math.min(bounds.z1, Math.max(a.z, b.z, c.z));
+        for (let x = Math.floor(x0 / CELL); x <= Math.floor(x1 / CELL); x++) for (let z = Math.floor(z0 / CELL); z <= Math.floor(z1 / CELL); z++) {
+          const key = x + ':' + z;
+          if (!scanCells.has(key)) scanCells.set(key, new Set());
+          scanCells.get(key).add(mesh);
+        }
+      }
+    });
+    scanIndexed = true;
+  }
+  function fade(mesh) {
+    if (fadeStates.has(mesh)) return;
+    const original = mesh.material, sources = Array.isArray(original) ? original : [original];
+    const copies = sources.map(source => {
+      const copy = source.clone(); delete copy.userData.scanRole;
+      copy.transparent = true; copy.depthWrite = false; copy.opacity = 0.12; copy.needsUpdate = true;
+      return copy;
+    });
+    fadeStates.set(mesh, { original, sources, copies, faded: Array.isArray(original) ? copies : copies[0],
+      castShadow: mesh.castShadow, base: sources.map(m => ({ opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite })) });
+    mesh.material = fadeStates.get(mesh).faded; mesh.castShadow = false;
+    renderer.shadowMap.needsUpdate = true;
+  }
+  function restore(mesh, state) {
+    if (mesh.material === state.faded) {
+      mesh.material = state.original; mesh.castShadow = state.castShadow;
+      state.sources.forEach((m, i) => { Object.assign(m, state.base[i]); m.needsUpdate = true; });
     }
-    return [0, 6];
+    state.copies.forEach(m => m.dispose()); fadeStates.delete(mesh);
+    renderer.shadowMap.needsUpdate = true;
+  }
+  function updateTransparency(dt) {
+    proximityTime -= dt;
+    if (proximityTime <= 0) {
+      proximityTime = 0.12; indexScan();
+      const nearby = new Set(), p = camera.position;
+      for (let x = Math.floor((p.x - 0.45) / CELL); x <= Math.floor((p.x + 0.45) / CELL); x++) for (let z = Math.floor((p.z - 0.45) / CELL); z <= Math.floor((p.z + 0.45) / CELL); z++) {
+        const meshes = scanCells.get(x + ':' + z); if (meshes) for (const mesh of meshes) nearby.add(mesh);
+      }
+      nearBox.min.set(p.x - 0.55, EYE - 0.8, p.z - 0.55); nearBox.max.set(p.x + 0.55, EYE + 0.7, p.z + 0.55);
+      for (const vp of V) {
+        if (!vp.g.parent || !vp.g.visible) continue;
+        meshBox.setFromObject(vp.g);
+        if (meshBox.intersectsBox(nearBox)) vp.g.traverse(mesh => { if (mesh.isMesh) nearby.add(mesh); });
+      }
+      for (const [mesh, state] of fadeStates) if (!nearby.has(mesh) || !mesh.parent) restore(mesh, state);
+      for (const mesh of nearby) fade(mesh);
+    }
+    // Keep cloned illumination in sync without changing the shared originals.
+    for (const state of fadeStates.values()) state.copies.forEach((m, i) => {
+      const source = state.sources[i]; if (m.color && source.color) m.color.copy(source.color);
+      m.envMapIntensity = source.envMapIntensity;
+    });
+    canvas.dataset.walkFadedMeshes = String(fadeStates.size);
   }
   function label() {
-    barText.textContent = matchMedia('(pointer: coarse)').matches ? '拖动画面环顾，用右下角的方向键行走'
-      : st.locked ? (isSmall() ? 'W A S D 行走 · 移动鼠标环顾 · Esc 松开' : 'W A S D 行走 · Shift 跑 · 移动鼠标环顾 · 单击选中准星对着的雕塑 · Esc 松开鼠标')
-      : (isSmall() ? 'W A S D 行走 · 拖动环顾 · Esc 退出' : 'W A S D 行走 · Shift 跑 · 拖动画面环顾，单击画面用鼠标转向 · Esc 退出步行');
+    barText.textContent = matchMedia('(pointer: coarse)').matches ? '拖动画面左右环顾，用右下角的方向键行走'
+      : st.locked ? (isSmall() ? 'W A S D 行走 · 移动鼠标左右环顾 · Esc 松开' : 'W A S D 行走 · Shift 跑 · 移动鼠标左右环顾 · 单击选中准星对着的雕塑 · Esc 松开鼠标')
+      : (isSmall() ? 'W A S D 行走 · 拖动左右环顾 · Esc 退出' : 'W A S D 行走 · Shift 跑 · 拖动画面左右环顾，单击画面用鼠标转向 · Esc 退出步行');
   }
-  const apply = () => camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ');
+  const apply = () => { st.pitch = 0; camera.up.set(0, 1, 0); camera.rotation.set(0, st.yaw, 0, 'YXZ'); };
   function enter() {
     if (st.active) return;
     stopTour({ stay: true });
@@ -44,19 +103,19 @@ const Walk = (() => {
     st.yaw = Math.atan2(-dir.x, -dir.z); st.pitch = 0; st.vx = st.vz = 0;
     const [x, z] = nearestFree(camera.position.x, camera.position.z);
     camera.position.set(x, EYE, z); apply();
-    controls.enabled = false; st.active = true;
+    controls.enabled = false; st.active = true; proximityTime = 0; updateTransparency(0);
     document.body.classList.add('walking'); btn.setAttribute('aria-pressed', 'true'); bar.hidden = false; label();
   }
   function exit() {
     if (!st.active) return;
-    st.active = false; st.keys.clear(); st.pad.f = st.pad.r = 0; st.drag = null;
+    st.active = false; for (const [mesh, state] of fadeStates) restore(mesh, state); canvas.dataset.walkFadedMeshes = '0'; st.keys.clear(); st.pad.f = st.pad.r = 0; st.drag = null;
     if (document.pointerLockElement) document.exitPointerLock();
     const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
     controls.target.copy(camera.position).addScaledVector(fwd, 4);
     controls.enabled = true; controls.update();
     document.body.classList.remove('walking'); btn.setAttribute('aria-pressed', 'false'); bar.hidden = true; cross.hidden = true;
   }
-  function look(dx, dy, k) { st.yaw -= dx * k; st.pitch = THREE.MathUtils.clamp(st.pitch - dy * k, -1.5, 1.5); apply(); }
+  function look(dx, dy, k) { st.yaw -= dx * k; apply(); }
   function update(dt) {
     const k = st.keys;
     const f = (k.has('f') ? 1 : 0) - (k.has('b') ? 1 : 0) + st.pad.f, r = (k.has('r') ? 1 : 0) - (k.has('l') ? 1 : 0) + st.pad.r;
@@ -65,10 +124,11 @@ const Walk = (() => {
     const a = 1 - Math.exp(-dt * 10);
     st.vx += (tx * sp - st.vx) * a; st.vz += (tz * sp - st.vz) * a;
     const p = camera.position;
-    const nx = p.x + st.vx * dt; if (free(nx, p.z)) p.x = nx; else st.vx = 0; // slide along walls and plinths
-    const nz = p.z + st.vz * dt; if (free(p.x, nz)) p.z = nz; else st.vz = 0;
-    const v = Math.hypot(st.vx, st.vz); st.step += v * dt;
-    p.y = EYE + (reduceMotion ? 0 : Math.sin(st.step * 2.3) * 0.022 * Math.min(1, v / SPEED));
+    const b = WALK.bounds;
+    p.x = THREE.MathUtils.clamp(p.x + st.vx * dt, b.x0 + R, b.x1 - R);
+    p.z = THREE.MathUtils.clamp(p.z + st.vz * dt, b.z0 + R, b.z1 - R);
+    p.y = EYE;
+    updateTransparency(dt);
     apply();
   }
 
