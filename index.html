@@ -171,12 +171,13 @@
         <!-- POSE VIDEO COLLECTION START -->
         <section class="pose-video-collection" id="poseVideoCollection" aria-label="Skeleton Video Collection">
           <div class="row pose-video-heading"><h3 class="ph">Skeleton Video Collection</h3><span class="small muted" id="poseVideoCount">10 videos</span></div>
-          <p class="small muted pose-video-intro">点击缩略图播放已添加骨骼的视频。名称包含女神、女团和歌曲；“Visual comparison”表示姿态视觉对照。</p>
+          <p class="small muted pose-video-intro">点击视频，按实际骨骼数据生成姿势序列，并使用文字日记相同的雕塑匹配和动画。选择另一条视频会返回展厅全景。</p>
           <div class="pose-video-gallery" id="poseVideoGallery" aria-label="Skeleton video list"></div>
           <div class="pose-video-selected" id="poseVideoSelected" hidden>
             <h4 id="poseVideoTitle"></h4>
             <video id="poseCollectionPlayer" controls playsinline preload="none" aria-label="Selected skeleton video"></video>
             <p class="small muted" id="poseVideoRelation"></p>
+            <p class="small" id="poseVideoSequence" aria-live="polite"></p>
             <div class="row">
               <a class="btn" id="poseVideoDownload" download>下载视频</a>
               <a class="btn" id="poseVideoSource" target="_blank" rel="noopener noreferrer">视频来源</a>
