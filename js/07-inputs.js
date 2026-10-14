@@ -346,16 +346,17 @@ const Vid = { frames: [], busy: false };
 let poseGalleryItems = null, lastGalleryFocus = -1;
 let galleryOverviewTimer = 0;
 let poseSlideshowRoot = null, poseSlideshowItems = [], poseSlideshowIndex = 0, poseSlideshowTimer = 0;
+const POSE_ORBIT_SLOTS = 5;
 const poseSlideshowPoint = new THREE.Vector3();
 function ensurePoseSlideshow() {
   if (poseSlideshowRoot) return poseSlideshowRoot;
   poseSlideshowRoot = document.createElement('div');
   poseSlideshowRoot.id = 'poseSlideshow'; poseSlideshowRoot.className = 'pose-slideshow hidden';
   poseSlideshowRoot.setAttribute('aria-hidden', 'true');
-  poseSlideshowRoot.innerHTML = `
-    <figure class="pose-slide pose-slide-left"><img alt=""><figcaption></figcaption></figure>
-    <figure class="pose-slide pose-slide-main"><img alt=""><figcaption></figcaption></figure>
-    <figure class="pose-slide pose-slide-right"><img alt=""><figcaption></figcaption></figure>
+  const cards = Array.from({ length: POSE_ORBIT_SLOTS }, (_, i) =>
+    `<div class="pose-orbit-slot"><figure class="pose-orbit-card"><div class="pose-orbit-face"><img alt=""><figcaption></figcaption></div></figure></div>`
+  ).join('');
+  poseSlideshowRoot.innerHTML = `<div class="pose-orbit">${cards}</div>
     <div class="pose-slide-note"><span class="pose-slide-kicker">POSE STUDY · ${esc('姿势图集')}</span><span class="pose-slide-count"></span></div>`;
   $('#labels').appendChild(poseSlideshowRoot);
   return poseSlideshowRoot;
@@ -363,16 +364,19 @@ function ensurePoseSlideshow() {
 function updatePoseSlideshowFrame(animate = false) {
   if (!poseSlideshowRoot || !poseSlideshowItems.length) return;
   const root = poseSlideshowRoot, n = poseSlideshowItems.length;
-  const slots = [root.querySelector('.pose-slide-left'), root.querySelector('.pose-slide-main'), root.querySelector('.pose-slide-right')];
-  const indexes = [(poseSlideshowIndex + n - 1) % n, poseSlideshowIndex, (poseSlideshowIndex + 1) % n];
-  root.classList.toggle('has-two', n === 2); root.classList.toggle('has-one', n === 1);
+  const slots = [...root.querySelectorAll('.pose-orbit-slot')];
+  root.classList.toggle('has-few', n < POSE_ORBIT_SLOTS);
   slots.forEach((slot, i) => {
-    const item = poseSlideshowItems[indexes[i]];
-    slot.hidden = i === 0 ? n < 2 : i === 2 ? n < 3 : false;
-    slot.querySelector('img').src = item.file;
-    slot.querySelector('img').alt = item.title;
-    slot.querySelector('figcaption').textContent = item.title;
-    slot.classList.toggle('is-current', i === 1);
+    const item = poseSlideshowItems[(poseSlideshowIndex + i) % n];
+    slot.hidden = i >= n;
+    const angle = i * 360 / Math.min(n, POSE_ORBIT_SLOTS);
+    slot.style.setProperty('--slot-angle', `${angle}deg`);
+    slot.style.setProperty('--counter-angle', `${-angle}deg`);
+    const card = slot.querySelector('.pose-orbit-card');
+    card.querySelector('img').src = item.file;
+    card.querySelector('img').alt = item.title;
+    card.querySelector('figcaption').textContent = item.title;
+    card.classList.toggle('is-current', i === 0);
   });
   root.querySelector('.pose-slide-count').textContent = `${String(poseSlideshowIndex + 1).padStart(2, '0')} / ${String(n).padStart(2, '0')}`;
   if (animate) {
@@ -392,7 +396,7 @@ function startPoseSlideshow(selectedItem, cls) {
   poseSlideshowTimer = setInterval(() => {
     if (poseSlideshowItems.length > 1) poseSlideshowIndex = (poseSlideshowIndex + 1) % poseSlideshowItems.length;
     updatePoseSlideshowFrame(true);
-  }, 1700);
+  }, 3200);
   updatePoseSlideshowAnchor();
 }
 function stopPoseSlideshow() {
