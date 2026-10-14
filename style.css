@@ -227,6 +227,8 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:2px 0}
   #dataToggle{display:none}
   .atlas-head{padding-left:14px;padding-right:14px}
   .atlas-head input{width:100%}
+  #atlas .atlas-title,#atlas .atlas-filters{flex-basis:100%}
+  #atlas .atlas-head input{width:calc(100% - 64px)}
   .atlas-body{padding:14px}
   .atlas-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:14px 10px}
 }
