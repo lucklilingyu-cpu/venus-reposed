@@ -237,43 +237,80 @@ function mpDetect(source) {
 }
 
 /* ---------- camera mode ---------- */
-const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0 };
+const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0,
+  generation: 0, engine: null, busy: false, videoTime: -1, detectTime: 0, motion: [], note: '' };
 function camStatus(t) { $('#camStatus').innerHTML = t; }
+function cameraNote(text) { if (Cam.note !== text) { Cam.note = text; camStatus(text); } }
 function startSession() {
   if (S.source !== '摄像头') { S.posPal = {}; applyDay([], { source: '摄像头', fresh: true }); }
-  Cam.hist = []; Cam.holdCls = null; Cam.lastAdded = null;
+  Cam.hist = []; Cam.holdCls = null; Cam.lastAdded = null; Cam.last = null; Cam.motion = [];
+  Cam.engine?.matcher.reset(); Cam.engine?.hold.reset();
 }
 async function startCamera() {
   stopCamera();
+  const generation = Cam.generation;
   const msg = $('#camMsg');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     msg.textContent = '这个浏览器不能使用摄像头。'; camStatus('请用最新版 Chrome、Edge 或 Safari 通过 https 网址打开；也可以先点“模拟演示”，或在“视频 / 照片”里上传手机拍的片段。');
     return;
   }
   try {
-    Cam.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+    if (generation !== Cam.generation) { stream.getTracks().forEach(t => t.stop()); return; }
+    Cam.stream = stream;
   } catch (e) {
+    if (generation !== Cam.generation) return;
     msg.textContent = '摄像头没有打开';
     camStatus('浏览器没有允许使用摄像头：点地址栏左侧的图标，把摄像头改为“允许”后再试；或者先用“模拟演示”和“视频 / 照片”。');
     return;
   }
-  const video = $('#camVideo'); video.srcObject = Cam.stream; await video.play().catch(() => {});
+  const video = $('#camVideo'); video.srcObject = Cam.stream;
+  try { await video.play(); } catch (_) {
+    if (generation !== Cam.generation) return;
+    stopCamera(); msg.textContent = '摄像头画面没有开始播放'; camStatus('请重新打开摄像头后再试。'); return;
+  }
+  if (generation !== Cam.generation) return;
   msg.textContent = ''; camStatus('<b>正在加载姿势模型（MediaPipe）…</b>');
-  try { await loadMP(); } catch (e) { camStatus('姿势模型没有加载成功（需要联网）。可以先用“模拟演示”。'); return; }
-  camStatus('站进画面，让全身入镜；坐在电脑前时只拍到上半身也可以。保持一个姿势 2 秒就会加入序列。');
+  try {
+    const loading = import(new URL('assets/camera/camera-engine.mjs', document.baseURI).href)
+      .then(module => module.createCameraEngine(document.baseURI, text => { if (generation === Cam.generation) cameraNote(text); })).then(engine => {
+        if (generation !== Cam.generation) { engine.close(); return null; }
+        return engine;
+      });
+    const engine = await withTimeout(loading, 45000, '摄像头姿势模型加载超时');
+    if (generation !== Cam.generation) { engine?.close(); return; }
+    Cam.engine = engine;
+  } catch (_) {
+    if (generation !== Cam.generation) return;
+    stopCamera(); camStatus('姿势模型没有加载成功。请检查网络后重新打开摄像头；也可以先用“模拟演示”。'); return;
+  }
+  if (generation !== Cam.generation || !Cam.engine) return;
+  cameraNote('让肩膀、髋部和腿部进入画面；保持一个姿势 2 秒就会加入序列，换手势或换造型后可以继续识别。');
   startSession(); Cam.demo = false; $('#camAdd').disabled = false;
   $('#camStart').textContent = '关闭摄像头';
-  const loop = () => {
+  const loop = async now => {
+    if (generation !== Cam.generation || !Cam.stream) return;
     Cam.raf = requestAnimationFrame(loop);
-    if (video.readyState < 2) return;
-    let res = null; try { res = mpDetect(video); } catch (e) { return; }
-    camFrame(res ? res.K : null, res ? res.P2 : null, true);
+    if (video.readyState < 2 || Cam.busy || video.currentTime === Cam.videoTime || now-Cam.detectTime < 80) return;
+    Cam.videoTime = video.currentTime; Cam.detectTime = now; Cam.busy = true;
+    try {
+      const res = await Cam.engine.detect(video, now);
+      if (generation === Cam.generation) camFrame(res ? res.K : null, res ? res.P2 : null, true, res?.coordinateSystem);
+    } catch (_) {
+      if (generation === Cam.generation) {
+        camFrame(null, null, true);
+        cameraNote('这一帧没有完成识别，正在继续尝试；请保持身体在画面内。');
+      }
+    } finally { if (generation === Cam.generation) Cam.busy = false; }
   };
-  loop();
+  Cam.raf = requestAnimationFrame(loop);
 }
 function stopCamera() {
+  Cam.generation++;
   cancelAnimationFrame(Cam.raf); Cam.raf = 0;
   if (Cam.stream) { Cam.stream.getTracks().forEach(t => t.stop()); Cam.stream = null; }
+  Cam.engine?.close(); Cam.engine = null; Cam.busy = false; Cam.videoTime = -1; Cam.detectTime = 0;
+  Cam.last = null; Cam.motion = []; Cam.note = ''; $('#camVideo').srcObject = null; $('#camAdd').disabled = true;
   Cam.demo = false;
   $('#camStart').textContent = '打开摄像头';
   $('#camDemo').textContent = '模拟演示';
@@ -307,24 +344,51 @@ function startDemo() {
   };
   loop();
 }
-function camFrame(K, P2, mirror) {
+function camFrame(K, P2, mirror, coordinateSystem = 'world') {
   const c = $('#camCanvas'), box = c.getBoundingClientRect();
   if (c.width !== Math.round(box.width * 2)) { c.width = Math.round(box.width * 2); c.height = Math.round(box.height * 2); }
   const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
   if (Cam.demo) { ctx.fillStyle = '#2c2226'; ctx.fillRect(0, 0, c.width, c.height); }
-  if (!K) { renderBars(null); $('#holdBar').style.width = '0'; Cam.holdCls = null; return; }
+  const now = performance.now();
+  if (!K) {
+    renderBars(null); $('#holdBar').style.width = '0'; Cam.holdCls = null; Cam.last = null;
+    if (!Cam.demo) { Cam.engine?.hold.update(null, now); Cam.engine?.matcher.reset(); Cam.motion = [];
+      cameraNote('还没有找到可靠的身体骨架，请让身体进入画面，并保持光线清楚。'); }
+    return;
+  }
+  const rawP2 = P2;
+  if (!Cam.demo) P2 = Object.fromEntries(Object.entries(P2 || {}).map(([k, p]) => [k, p ? [...p] : null]));
   if (P2 && mirror) for (const k in P2) if (P2[k]) P2[k] = [1 - P2[k][0], P2[k][1]];
   drawStick(ctx, P2, c.width, c.height);
   const d = sub3(K.lank, K.rank), ha = sub3(K.lhip, K.rhip);
   const fl = Math.hypot(ha.z, ha.x) || 1;
-  Cam.hist.push((d.x * ha.z - d.z * ha.x) / fl); if (Cam.hist.length > 90) Cam.hist.shift();
-  const r = classifyPose(K, Cam.hist);
+  const stride = coordinateSystem === 'image-plane' ? d.x : (d.x * ha.z - d.z * ha.x) / fl;
+  if (Cam.demo) { Cam.hist.push(stride); if (Cam.hist.length > 90) Cam.hist.shift(); }
+  else {
+    if ((K.lank.v ?? 0) >= .5 && (K.rank.v ?? 0) >= .5) Cam.motion.push({ time: now, value: stride });
+    Cam.motion = Cam.motion.filter(sample => now-sample.time <= 1600);
+    Cam.hist = Cam.motion.map(sample => sample.value);
+  }
+  const base = classifyPose(K, Cam.hist);
+  const video = $('#camVideo');
+  const r = !Cam.demo && Cam.engine ? Cam.engine.matcher.classify(K, rawP2, video.videoWidth || 640, video.videoHeight || 480, base, now) : base;
+  if (!Cam.demo && r.ready === false) {
+    Cam.last = null; renderBars(r.P); Cam.engine.hold.update(r, now); $('#holdBar').style.width = '0';
+    cameraNote(r.reason); return;
+  }
   Cam.last = r;
   renderBars(r.P);
   ctx.fillStyle = 'rgba(251,247,245,.92)'; ctx.font = `${Math.round(c.width * 0.045)}px "Noto Sans SC", sans-serif`;
   ctx.fillText(`${CLASS[r.top].zh} ${Math.round(r.P[r.top] * 100)}%${r.g ? ' · ' + GESTURES[r.g].zh : ''}`, c.width * 0.04, c.height * 0.09);
   // hold to confirm
-  const now = performance.now();
+  if (!Cam.demo && Cam.engine) {
+    const confirmation = Cam.engine.hold.update(r, now);
+    $('#holdBar').style.width = (confirmation.progress*100)+'%';
+    cameraNote(Cam.engine.libraryLoaded ? '已识别骨骼。保持一个姿势 2 秒加入序列，换手势或换造型后可以继续识别。'
+      : '已识别骨骼，参考样本暂未载入，正在使用基础识别。保持一个姿势 2 秒加入序列。');
+    if (confirmation.accept) addCamPose(r);
+    return;
+  }
   if (r.P[r.top] > 0.5 && r.top === Cam.holdCls) {
     const p = Math.min(1, (now - Cam.holdT0) / 2000);
     $('#holdBar').style.width = (p * 100) + '%';
