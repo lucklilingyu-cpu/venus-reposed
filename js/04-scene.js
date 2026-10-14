@@ -46,8 +46,7 @@ const ExhibitionEnvelope = (() => {
   const bounds = { x0: HALL.x0 - 2, x1: HALL.x1 + 2, z0: -13, z1: 13, height: HALL.wallH + HALL.vaultRise };
   const group = new THREE.Group(); group.name = 'venus-exhibition-envelope';
   group.userData.bounds = bounds;
-  const wallMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(8, 8, 8), toneMapped: false });
-  const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x4d595b, roughness: 0.8, metalness: 0.15, envMapIntensity: 0.2 });
+  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 1, metalness: 0, envMapIntensity: 0.3, transparent: true, opacity: 0.3, depthWrite: false });
   const glassMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb8cbd0, roughness: 0.25, metalness: 0,
     transparent: true, opacity: 0.28, transmission: 0.35, thickness: 0.14, ior: 1.45,
     side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.18 });
@@ -57,24 +56,27 @@ const ExhibitionEnvelope = (() => {
     group.add(mesh); return mesh;
   }
   const width = bounds.x1 - bounds.x0, depth = bounds.z1 - bounds.z0, height = bounds.height;
-  // Fixed white also survives the compositor output tone mapping.
-  const translucentWallMaterial = wallMaterial.clone();
-  translucentWallMaterial.transparent = true; translucentWallMaterial.opacity = 0.45;
-  translucentWallMaterial.depthWrite = false;
-  function wall(name, w, d, x, z, translucent = false) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, height, d), translucent ? translucentWallMaterial : wallMaterial);
+  // A continuous vertical colour blend, without wall textures, seams or roof-grid shadows.
+  const lowerWallColor = new THREE.Color(0x89938a), whiteWallColor = new THREE.Color(0xffffff);
+  function wall(name, w, d, x, z) {
+    const geometry = new THREE.BoxGeometry(w, height, d, 1, 48, 1);
+    const positions = geometry.attributes.position, colors = new Float32Array(positions.count * 3);
+    const color = new THREE.Color();
+    for (let i = 0; i < positions.count; i++) {
+      const y = positions.getY(i) + height / 2;
+      const blend = THREE.MathUtils.smoothstep(y, 4, 14);
+      color.copy(lowerWallColor).lerp(whiteWallColor, blend).toArray(colors, i * 3);
+    }
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mesh = new THREE.Mesh(geometry, wallMaterial);
     mesh.name = name; mesh.position.set(x, height / 2, z);
     mesh.castShadow = false; mesh.receiveShadow = false;
     group.add(mesh);
   }
-  for (const z of [bounds.z0, bounds.z1]) wall('perimeter-long-wall', width + 0.38, 0.38, 0, z, z === bounds.z1);
+  for (const z of [bounds.z0, bounds.z1]) wall('perimeter-long-wall', width + 0.38, 0.38, 0, z);
   for (const x of [bounds.x0, bounds.x1]) wall('perimeter-end-wall', 0.38, depth, x, 0);
   box('glass-roof', width, 0.14, depth, 0, height + 0.07, 0, glassMaterial, false);
-  for (const z of [bounds.z0, bounds.z1]) box('roof-edge-frame', width, 0.16, 0.12, 0, height + 0.16, z, frameMaterial);
-  for (const x of [bounds.x0, bounds.x1]) box('roof-edge-frame', 0.12, 0.16, depth, x, height + 0.16, 0, frameMaterial);
-  for (let x = bounds.x0 + 4; x < bounds.x1; x += 4) box('roof-glazing-bar', 0.07, 0.12, depth, x, height + 0.15, 0, frameMaterial);
-  box('roof-central-bar', width, 0.12, 0.07, 0, height + 0.15, 0, frameMaterial);
-  const day = new THREE.Color(0xffffff), night = new THREE.Color(0x111b2b), background = day.clone();
+  const day = new THREE.Color(0xb4bec2), night = new THREE.Color(0x111b2b), background = day.clone();
   function setNight(value) { background.copy(day).lerp(night, value); }
   scene.add(group); scene.background = background; renderer.setClearColor(background, 1);
   canvas.dataset.enclosureHeight = String(height);
