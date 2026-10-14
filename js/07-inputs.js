@@ -604,3 +604,21 @@ async function importGalleryAnnotations(file) {
     if (!saveGalleryAnnotations()) return; $('#poseGalleryStatus').textContent = '标注文件已导入到此浏览器。';
   } catch (_) { $('#poseGalleryStatus').textContent = '导入失败：请选择本图集导出的 JSON 标注文件。'; }
 }
+
+
+// Ensure manually annotated atlas images also finish with a close-up of their matching sculpture.
+function updateHallFromGalleryAnnotation(item, annotation) {
+  const cls = CLS.includes(annotation.cls) ? annotation.cls : 'standing';
+  const validGesture = annotation.g && GESTURES[annotation.g]?.cls.includes(cls) ? annotation.g : null;
+  S.posPal = {}; S.sel = 0;
+  return applyDay([{ cls, g: validGesture, label: item.title.slice(0, 28) + ' · 校正' + CLASS[cls].zh, time: null, hours: CLASS[cls].dur }], {
+    source: '骨骼图集人工校正', fresh: true,
+    onVisualComplete: (seq) => {
+      const i = seq.findIndex(p => p.act && p.act.cls === cls && (p.act.g || null) === validGesture);
+      if (i < 0) return;
+      Walk.exit();
+      focusSculpture(i);
+      $('#poseGalleryStatus').textContent = `校正为「${CLASS[cls].zh}」，展厅动画已完成，正在近景展示对应雕像。`;
+    },
+  });
+}
