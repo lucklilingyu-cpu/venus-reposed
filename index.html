@@ -1,41 +1,41 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Venus, Re-posed</title>
-<meta name="description" content="Venus, Re-posed · Bartlett Workshop 7：日常姿势在 V&amp;A Cast Courts 里替换女神雕塑，石膏丝带按序列缠绕雕塑；组员作品汇总平台。">
+<meta name="description" content="Venus, Re-posed · Bartlett Workshop 7: everyday poses swap goddess sculptures inside the V&amp;A Cast Courts, with plaster ribbons winding around them in sequence; a platform gathering the group’s work.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@500;600;700&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
 <link rel="stylesheet" href="style.css?v=lobby-20261022">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
-<!-- ===== 页面结构：面板、浮层、弹窗都在这里。样式在 style.css，功能在 js/ ===== -->
+<!-- ===== Page structure: panels, overlays and dialogs live here. Styles in style.css, behaviour in js/ ===== -->
 <div id="app">
-  <!-- ===== 开场入口页：只是盖在展厅上的一层，展厅在它后面照常加载。点“进入展厅”后淡出。 ===== -->
-  <section class="intro" id="intro" aria-label="开场">
+  <!-- ===== Lobby: a layer over the hall; the hall keeps loading behind it. ===== -->
+  <section class="intro" id="intro" aria-label="Lobby">
     <div class="intro-sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <div class="intro-plate"><span>VENUS, RE-POSED</span></div>
     <div class="intro-main">
       <h1 class="intro-title"><span>Venus,</span><span class="rose">Re-posed</span></h1>
-      <p class="intro-lede">两种方式走近女神：步入 V&amp;A Cast Courts 的虚拟展馆，<br>或翻阅女神雕塑 Gallery 图谱。</p>
+      <p class="intro-lede">Two ways to meet the goddesses: step into the virtual exhibition at the V&amp;A Cast Courts,<br>or browse the goddess sculpture Gallery.</p>
       <div class="intro-choices">
-        <button class="intro-choice primary" id="introEnter" type="button"><span class="ic-t">展馆<em>Exhibition</em></span><span class="ic-d">步入虚拟展厅，与雕塑同行</span><i aria-hidden="true">›</i></button>
-        <button class="intro-choice" id="introGallery" type="button"><span class="ic-t">Gallery<em>图谱</em></span><span class="ic-d">浏览女神雕塑三维图谱</span><i aria-hidden="true">›</i></button>
+        <button class="intro-choice primary" id="introEnter" type="button"><span class="ic-t">Exhibition<em>The virtual hall</em></span><span class="ic-d">Step into the virtual hall and walk among the sculptures</span><i aria-hidden="true">›</i></button>
+        <button class="intro-choice" id="introGallery" type="button"><span class="ic-t">Gallery<em>The atlas</em></span><span class="ic-d">Browse the 3D atlas of goddess sculptures</span><i aria-hidden="true">›</i></button>
       </div>
     </div>
     <div class="intro-foot">
       <span>Bartlett B-Pro Architectural Design · Workshop 7</span>
-      <span class="intro-hint">展馆内：拖动环顾 · 滚轮缩放 · W A S D 步行</span>
+      <span class="intro-hint">In the exhibition: drag to look around · scroll to zoom · W A S D to walk</span>
     </div>
   </section>
   <section class="gallery-view" id="galleryView" aria-label="Gallery" hidden>
     <iframe id="galleryFrame" title="Goddess Sculpture Atlas" allow="fullscreen; xr-spatial-tracking" referrerpolicy="no-referrer"></iframe>
-    <div class="gallery-bar"><button type="button" id="galleryBack">‹ 返回大厅</button><a href="https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/" target="_blank" rel="noopener">新窗口打开 ↗</a></div>
+    <div class="gallery-bar"><button type="button" id="galleryBack">‹ Back to lobby</button><a href="https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/" target="_blank" rel="noopener">Open in new window ↗</a></div>
   </section>
-  <canvas id="scene" aria-label="V&amp;A Cast Courts 虚拟展厅三维视图"></canvas>
+  <canvas id="scene" aria-label="Virtual hall of the V&amp;A Cast Courts, 3D view"></canvas>
   <div id="labels"></div>
 
   <header class="topbar">
@@ -43,135 +43,135 @@
       <span class="mark">VENUS, RE-POSED</span>
       <span class="sub" id="brandSub">V&amp;A Cast Courts × Goddess Atlas</span>
     </div>
-    <nav class="seg" role="tablist" aria-label="视图" id="views">
-      <button role="tab" data-view="sculpture" aria-selected="true">雕塑序列</button>
-      <button role="tab" data-view="skin" aria-selected="false">表皮序列</button>
-      <button role="tab" data-view="both" aria-selected="false">叠加</button>
-      <button role="tab" data-view="ribbons" aria-selected="false">雕塑与丝带</button>
+    <nav class="seg" role="tablist" aria-label="View" id="views">
+      <button role="tab" data-view="sculpture" aria-selected="true">Sculptures</button>
+      <button role="tab" data-view="skin" aria-selected="false">Skin</button>
+      <button role="tab" data-view="both" aria-selected="false">Overlay</button>
+      <button role="tab" data-view="ribbons" aria-selected="false">Ribbons</button>
     </nav>
     <div class="tools">
-      <button class="iconbtn" id="lobbyBtn" type="button" title="返回大厅">大厅</button>
-      <button class="iconbtn lighting-toggle" id="lightingBtn" type="button" aria-pressed="false" aria-label="切换到夜晚灯光" title="切换白天 / 夜晚灯光"><span class="lighting-symbol" aria-hidden="true">☾</span><span id="lightingLabel">夜晚</span></button>
-      <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 118 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
-      <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
-      <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="显示 / 隐藏骨骼"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">骨架</span></button>
-      <button class="iconbtn" id="tourBtn" title="沿展厅轴线漫游"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl">漫游</span></button>
-      <button class="iconbtn" id="walkBtn" aria-pressed="false" title="像游戏一样在展厅里步行：W A S D 行走，鼠标环顾"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="2.4" r="1.4"/><path d="M8.6 4.6 7.2 8.6l2.4 1.8.5 3.8M7.2 8.6l-1.7 5.2M8.6 4.8l2.4 2.1 1.9.3M8.4 4.9 5.9 6.2l-1 2"/></svg><span class="lbl">步行</span></button>
-      <button class="iconbtn" id="soundBtn" aria-pressed="false" title="声音"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.2a4 4 0 0 1 0 5.6M12.8 3.5a6.4 6.4 0 0 1 0 9"/></svg><span class="lbl">声音</span></button>
+      <button class="iconbtn" id="lobbyBtn" type="button" title="Back to the lobby">Lobby</button>
+      <button class="iconbtn lighting-toggle" id="lightingBtn" type="button" aria-pressed="false" aria-label="Switch to night lighting" title="Switch day / night lighting"><span class="lighting-symbol" aria-hidden="true">☾</span><span id="lightingLabel">Night</span></button>
+      <button class="iconbtn strong" id="atlasBtn" title="The 118 models of the group research site"><span>Atlas<span class="en"> ATLAS</span></span></button>
+      <button class="iconbtn strong" id="groupBtn" title="Collected works of the group members"><span>Group<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
+      <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="Show / hide skeletons"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">Skeleton</span></button>
+      <button class="iconbtn" id="tourBtn" title="Tour along the hall axis"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl">Tour</span></button>
+      <button class="iconbtn" id="walkBtn" aria-pressed="false" title="Walk through the hall like a game: W A S D to move, mouse to look"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="2.4" r="1.4"/><path d="M8.6 4.6 7.2 8.6l2.4 1.8.5 3.8M7.2 8.6l-1.7 5.2M8.6 4.8l2.4 2.1 1.9.3M8.4 4.9 5.9 6.2l-1 2"/></svg><span class="lbl">Walk</span></button>
+      <button class="iconbtn" id="soundBtn" aria-pressed="false" title="Sound"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 6h2.5l3.5-3v10l-3.5-3H2.5z"/><path d="M11 5.2a4 4 0 0 1 0 5.6M12.8 3.5a6.4 6.4 0 0 1 0 9"/></svg><span class="lbl">Sound</span></button>
       <div class="rel">
-        <button class="iconbtn" id="moreBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span class="lbl">表皮与导出</span></button>
+        <button class="iconbtn" id="moreBtn" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg><span class="lbl">Skin and export</span></button>
         <div class="menu" id="moreMenu" hidden>
-          <div class="hint">表皮：石膏丝带</div>
-          <button data-skin="drape">褶皱丝带</button>
-          <button data-skin="smooth">平滑丝带</button>
-          <button data-skin="fold">折面丝带</button>
-          <button id="ownBtn">切换：叠加视图里每件雕塑自己的姿态丝带</button>
-          <button id="bonesBtn">切换：显示骨架火柴人</button>
+          <div class="hint">Skin: plaster ribbons</div>
+          <button data-skin="drape">Ruffled ribbon</button>
+          <button data-skin="smooth">Smooth ribbon</button>
+          <button data-skin="fold">Faceted ribbon</button>
+          <button id="ownBtn">Toggle: each sculpture’s own pose ribbon in the overlay view</button>
+          <button id="bonesBtn">Toggle: show skeleton stick figures</button>
           <hr class="soft">
-          <div class="hint">视角</div>
-          <button data-cam="home">总览：沿轴线的序列</button>
-          <button data-cam="vault">仰望：玻璃拱顶与日光</button>
-          <button data-cam="portico">西端：荣耀门廊复制品</button>
-          <button data-cam="trajan">东端：图拉真柱复制品</button>
-          <button data-cam="axis">轴线：从西端看水景</button>
+          <div class="hint">Viewpoint</div>
+          <button data-cam="home">Overview: the sequence along the axis</button>
+          <button data-cam="vault">Look up: glass vault and daylight</button>
+          <button data-cam="portico">West end: Portico de la Gloria cast</button>
+          <button data-cam="trajan">East end: Trajan’s Column cast</button>
+          <button data-cam="axis">Axis: from the west end over the water</button>
           <hr class="soft">
-          <div class="hint">给 Blender 与组员</div>
-          <button id="exportZip">导出表皮与序列（.zip：OBJ + JSON + 提示词）</button>
-          <button id="copyPrompt">复制 Blender MCP 提示词</button>
+          <div class="hint">For Blender and the group</div>
+          <button id="exportZip">Export skin and sequence (.zip: OBJ + JSON + prompt)</button>
+          <button id="copyPrompt">Copy the Blender MCP prompt</button>
         </div>
       </div>
-      <button class="iconbtn" id="dataToggle" aria-pressed="false">数据</button>
-      <button class="iconbtn" id="aboutBtn" aria-label="说明"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.2"/></svg></button>
+      <button class="iconbtn" id="dataToggle" aria-pressed="false">Data</button>
+      <button class="iconbtn" id="aboutBtn" aria-label="About"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.2"/></svg></button>
     </div>
   </header>
 
-  <aside class="panel left" id="inputPanel" aria-label="输入">
+  <aside class="panel left" id="inputPanel" aria-label="Input">
     <div class="tabs" role="tablist" id="modeTabs">
-      <button role="tab" data-mode="text" aria-selected="true">文字日记</button>
-      <button role="tab" data-mode="camera" aria-selected="false">摄像头</button>
-      <button role="tab" data-mode="video" aria-selected="false">视频 / 照片</button>
+      <button role="tab" data-mode="text" aria-selected="true">Text diary</button>
+      <button role="tab" data-mode="camera" aria-selected="false">Camera</button>
+      <button role="tab" data-mode="video" aria-selected="false">Video / photos</button>
     </div>
     <div class="scroll">
       <section id="mode-text" class="dcard">
         <div class="eyebrow">A day in my life</div>
-        <h2 class="ph">写下你的一天，生成一串姿势</h2>
-        <textarea id="journal" aria-label="日记"></textarea>
+        <h2 class="ph">Write your day and generate a string of poses</h2>
+        <textarea id="journal" aria-label="Diary"></textarea>
         <div class="row">
-          <button class="btn primary" id="parseBtn">生成姿势序列</button>
-          <select id="samples" class="btn" aria-label="示例日记">
-            <option value="">换一个示例…</option>
-            <option value="group">示例 · 组内样例日记</option>
-            <option value="tutor">示例 · 老师的例子</option>
-            <option value="london">示例 · London weekend</option>
+          <button class="btn primary" id="parseBtn">Generate pose sequence</button>
+          <select id="samples" class="btn" aria-label="Sample diary">
+            <option value="">Try another sample…</option>
+            <option value="group">Sample · Group diary</option>
+            <option value="tutor">Sample · Tutor example</option>
+            <option value="london">Sample · London weekend</option>
           </select>
         </div>
-        <label class="check"><input type="checkbox" id="mergeChk" checked> 合并相邻的相同姿势，时长相加</label>
+        <label class="check"><input type="checkbox" id="mergeChk" checked> Merge adjacent identical poses and add their durations</label>
         <div class="status" id="textStatus"></div>
-        <p class="small muted" style="margin:0">可以写虚构的一天。平台只使用解析出的姿势序列，不保存日记原文。</p>
+        <p class="small muted" style="margin:0">You can write an imaginary day. The platform only uses the parsed pose sequence and never stores the diary text.</p>
       </section>
 
       <section id="mode-camera" class="dcard" hidden>
         <div class="eyebrow">Live body language</div>
-        <h2 class="ph">在镜头前做动作，实时识别并加入序列</h2>
-        <div class="cam"><video id="camVideo" playsinline muted></video><canvas id="camCanvas"></canvas><div class="msg" id="camMsg">摄像头未开启</div></div>
+        <h2 class="ph">Move in front of the camera: poses are recognised live and added to the sequence</h2>
+        <div class="cam"><video id="camVideo" playsinline muted></video><canvas id="camCanvas"></canvas><div class="msg" id="camMsg">Camera is off</div></div>
         <div class="hold" aria-hidden="true"><i id="holdBar"></i></div>
         <div class="row">
-          <button class="btn primary" id="camStart">打开摄像头</button>
-          <button class="btn" id="camDemo">模拟演示</button>
-          <button class="btn" id="camAdd" disabled>加入当前姿势</button>
+          <button class="btn primary" id="camStart">Open camera</button>
+          <button class="btn" id="camDemo">Simulated demo</button>
+          <button class="btn" id="camAdd" disabled>Add current pose</button>
         </div>
         <div class="status" id="camStatus"></div>
       </section>
 
       <section id="mode-video" class="dcard" hidden>
         <div class="eyebrow">Third input · video</div>
-        <h2 class="ph">上传一段视频或几张照片，读出动作序列</h2>
-        <label class="drop" id="drop" for="videoFile">把视频或照片拖到这里，或点击选择<br><span class="small">手机上可以直接拍摄</span></label>
+        <h2 class="ph">Upload a video or a few photos to read off a movement sequence</h2>
+        <label class="drop" id="drop" for="videoFile">Drag a video or photos here, or click to choose<br><span class="small">On a phone you can shoot directly</span></label>
         <input type="file" id="videoFile" accept="video/*,image/*" multiple hidden>
         <div class="frames" id="frames"></div>
         <div class="row">
-          <button class="btn primary" id="videoGo" disabled>分析并生成序列</button>
+          <button class="btn primary" id="videoGo" disabled>Analyse and generate sequence</button>
         </div>
         <div class="status" id="videoStatus"></div>
-        <p class="small muted" style="margin:0">只读取身体姿势，不识别人脸；画面不会保存。每段的主色调会传给对应位置的表皮。</p>
-        <div class="row pose-gallery-head"><h3 class="ph">骨骼图集</h3><span class="small muted" id="poseGalleryCount">77 张</span></div>
-        <p class="small muted" style="margin:0">点选图片可识别骨架并更新展厅雕塑。识别在浏览器本地运行；遮挡、侧身或多人画面可能导致关节不完整。</p>
-        <div class="pose-gallery" id="poseGallery" aria-label="骨骼识别图片图集"></div>
-        <div class="status" id="poseGalleryStatus" aria-live="polite">正在载入图片图集…</div>
+        <p class="small muted" style="margin:0">Only body pose is read, never faces; nothing is stored. The dominant colour of each segment is passed to the skin at the matching position.</p>
+        <div class="row pose-gallery-head"><h3 class="ph">Skeleton gallery</h3><span class="small muted" id="poseGalleryCount">77 images</span></div>
+        <p class="small muted" style="margin:0">Pick an image to detect its skeleton and update the hall sculptures. Detection runs locally in your browser; occlusion, side views or several people may leave joints incomplete.</p>
+        <div class="pose-gallery" id="poseGallery" aria-label="Skeleton detection image gallery"></div>
+        <div class="status" id="poseGalleryStatus" aria-live="polite">Loading the image gallery…</div>
         <div class="row pose-annotation-actions">
-          <button class="btn" id="poseAnnotateBtn" type="button" disabled>校正所选图片</button>
-          <button class="btn" id="poseExportBtn" type="button">导出标注</button>
-          <label class="btn" for="poseImportFile">导入标注</label>
+          <button class="btn" id="poseAnnotateBtn" type="button" disabled>Correct selected image</button>
+          <button class="btn" id="poseExportBtn" type="button">Export annotations</button>
+          <label class="btn" for="poseImportFile">Import annotations</label>
           <input id="poseImportFile" type="file" accept="application/json,.json" hidden>
-          <span class="small muted" id="poseAnnotationCount">0 / 77 已校正</span>
+          <span class="small muted" id="poseAnnotationCount">0 / 77 corrected</span>
         </div>
-        <p class="small muted" style="margin:4px 0 0">标注只保存在当前浏览器；导出 JSON 可备份或转移到另一台设备，导入后即可继续使用。</p>
-        <section class="pose-annotator" id="poseAnnotator" hidden aria-label="手动校正骨骼姿势">
+        <p class="small muted" style="margin:4px 0 0">Annotations are stored only in this browser; export the JSON to back it up or move it to another device, then import it to carry on.</p>
+        <section class="pose-annotator" id="poseAnnotator" hidden aria-label="Manually correct skeleton pose">
           <div class="row pose-annotation-head">
-            <h3 class="ph" id="poseAnnotatorTitle">校正姿势标注</h3>
-            <button class="btn" id="poseAnnotatorClose" type="button">关闭</button>
+            <h3 class="ph" id="poseAnnotatorTitle">Correct pose annotation</h3>
+            <button class="btn" id="poseAnnotatorClose" type="button">Close</button>
           </div>
-          <p class="small muted">依次选择关节点，再点击图片放置。按人物自身左右标注；遮挡点可以跳过。设置动作类别后保存，展厅会按校正结果更新。</p>
+          <p class="small muted">Pick each joint in turn, then click the image to place it. Label left and right from the figure’s own point of view; occluded points can be skipped. Set the action class and save, and the hall updates with the correction.</p>
           <div class="pose-annotator-stage" id="poseAnnotatorStage">
-            <img id="poseAnnotatorImage" alt="正在校正的骨骼图集图片">
-            <canvas id="poseAnnotatorCanvas" aria-label="点击图片设置当前关节点"></canvas>
+            <img id="poseAnnotatorImage" alt="Skeleton gallery image being corrected">
+            <canvas id="poseAnnotatorCanvas" aria-label="Click the image to set the current joint"></canvas>
           </div>
           <div class="row pose-annotation-controls">
-            <label class="small">当前点 <select id="poseJointSelect"></select></label>
-            <button class="btn" id="poseJointSkip" type="button">标记为遮挡</button>
-            <button class="btn" id="poseJointClear" type="button">清除此点</button>
-            <label class="small">动作 <select id="poseClassSelect">
-              <option value="standing">站立</option><option value="walking">行走</option><option value="seated">坐姿</option><option value="crouching">蹲姿</option><option value="reclining">斜倚</option><option value="horizontal">躺姿</option>
+            <label class="small">Current point <select id="poseJointSelect"></select></label>
+            <button class="btn" id="poseJointSkip" type="button">Mark as occluded</button>
+            <button class="btn" id="poseJointClear" type="button">Clear this point</button>
+            <label class="small">Action <select id="poseClassSelect">
+              <option value="standing">Standing</option><option value="walking">Walking</option><option value="seated">Seated</option><option value="crouching">Crouching</option><option value="reclining">Reclining</option><option value="horizontal">Lying</option>
             </select></label>
-            <label class="small">复杂姿势 <select id="poseGestureSelect"><option value="">无</option><option value="hair">举手</option><option value="oneleg">单腿</option><option value="cover">遮挡</option><option value="lookback">回眸</option></select></label>
-            <button class="btn primary" id="poseAnnotationSave" type="button">保存并更新展厅</button>
+            <label class="small">Complex pose <select id="poseGestureSelect"><option value="">None</option><option value="hair">Hand raised</option><option value="oneleg">One leg</option><option value="cover">Covering</option><option value="lookback">Look back</option></select></label>
+            <button class="btn primary" id="poseAnnotationSave" type="button">Save and update the hall</button>
           </div>
           <div class="status" id="poseAnnotatorStatus" aria-live="polite"></div>
         </section>
         <!-- POSE VIDEO COLLECTION START -->
         <section class="pose-video-collection" id="poseVideoCollection" aria-label="Skeleton Video Collection">
           <div class="row pose-video-heading"><h3 class="ph">Skeleton Video Collection</h3><span class="small muted" id="poseVideoCount">10 videos</span></div>
-          <p class="small muted pose-video-intro">点击视频，按实际骨骼数据生成姿势序列，并使用文字日记相同的雕塑匹配和动画。选择另一条视频会返回展厅全景。</p>
+          <p class="small muted pose-video-intro">Click a video to generate a pose sequence from its real skeleton data, using the same sculpture matching and animation as the text diary. Choosing another video returns to the hall overview.</p>
           <div class="pose-video-gallery" id="poseVideoGallery" aria-label="Skeleton video list"></div>
           <div class="pose-video-selected" id="poseVideoSelected" hidden>
             <h4 id="poseVideoTitle"></h4>
@@ -179,77 +179,77 @@
             <p class="small muted" id="poseVideoRelation"></p>
             <p class="small" id="poseVideoSequence" aria-live="polite"></p>
             <div class="row">
-              <a class="btn" id="poseVideoDownload" download>下载视频</a>
-              <a class="btn" id="poseVideoSource" target="_blank" rel="noopener noreferrer">视频来源</a>
+              <a class="btn" id="poseVideoDownload" download>Download video</a>
+              <a class="btn" id="poseVideoSource" target="_blank" rel="noopener noreferrer">Video source</a>
             </div>
-            <details class="small pose-video-evidence"><summary>女神关联说明</summary><p id="poseVideoNote"></p><a id="poseVideoEvidence" target="_blank" rel="noopener noreferrer">查看关联依据</a></details>
+            <details class="small pose-video-evidence"><summary>Goddess connection note</summary><p id="poseVideoNote"></p><a id="poseVideoEvidence" target="_blank" rel="noopener noreferrer">See the evidence</a></details>
           </div>
-          <div class="status" id="poseVideoStatus" aria-live="polite">正在载入视频集…</div>
+          <div class="status" id="poseVideoStatus" aria-live="polite">Loading the video collection…</div>
         </section>
         <!-- POSE VIDEO COLLECTION END -->
       </section>
 
       <section class="dcard">
-        <div class="row" style="justify-content:space-between"><h3 class="ph" id="barsTitle" style="font-size:13px">这一天的姿势构成（按时长）</h3></div>
+        <div class="row" style="justify-content:space-between"><h3 class="ph" id="barsTitle" style="font-size:13px">Poses of the day (by duration)</h3></div>
         <div class="bars" id="bars"></div>
       </section>
 
       <section class="dcard">
-        <h3 class="ph" style="font-size:13px">复杂姿势</h3>
-        <p class="small muted" style="margin:0">作用于选中的序列卡片，替换时优先选择同样动作的女神。</p>
+        <h3 class="ph" style="font-size:13px">Complex poses</h3>
+        <p class="small muted" style="margin:0">Applies to the selected sequence card; when swapping, goddesses with the same action are preferred.</p>
         <div class="chips" id="gestures"></div>
       </section>
     </div>
   </aside>
 
-  <section class="strip" id="strip" aria-label="姿势序列">
+  <section class="strip" id="strip" aria-label="Pose sequence">
     <div class="strip-head">
-      <h2 class="ph">Cast Courts 序列 × 你的一天</h2>
+      <h2 class="ph">Cast Courts sequence × your day</h2>
       <span class="summary" id="summary"></span>
       <span style="margin-left:auto" class="row">
-        <select id="layoutSel" class="mini" aria-label="雕塑在水面上的排布轨迹" title="序列沿着哪条轨迹排在棋盘格上">
-          <option value="skeleton">轨迹：第一个动作的骨架</option>
-          <option value="s">轨迹：S 形</option>
+        <select id="layoutSel" class="mini" aria-label="Layout path of the sculptures on the water" title="Which path the sequence follows on the checkerboard">
+          <option value="skeleton">Path: skeleton of the first action</option>
+          <option value="s">Path: S-curve</option>
         </select>
-        <button class="btn" id="saveDayBtn" style="padding:4px 10px" hidden>保存到小组</button>
-        <button class="btn ghost" id="resetBtn" style="padding:4px 10px">展厅原状</button>
+        <button class="btn" id="saveDayBtn" style="padding:4px 10px" hidden>Save to group</button>
+        <button class="btn ghost" id="resetBtn" style="padding:4px 10px">Reset hall</button>
       </span>
     </div>
     <div class="cards" id="cards"></div>
   </section>
 
-  <aside class="panel right" id="dataPanel" aria-label="数据">
+  <aside class="panel right" id="dataPanel" aria-label="Data">
     <div class="scroll" id="dataScroll"></div>
   </aside>
 
   <nav class="sheet-tabs" id="sheetTabs" role="tablist">
-    <button role="tab" data-sheet="inputPanel" aria-selected="false">输入</button>
-    <button role="tab" data-sheet="strip" aria-selected="true">序列</button>
-    <button role="tab" data-sheet="dataPanel" aria-selected="false">数据</button>
-    <button role="tab" data-sheet="" aria-selected="false">只看展厅</button>
+    <button role="tab" data-sheet="inputPanel" aria-selected="false">Input</button>
+    <button role="tab" data-sheet="strip" aria-selected="true">Sequence</button>
+    <button role="tab" data-sheet="dataPanel" aria-selected="false">Data</button>
+    <button role="tab" data-sheet="" aria-selected="false">Hall only</button>
   </nav>
 
-  <div class="loading" id="loading"><i></i><span id="loadingText">正在铸造雕塑…</span></div>
+  <div class="loading" id="loading"><i></i><span id="loadingText">Casting the sculptures…</span></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <div class="tourbar" id="tourbar" hidden><span id="tourText"></span><button id="tourStop">停止</button></div>
-  <div class="walkbar" id="walkbar" hidden><span id="walkText"></span><button id="walkExit">退出步行</button></div>
+  <div class="tourbar" id="tourbar" hidden><span id="tourText"></span><button id="tourStop">Stop</button></div>
+  <div class="walkbar" id="walkbar" hidden><span id="walkText"></span><button id="walkExit">Exit walk</button></div>
   <div class="walkcross" id="walkCross" hidden></div>
-  <div class="walkpad" id="walkPad" aria-label="行走方向键"><span></span><button data-pad="f" aria-label="前进">▲</button><span></span><button data-pad="l" aria-label="向左">◀</button><button data-pad="b" aria-label="后退">▼</button><button data-pad="r" aria-label="向右">▶</button></div>
+  <div class="walkpad" id="walkPad" aria-label="Walking direction keys"><span></span><button data-pad="f" aria-label="Forward">▲</button><span></span><button data-pad="l" aria-label="Left">◀</button><button data-pad="b" aria-label="Back">▼</button><button data-pad="r" aria-label="Right">▶</button></div>
   <input type="file" id="paletteFile" accept="image/*" hidden>
   <input type="file" id="soundFile" accept="audio/*" hidden>
 
   <div class="atlas" id="atlas" hidden>
     <div class="atlas-head">
-      <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub" id="atlasSub">118 件模型 · 哑光石膏 · 精细版按需加载</span></div>
+      <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub" id="atlasSub">118 models · matte plaster · detailed versions load on demand</span></div>
       <div class="atlas-filters" id="atlasFilters"></div>
-      <input id="atlasSearch" type="search" placeholder="搜索标题、作者、收藏地" aria-label="搜索图谱">
-      <button class="iconbtn" id="atlasClose">关闭</button>
+      <input id="atlasSearch" type="search" placeholder="Search title, author, collection" aria-label="Search the atlas">
+      <button class="iconbtn" id="atlasClose">Close</button>
     </div>
     <div class="atlas-body">
       <div class="atlas-grid" id="atlasGrid"></div>
       <div class="spec" id="spec" hidden>
-        <div class="spec-view"><canvas id="specCanvas" aria-label="模型石膏渲染"></canvas>
-          <div class="spec-tools"><button class="chip" id="specBones" aria-pressed="true">骨架</button><button class="chip" id="specSpin" aria-pressed="true">自动旋转</button></div></div>
+        <div class="spec-view"><canvas id="specCanvas" aria-label="Plaster render of the model"></canvas>
+          <div class="spec-tools"><button class="chip" id="specBones" aria-pressed="true">Skeleton</button><button class="chip" id="specSpin" aria-pressed="true">Auto-rotate</button></div></div>
         <div class="spec-info" id="specInfo"></div>
       </div>
     </div>
@@ -258,22 +258,22 @@
 
   <div class="atlas group" id="group" hidden>
     <div class="atlas-head">
-      <div class="atlas-title"><span class="mark">GROUP WORKS</span><span class="sub" id="groupSub">组员的作品</span></div>
+      <div class="atlas-title"><span class="mark">GROUP WORKS</span><span class="sub" id="groupSub">Members’ works</span></div>
       <div class="atlas-filters" id="groupFilters"></div>
-      <select id="groupWho" class="btn" aria-label="按组员筛选" hidden></select>
-      <input id="groupSearch" type="search" placeholder="搜索标题、说明、署名" aria-label="搜索小组作品">
-      <a class="btn ghost" id="groupPublicLink" target="_blank" rel="noopener" hidden>公开展厅 ↗</a>
-      <button class="btn" id="groupLogin" hidden>组员登录</button>
-      <button class="btn" id="groupMe" hidden>我的署名</button>
-      <button class="btn primary" id="groupAdd" hidden>+ 添加作品</button>
-      <button class="iconbtn" id="groupClose">关闭</button>
+      <select id="groupWho" class="btn" aria-label="Filter by member" hidden></select>
+      <input id="groupSearch" type="search" placeholder="Search title, note, credit" aria-label="Search group works">
+      <a class="btn ghost" id="groupPublicLink" target="_blank" rel="noopener" hidden>Public exhibition ↗</a>
+      <button class="btn" id="groupLogin" hidden>Member login</button>
+      <button class="btn" id="groupMe" hidden>My credit</button>
+      <button class="btn primary" id="groupAdd" hidden>+ Add a work</button>
+      <button class="iconbtn" id="groupClose">Close</button>
     </div>
     <div class="atlas-body">
       <div class="gbanner" id="groupBanner" hidden></div>
       <div class="atlas-grid ggrid" id="groupGrid"></div>
       <div class="spec gdetail" id="gdetail" hidden>
-        <div class="spec-view gview"><canvas id="gCanvas" aria-label="模型石膏渲染" hidden></canvas><div class="gmedia" id="gmedia"></div>
-          <div class="spec-tools" id="gtools" hidden><button class="chip" id="gSpin" aria-pressed="true">自动旋转</button></div></div>
+        <div class="spec-view gview"><canvas id="gCanvas" aria-label="Plaster render of the model" hidden></canvas><div class="gmedia" id="gmedia"></div>
+          <div class="spec-tools" id="gtools" hidden><button class="chip" id="gSpin" aria-pressed="true">Auto-rotate</button></div></div>
         <div class="spec-info" id="ginfo"></div>
       </div>
     </div>
@@ -281,100 +281,100 @@
 
   <div class="modal" id="gform" hidden>
     <div class="box wide" role="dialog" aria-modal="true" aria-labelledby="gformTitle">
-      <h2 id="gformTitle">添加作品</h2>
+      <h2 id="gformTitle">Add a work</h2>
       <div class="gform-grid">
         <div class="gform-left">
-          <label class="drop" id="gdrop" for="gfile"><span id="gdropTxt">把文件拖到这里，或点击选择</span><br><span class="small">图片、视频（MP4）、PDF、3D 模型（OBJ / STL / PLY / GLB）、声音或其他文件；也可以不传文件，只写文字或链接</span></label>
+          <label class="drop" id="gdrop" for="gfile"><span id="gdropTxt">Drag a file here, or click to choose</span><br><span class="small">Images, video (MP4), PDF, 3D models (OBJ / STL / PLY / GLB), sound or other files; or skip the file and write text or a link only</span></label>
           <input type="file" id="gfile" hidden>
           <div class="gkind small muted" id="gfKind"></div>
           <div class="gprev"><canvas id="gformCanvas" hidden></canvas><div id="gprevMedia"></div></div>
           <div class="status" id="gfileStatus"></div>
           <div id="gfModel" hidden>
-            <div class="row" id="gfOrient"><select id="gfUp" class="btn" aria-label="哪个轴朝上"></select><button class="btn" id="gfYaw" type="button">绕竖轴转 90°</button></div>
-            <label class="field">姿势类别（决定在展厅里的尺寸）<select id="gfCls" class="btn"></select></label>
+            <div class="row" id="gfOrient"><select id="gfUp" class="btn" aria-label="Which axis points up"></select><button class="btn" id="gfYaw" type="button">Rotate 90° about the vertical axis</button></div>
+            <label class="field">Pose class (sets the size in the hall)<select id="gfCls" class="btn"></select></label>
           </div>
-          <div id="gfSound" hidden><label class="field">在展厅里<select id="gfSnd" class="btn"></select></label></div>
+          <div id="gfSound" hidden><label class="field">In the hall<select id="gfSnd" class="btn"></select></label></div>
         </div>
         <div class="gform-right">
-          <label class="field">标题<input id="gfTitle" maxlength="120" autocomplete="off"></label>
-          <label class="field">类别<select id="gfCat" class="btn"></select></label>
-          <label class="field">说明<textarea id="gfNote" maxlength="4000" placeholder="做了什么、怎么做的、下一步"></textarea></label>
-          <label class="field">链接（可选）<input id="gfLink" type="url" placeholder="https://" autocomplete="off"></label>
+          <label class="field">Title<input id="gfTitle" maxlength="120" autocomplete="off"></label>
+          <label class="field">Category<select id="gfCat" class="btn"></select></label>
+          <label class="field">Note<textarea id="gfNote" maxlength="4000" placeholder="What was done, how, and what is next"></textarea></label>
+          <label class="field">Link (optional)<input id="gfLink" type="url" placeholder="https://" autocomplete="off"></label>
           <div class="row2">
-            <label class="field">关联展厅位置<select id="gfPos" class="btn"></select></label>
-            <label class="field">关联图谱编号<input id="gfAtlas" inputmode="numeric" placeholder="如 7" autocomplete="off"></label>
+            <label class="field">Linked hall position<select id="gfPos" class="btn"></select></label>
+            <label class="field">Linked atlas number<input id="gfAtlas" inputmode="numeric" placeholder="e.g. 7" autocomplete="off"></label>
           </div>
-          <label class="check" id="gfDayRow" hidden><input type="checkbox" id="gfText"> 附上日记原文（默认只保存解析出的姿势序列）</label>
-          <label class="check"><input type="checkbox" id="gfPub" checked> <span id="gfPubLabel">公开：同步时放到公开展厅（取消则只在小组内可见）</span></label>
+          <label class="check" id="gfDayRow" hidden><input type="checkbox" id="gfText"> Attach the diary text (by default only the parsed pose sequence is saved)</label>
+          <label class="check"><input type="checkbox" id="gfPub" checked> <span id="gfPubLabel">Public: shown in the public exhibition on sync (untick to keep it visible to the group only)</span></label>
         </div>
       </div>
       <div class="status" id="gfStatus"></div>
-      <div class="row end"><button class="btn ghost" id="gfCancel" type="button">取消</button><button class="btn primary" id="gfSave" type="button">保存到工作台</button></div>
+      <div class="row end"><button class="btn ghost" id="gfCancel" type="button">Cancel</button><button class="btn primary" id="gfSave" type="button">Save to the workbench</button></div>
     </div>
   </div>
 
   <div class="modal" id="gloginBox" hidden>
     <div class="box narrow" role="dialog" aria-modal="true" aria-labelledby="gloginTitle">
-      <h2 id="gloginTitle">组员登录</h2>
-      <p class="small muted">输入小组编辑码就能添加、修改和删除作品，不需要注册账号。编辑码请向组长要，不要公开发布。</p>
-      <label class="field">编辑码<input id="gcode" type="password" autocomplete="off"></label>
+      <h2 id="gloginTitle">Member login</h2>
+      <p class="small muted">Enter the group edit code to add, change and delete works; no account is needed. Ask the group leader for the code and do not publish it.</p>
+      <label class="field">Edit code<input id="gcode" type="password" autocomplete="off"></label>
       <div class="status" id="gloginStatus"></div>
-      <div class="row end"><button class="btn ghost" id="gloginCancel" type="button">取消</button><button class="btn primary" id="gloginGo" type="button">解锁编辑</button></div>
+      <div class="row end"><button class="btn ghost" id="gloginCancel" type="button">Cancel</button><button class="btn primary" id="gloginGo" type="button">Unlock editing</button></div>
     </div>
   </div>
 
   <div class="modal" id="gmeBox" hidden>
     <div class="box narrow" role="dialog" aria-modal="true" aria-labelledby="gmeTitle">
-      <h2 id="gmeTitle">我的署名</h2>
+      <h2 id="gmeTitle">My credit</h2>
       <p class="small muted" id="gmeWho"></p>
-      <select id="gmeSel" class="btn" aria-label="选择你是谁" hidden></select>
-      <label class="field">署名（公开展厅上显示）<input id="gnick" maxlength="30" autocomplete="off"></label>
-      <label class="field">分工（可选）<input id="grole" maxlength="40" placeholder="如：扫描与建模" autocomplete="off"></label>
+      <select id="gmeSel" class="btn" aria-label="Choose who you are" hidden></select>
+      <label class="field">Credit (shown in the public exhibition)<input id="gnick" maxlength="30" autocomplete="off"></label>
+      <label class="field">Role (optional)<input id="grole" maxlength="40" placeholder="e.g. scanning and modelling" autocomplete="off"></label>
       <div class="status" id="gmeStatus"></div>
-      <div class="row end"><button class="btn ghost" id="gmeCancel" type="button">取消</button><button class="btn primary" id="gmeSave" type="button">保存</button></div>
+      <div class="row end"><button class="btn ghost" id="gmeCancel" type="button">Cancel</button><button class="btn primary" id="gmeSave" type="button">Save</button></div>
     </div>
   </div>
 
   <div class="modal" id="about" hidden>
     <div class="box" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
       <h2 id="aboutTitle">VENUS, RE-POSED</h2>
-      <p>Bartlett B-Pro Architectural Design · Workshop 7 · V&amp;A Cast Courts。观众用一段日常叙事生成一串姿势，平台拿这串姿势沿 Cast Courts 的轴线逐个比对：姿势相同的雕塑保留，不同的就从女神数据集里换一尊同类姿势的进来，打开“表皮序列”后，一条宽阔的丝绸主丝带带着两条细丝带缓缓展开，按动作顺序依次缠绕当天的雕塑，在雕塑之间高低起伏，连成一件空间装置；在“叠加”里，其余雕塑也按自己的姿势长出环绕身体的丝带。</p>
-      <h3>怎么用</h3>
+      <p>Bartlett B-Pro Architectural Design · Workshop 7 · V&amp;A Cast Courts. A visitor turns a daily narrative into a string of poses, and the platform compares them one by one along the axis of the Cast Courts: sculptures with the same pose stay, the others are swapped for a goddess of the same pose from the dataset. Switch on the “Skin” and a broad silk ribbon unfurls with two thinner ones, winding around the day’s sculptures in the order of the actions and rising and falling between them to form a spatial installation; in “Overlay” the remaining sculptures grow ribbons of their own that follow their poses.</p>
+      <h3>How to use it</h3>
       <ul>
-        <li><b>文字日记</b>：写下“我的一天”，点“生成姿势序列”，按关键词规则拆分活动并标注姿势。</li>
-        <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则分析姿态，识别到可靠动作即加入序列。</li>
-        <li><b>图谱</b>：浏览 118 件模型，打开任一件查看哑光石膏渲染和骨骼。精细版按需加载，也可以把姿势已分类的雕像放到展厅里选中的位置。</li>
-        <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
-        <li><b>视图</b>：雕塑序列（只有雕塑）、表皮序列（缠绕当天雕塑的丝绸丝带：一条粗主丝带 + 两条细丝带）、叠加（再加上其余雕塑各自的姿态丝带），以及雕塑与丝带（每件雕塑和它自己的姿态丝带）。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>
-        <li><b>修改</b>：序列卡片可以拖动排序、改类别、删除；复杂姿势按钮作用于选中的卡片。</li>
-        <li><b>小组</b>：组员的作品汇总——图片、视频、PDF、扫描与建模的 3D 模型、声音、笔记和链接，以及每个人保存的“一天”。模型可以放到展厅的任一位置，“一天”可以在展厅中载入。</li>
+        <li><b>Text diary</b>: write “my day”, press “Generate pose sequence”, and the activities are split by keyword rules and given poses.</li>
+        <li id="aboutCam"><b>Camera</b>: the browser asks for permission to use the camera. MediaPipe reads joints in the browser (nothing is uploaded), the pose is analysed with six class rules, and a reliable action is added to the sequence.</li>
+        <li><b>Atlas</b>: browse 118 models and open any one to see its matte plaster render and skeleton. Detailed versions load on demand, and a sculpture with a classified pose can be placed at the selected position in the hall.</li>
+        <li><b>Video / photos</b>: key frames are extracted to read a pose sequence, and the dominant colour of each segment is taken.</li>
+        <li><b>Views</b>: Sculptures (sculptures only), Skin (silk ribbons winding around the day’s sculptures: one thick main ribbon plus two thin ones), Overlay (adding the pose ribbons of the other sculptures), and Ribbons (every sculpture with its own pose ribbon). The ribbon style can be changed in the “Skin and export” menu: ruffled, smooth or faceted.</li>
+        <li><b>Editing</b>: sequence cards can be dragged to reorder, reclassified or deleted; the complex-pose buttons act on the selected card.</li>
+        <li><b>Group</b>: the members’ works in one place: images, video, PDF, scanned and modelled 3D models, sound, notes and links, plus each person’s saved “day”. A model can be placed at any position in the hall, and a “day” can be loaded into the hall.</li>
       </ul>
       <div id="aboutLinks">
-      <h3>访客与组员</h3>
+      <h3>Visitors and members</h3>
       <ul>
-        <li><b>访客</b>：打开网址就能浏览展厅和组员作品，不用登录。</li>
-        <li><b>组员</b>：在“小组”里点“组员登录”，输入小组编辑码，就能上传、修改和删除作品，并把一天的序列设为展厅默认序列。标为“仅组内”的作品访客看不到。</li>
-        <li>数据和文件存放在小组自己的 Supabase 项目里。</li>
+        <li><b>Visitors</b>: open the address to browse the hall and the members’ works; no login needed.</li>
+        <li><b>Members</b>: in “Group” press “Member login” and enter the group edit code to upload, change and delete works and to set a day’s sequence as the default of the hall. Works marked “Group only” are invisible to visitors.</li>
+        <li>Data and files are kept in the group’s own Supabase project.</li>
       </ul>
       </div>
-      <h3>说明</h3>
+      <h3>Notes</h3>
       <ul>
-        <li>雕塑来自组内的 Goddess Sculpture Atlas：同步 118 条记录，包含原有 105 件及新增 13 件博物馆扫描；117 件提供精细网格和保留折角的平滑法线。姿势已分类的独立雕像进入替换序列，其他模型在图谱中浏览。保留平台的姿势修正和骨骼候选（未确认），新增作品附来源、许可和署名。</li>
-        <li>所有模型统一用哑光石膏材质渲染；地面上的金色、青色细环分别表示“保留”和“替换”。骨骼都是候选结果，只做显示，不评判身体。</li>
-        <li>展厅的“现有序列”是从图谱里挑的 21 件不同雕塑，可以在图谱里为任何位置手动指定。替换时同一件雕塑不会在棋盘上出现两次：先用同类姿势的雕塑，再用“也可代表”这一姿势的，最后用相近姿势的。</li>
-        <li>声音是按姿势合成的占位音色，可以在数据栏为每一类上传组员录制的声音；色板可以从图片中提取。</li>
-        <li>雕塑像国际象棋一样，交错站在水池上方的棋盘格里（只用“黑格”），最外两排稍微超出水面。生成新的一天时，要换掉的雕塑先碎裂，底座再按序列顺序（01、02……）一个接一个移动：抬起、沿横线或竖线滑行、转一次弯、放下，每步 2–3 秒；要去的格子上有底座时，等它先离开。留下的雕塑跟着自己的底座走，其余的只走最近的一格。底座到位后，新雕塑再碎片化生成。排布轨迹可以在序列栏右上角切换：沿第一个动作的骨架，或沿 S 形。</li>
-        <li>空间参考 V&amp;A Cast Courts：上下层统一的灰绿色墙面（荣耀门廊的门洞里也是绿色）、深灰绿色的静水（介于红色地面和白色雕塑之间，与绿墙呼应）、下段红色并镀金柱头的奶油色柱子、托架承托的回廊与栏杆、上层绿色拱龛、红色人字纹地面、铁格栅玻璃筒拱。阳光从拱顶照进来，把格栅的影子投在墙面和地面上。东端是分成两半的图拉真柱复制品（带浮雕基座），西墙是圣地亚哥“荣耀门廊”复制品。</li>
-        <li>点顶部的“步行”或直接按 W A S D，就能像游戏一样在展厅里走：Shift 跑步，拖动或单击画面后用鼠标环顾，步行视线保持水平，接触前景雕塑会暂时变透明，离开后恢复，展厅背景模型保持原样；Esc 退出。手机上用右下角的方向键。</li>
+        <li>The sculptures come from the group’s Goddess Sculpture Atlas: 118 records are synced, including the original 105 and 13 newly added museum scans; 117 have detailed meshes and smooth normals that keep sharp edges. Standalone statues with a classified pose enter the swap sequence, and the other models can be browsed in the atlas. The platform’s pose corrections and skeleton candidates (unconfirmed) are kept, and new works carry source, licence and credit.</li>
+        <li>All models are rendered in one matte plaster material; the thin gold and teal rings on the floor mean “kept” and “swapped”. Skeletons are only candidates, shown for display and never to judge a body.</li>
+        <li>The hall’s “current sequence” is 21 different sculptures picked from the atlas, and any position can be set by hand in the atlas. When swapping, the same sculpture never appears twice on the board: first one with the same pose, then one that “can also stand for” the pose, and finally one with a similar pose.</li>
+        <li>Sounds are placeholder tones synthesised per pose; members’ own recordings can be uploaded for each class in the data panel, and colour palettes can be extracted from an image.</li>
+        <li>Like chess pieces, the sculptures stand staggered on a checkerboard above the pool (only the “dark squares” are used), with the outer two rows slightly beyond the water. When a new day is generated, the sculptures to be replaced shatter first, then the plinths move one after another in sequence order (01, 02…): lift, slide along a row or column, turn once, set down, 2–3 seconds per step; if a target square is occupied, it waits for that plinth to leave. Sculptures that stay follow their own plinths, and the rest move only to the nearest square. Once the plinths arrive, the new sculptures form out of fragments. The layout path can be switched at the top right of the sequence bar: along the skeleton of the first action, or an S-curve.</li>
+        <li>The space follows the V&amp;A Cast Courts: grey-green walls on both levels (green inside the doorways of the Portico de la Gloria too), deep grey-green still water (between the red floor and the white sculptures, echoing the green walls), cream columns with red lower shafts and gilded capitals, a bracketed gallery with balustrades, green arched niches above, a red herringbone floor and an iron-lattice glass barrel vault. Sunlight pours in from the vault and casts the lattice shadows on walls and floor. At the east end stands the Trajan’s Column cast in two halves (with its relief base), and the west wall holds the cast of the Portico de la Gloria of Santiago.</li>
+        <li>Press “Walk” at the top, or just W A S D, to walk through the hall like a game: Shift to run, drag or click the view and then look around with the mouse. The gaze stays level, sculptures in the foreground turn transparent while you touch them and return when you leave, and the hall backdrop model is left as it is; Esc exits. On a phone use the arrow keys at the bottom right.</li>
       </ul>
-      <div class="row"><button class="btn primary" id="aboutClose">进入展厅</button></div>
+      <div class="row"><button class="btn primary" id="aboutClose">Enter the hall</button></div>
     </div>
   </div>
 </div>
 
-<!-- ===== 下面是启动部分，一般不用改 ===== -->
+<!-- ===== Start-up section below; usually no need to change ===== -->
 <script>
-  // 大厅：两个入口 —— 展馆（进入虚拟展厅）和 Gallery（图谱，嵌入显示）；顶栏“大厅”按钮可随时回到这里
+  // Lobby: two doors, Exhibition (the virtual hall) and Gallery (the atlas, embedded); the “Lobby” button in the top bar returns here
   (function () {
     var GALLERY_URL = 'https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/';
     var lobby = document.getElementById('intro'), gal = document.getElementById('galleryView'), frame = document.getElementById('galleryFrame');
@@ -400,38 +400,39 @@
   })();
 </script>
 <script>
-  // 沉浸模式：序列/数据面板不再常驻；双击雕塑后才在右侧弹出这件雕塑的介绍（点空白处、按 Esc 或点 × 关闭）
+  // Immersive mode: the sequence / data panels no longer stay; double-clicking a sculpture opens its intro on the right (click empty space, press Esc or click x to close)
   (function () {
     var canvas = document.getElementById('scene'), panel = document.getElementById('dataPanel'), box = document.getElementById('dataScroll');
     if (!canvas || !panel || !box) return;
     var close = document.createElement('button');
-    close.type = 'button'; close.className = 'info-close'; close.setAttribute('aria-label', '关闭介绍'); close.textContent = '×';
+    close.type = 'button'; close.className = 'info-close'; close.setAttribute('aria-label', 'Close intro'); close.textContent = '×';
     close.addEventListener('click', function () { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); document.body.classList.remove('info-open'); });
     panel.insertBefore(close, panel.firstChild);
     function sync() { document.body.classList.toggle('info-open', !!canvas.dataset.focusWork); }
     new MutationObserver(sync).observe(canvas, { attributes: true, attributeFilter: ['data-focus-work'] });
-    // 介绍里只留作品信息：姿势、骨骼、可信度这几行是分析数据，隐藏
-    var HIDE = { '姿势': 1, '骨骼': 1, '可信度': 1 };
+    // Keep only work info in the intro: the pose, skeleton and confidence rows are analysis data, hidden
+    var HIDE = { 'Pose': 1, 'Skeleton': 1, 'Confidence': 1 };
     function tidy() { box.querySelectorAll('dl.meta dt').forEach(function (dt) { if (HIDE[dt.textContent.trim()]) { dt.classList.add('x'); if (dt.nextElementSibling) dt.nextElementSibling.classList.add('x'); } }); }
     new MutationObserver(tidy).observe(box, { childList: true }); tidy();
   })();
 </script>
+<script src="i18n-en.js?v=en-20261023"></script>
 <script src="config.js"></script>
 <script>
-  // 启动失败时，在加载提示里显示原因
+  // If start-up fails, show the reason in the loading note
   (function () {
-    var MSG = '请通过网址或本地服务器打开（在文件夹里运行 python -m http.server 8000），不要直接双击 index.html。';
+    var MSG = 'Please open it through a web address or a local server (run python -m http.server 8000 in the folder), not by double-clicking index.html.';
     var t = document.getElementById('loadingText');
     if (location.protocol === 'file:' && t) t.textContent = MSG;
     window.addEventListener('unhandledrejection', function (e) {
-      if (t && String(e.reason).indexOf('atlas') >= 0) t.textContent = '图谱数据没有加载成功：' + MSG;
+      if (t && String(e.reason).indexOf('atlas') >= 0) t.textContent = 'The atlas data did not load: ' + MSG;
     });
   })();
 </script>
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
-  // 网页功能的代码在 js/ 文件夹里，按下面的顺序拼成一个模块运行（不需要构建步骤）。
-  // 新建 js 文件时，要把文件名加进这个列表。
+  // The page code lives in the js/ folder and is joined in the order below into one module (no build step).
+  // When adding a new js file, add its name to this list.
   const PARTS = [
     '01-data.js', '02-pose.js', '03b-architecture.js', '04-scene.js',
     '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan-2eaee907ac7abeaa.js', '05-seq.js', '05b-ribbons.js', '06-ui.js', '06b-atlas.js',
@@ -439,14 +440,14 @@
     '09c-walk.js', '10-main.js',
   ];
   const SCAN_MODULE = "04d-va-hall-scan-2eaee907ac7abeaa.js", SCAN_MODULE_SHA256 = "2eaee907ac7abeaa010f5bf156b5dee14a62848c8a562338c0c89d802e9f47fd";
-  const debug = /[?&]debug\b/.test(location.search); // 网址后加 ?debug 会保留测试用的 window.__vr
+  const debug = /[?&]debug\b/.test(location.search); // Adding ?debug to the address keeps the test hook window.__vr
   const t = document.getElementById('loadingText');
   try {
     const get = async (p) => { // retry a few times: right after an update the server can answer 503 for a moment
       for (let i = 0; ; i++) {
         const r = await fetch('js/' + p, { cache: 'no-cache' }).catch(() => null);
         if (r && r.ok) return r;
-        if (i >= 4 || (r && r.status === 404)) throw new Error('找不到 js/' + p + '（' + (r ? r.status : '网络错误') + '）');
+        if (i >= 4 || (r && r.status === 404)) throw new Error('Cannot find js/' + p + ' (' + (r ? r.status : 'network error') + ')');
         await new Promise((ok) => setTimeout(ok, 600 * 2 ** i));
       }
     };
@@ -456,17 +457,17 @@
       if (p === SCAN_MODULE) {
         const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
         const hash = Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
-        if (hash !== SCAN_MODULE_SHA256) throw new Error('扫描加载代码版本校验失败');
+        if (hash !== SCAN_MODULE_SHA256) throw new Error('Scan loader version check failed');
       }
-      return '/* ===== js/' + p + ' ===== */\n' + (debug ? s : s.split('/* DEBUG */')[0]);
+      return '/* ===== js/' + p + ' ===== */\n' + window.__EN.js(debug ? s : s.split('/* DEBUG */')[0]);
     }));
     const url = URL.createObjectURL(new Blob([texts.join('\n') + '\n//# sourceURL=venus-app.js\n'], { type: 'text/javascript' }));
     await import(url);
   } catch (e) {
     console.error(e);
     const m = e && e.message ? e.message : String(e);
-    if (t && location.protocol !== 'file:') t.textContent = m.indexOf('atlas') >= 0 ? '图谱数据（data/atlas.json）没有加载成功，请刷新再试。'
-      : '网页代码出错，没能启动：' + m + '。如果刚改过代码，请检查最近的修改（按 F12 打开 Console 看详细错误）。';
+    if (t && location.protocol !== 'file:') t.textContent = m.indexOf('atlas') >= 0 ? 'The atlas data (data/atlas.json) did not load; please refresh and try again.'
+      : 'The page code failed to start: ' + m + '. If you just changed the code, check your latest edits (press F12 and open the Console for details).';
   }
 </script>
 </body>
