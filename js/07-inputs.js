@@ -384,7 +384,7 @@ async function analyzeGalleryImage(id, button) {
       fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
       const visible = Object.values(found.K).filter(p => (p.v ?? 0) > 0.5).length;
       const core = ['lsh', 'rsh', 'lhip', 'rhip', 'lkn', 'rkn', 'lank', 'rank'].filter(k => (found.K[k].v ?? 0) > 0.5).length;
-      if (core < 8) {
+      if (core < 8 && !(visible >= 8 && ['lsh', 'rsh', 'lhip', 'rhip'].filter(k => (found.K[k].v ?? 0) > 0.5).length >= 3 && ['lkn', 'rkn', 'lank', 'rank'].some(k => (found.K[k].v ?? 0) > 0.5))) {
         status.textContent = `检测到 ${visible}/13 个可见关节点，但肩、髋、膝和脚踝没有全部识别到；展厅暂未更新。请试试全身更清楚的图片。`;
         return;
       }
