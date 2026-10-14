@@ -41,6 +41,53 @@ renderer.setClearColor(0xffffff, 0);
 /* hall dimensions (metres). The long walls run along x at z = ±HALL.z. */
 const HALL = { x0: -24, x1: 24, z: 9, wallH: 18, galleryY: 8.4, vaultR: 9, vaultRise: 6.4 };
 
+/* ---------- Venus mosaic: a quiet, hand-laid floor for the sculpture court ----------
+   Warm limestone, faded terracotta and sage inlay echo the hall's existing palette.
+   The low-contrast rosettes recall antique floor mosaics without competing with the casts. */
+function makeVenusMosaic() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1536; canvas.height = 432;
+  const ctx = canvas.getContext('2d');
+  const cols = 32, rows = 9, cw = canvas.width / cols, ch = canvas.height / rows;
+  const stone = ['#e8dece', '#e4d8c4', '#ede3d3', '#e1d6c5'];
+  ctx.fillStyle = '#d2c2aa'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+    const x = col * cw, y = row * ch;
+    ctx.fillStyle = stone[(col * 7 + row * 3) % stone.length];
+    ctx.fillRect(x + 1.5, y + 1.5, cw - 3, ch - 3);
+    // Small four-petal rosettes repeat at measured intervals through the stone grid.
+    if (col % 4 === 2 && row % 3 === 1) {
+      ctx.save(); ctx.translate(x + cw / 2, y + ch / 2);
+      for (let petal = 0; petal < 4; petal++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(4.4, -9.5); ctx.lineTo(0, -15);
+        ctx.lineTo(-4.4, -9.5); ctx.closePath();
+        ctx.fillStyle = petal % 2 ? '#9b7569' : '#829084'; ctx.globalAlpha = 0.72; ctx.fill();
+      }
+      ctx.globalAlpha = 0.85; ctx.fillStyle = '#b69a68';
+      ctx.beginPath(); ctx.moveTo(0, -3.2); ctx.lineTo(3.2, 0); ctx.lineTo(0, 3.2); ctx.lineTo(-3.2, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  // Double inlaid border: faded rose stone framed by deep sage.
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#758478'; ctx.lineWidth = 8; ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+  ctx.strokeStyle = '#a77c70'; ctx.lineWidth = 3; ctx.strokeRect(13, 13, canvas.width - 26, canvas.height - 26);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const group = new THREE.Group(); group.name = 'venus-mosaic-floor';
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(33.4, 9.6), new THREE.MeshStandardMaterial({
+    map: texture, roughness: 0.88, metalness: 0, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
+  }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, -0.035, 0);
+  floor.receiveShadow = true;
+  group.add(floor); scene.add(group);
+  return group;
+}
+const venusMosaicFloor = makeVenusMosaic();
+
 /* ---------- light: sky, a low red bounce from the floor, and the sun through the vault ---------- */
 const hemi = new THREE.HemisphereLight(0xf6f3ee, 0x9a6a5e, 0.75);
 scene.add(hemi);
