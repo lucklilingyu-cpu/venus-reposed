@@ -49,12 +49,12 @@ function makeVenusMosaic() {
   canvas.width = 1536; canvas.height = 432;
   const ctx = canvas.getContext('2d');
   const cols = 32, rows = 9, cw = canvas.width / cols, ch = canvas.height / rows;
-  const stone = ['#e8dece', '#e4d8c4', '#ede3d3', '#e1d6c5'];
-  ctx.fillStyle = '#d2c2aa'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const stone = ['#c6a38c', '#b98d78', '#cfb69a', '#a8ad97'];
+  ctx.fillStyle = '#927365'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
     const x = col * cw, y = row * ch;
     ctx.fillStyle = stone[(col * 7 + row * 3) % stone.length];
-    ctx.fillRect(x + 1.5, y + 1.5, cw - 3, ch - 3);
+    ctx.fillRect(x + 2.5, y + 2.5, cw - 5, ch - 5);
     // Small four-petal rosettes repeat at measured intervals through the stone grid.
     if (col % 4 === 2 && row % 3 === 1) {
       ctx.save(); ctx.translate(x + cw / 2, y + ch / 2);
@@ -62,17 +62,17 @@ function makeVenusMosaic() {
         ctx.rotate(Math.PI / 2);
         ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(4.4, -9.5); ctx.lineTo(0, -15);
         ctx.lineTo(-4.4, -9.5); ctx.closePath();
-        ctx.fillStyle = petal % 2 ? '#9b7569' : '#829084'; ctx.globalAlpha = 0.72; ctx.fill();
+        ctx.fillStyle = petal % 2 ? '#875b50' : '#5e7162'; ctx.globalAlpha = 0.86; ctx.fill();
       }
-      ctx.globalAlpha = 0.85; ctx.fillStyle = '#b69a68';
+      ctx.globalAlpha = 0.95; ctx.fillStyle = '#a27a42';
       ctx.beginPath(); ctx.moveTo(0, -3.2); ctx.lineTo(3.2, 0); ctx.lineTo(0, 3.2); ctx.lineTo(-3.2, 0); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
   }
   // Double inlaid border: faded rose stone framed by deep sage.
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = '#758478'; ctx.lineWidth = 8; ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
-  ctx.strokeStyle = '#a77c70'; ctx.lineWidth = 3; ctx.strokeRect(13, 13, canvas.width - 26, canvas.height - 26);
+  ctx.strokeStyle = '#5e7162'; ctx.lineWidth = 12; ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+  ctx.strokeStyle = '#986956'; ctx.lineWidth = 5; ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
