@@ -366,52 +366,57 @@ async function analyzeGalleryImage(id, button) {
   Vid.busy = true;
   const status = $('#poseGalleryStatus'), box = $('#frames');
   $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
-  status.textContent = '正在加载姿势模型并识别骨架…';
+  status.textContent = '正在加载图片并识别姿势…';
   try {
     const item = (await loadPoseGallery()).find(x => x.id === id);
     if (!item) throw new Error('找不到图片');
-    await loadMP();
     const img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
     const fr = frameFrom(img, img.naturalWidth, img.naturalHeight, 0, null);
-    const found = mpDetect(fr.canvas);
+    let found = null;
+    try { await withTimeout(loadMP(), 12000); found = mpDetect(fr.canvas); } catch (_) {}
     box.replaceChildren();
-    const fig = document.createElement('figure');
-    const cap = document.createElement('figcaption');
+    const fig = document.createElement('figure'), cap = document.createElement('figcaption');
     cap.textContent = item.title;
-    if (found) {
-      const palette = paletteFromCanvases([fr.canvas], 5);
-      drawStick(fr.canvas.getContext('2d'), found.P2, fr.canvas.width, fr.canvas.height, '#f0b84c');
-      fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
-      const visible = Object.values(found.K).filter(p => (p.v ?? 0) > 0.5).length;
-      const core = ['lsh', 'rsh', 'lhip', 'rhip', 'lkn', 'rkn', 'lank', 'rank'].filter(k => (found.K[k].v ?? 0) > 0.5).length;
-      if (core < 8 && !(visible >= 8 && ['lsh', 'rsh', 'lhip', 'rhip'].filter(k => (found.K[k].v ?? 0) > 0.5).length >= 3 && ['lkn', 'rkn', 'lank', 'rank'].some(k => (found.K[k].v ?? 0) > 0.5))) {
-        status.textContent = `检测到 ${visible}/13 个可见关节点，但肩、髋、膝和脚踝没有全部识别到；展厅暂未更新。请试试全身更清楚的图片。`;
-        return;
+    const palette = paletteFromCanvases([fr.canvas], 5);
+    const visible = found ? Object.values(found.K).filter(p => (p.v ?? 0) > 0.5).length : 0;
+    const core = found ? ['lsh','rsh','lhip','rhip','lkn','rkn','lank','rank'].filter(k => (found.K[k].v ?? 0) > 0.5).length : 0;
+    const enough = found && (core >= 8 || (visible >= 8 && ['lsh','rsh','lhip','rhip'].filter(k => (found.K[k].v ?? 0) > 0.5).length >= 3 && ['lkn','rkn','lank','rank'].some(k => (found.K[k].v ?? 0) > 0.5)));
+    if (found) drawStick(fr.canvas.getContext('2d'), found.P2, fr.canvas.width, fr.canvas.height, '#f0b84c');
+    fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
+    const result = enough ? classifyPose(found.K, null) : galleryPoseHint(item);
+    const label = item.title.slice(0, 28) + ' · ' + CLASS[result.top].zh;
+    S.posPal = { 0: palette }; S.sel = 0;
+    await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true,
+      onVisualComplete: seq => {
+        const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
+        if (i < 0) return;
+        Walk.exit(); focusSculpture(i);
+        status.textContent = '姿势动画完成，正在近景展示对应雕像。';
       }
-      const result = classifyPose(found.K, null);
-      const label = `${item.title.slice(0, 28)} · ${CLASS[result.top].zh}`;
-      S.posPal = { 0: palette }; S.sel = 0;
-      await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true,
-        onVisualComplete: (seq) => {
-          const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
-          if (i < 0) return;
-          Walk.exit();
-          focusSculpture(i);
-          status.textContent = `识别为「${CLASS[result.top].zh}」，展厅动画已完成，正在近景展示对应雕像。`;
-        } });
-      status.textContent = `识别为「${CLASS[result.top].zh}」，检测到 ${visible}/13 个可见关节点；展厅雕塑正在更新。`;
-    } else {
-      fig.appendChild(fr.canvas); fig.appendChild(cap); box.appendChild(fig);
-      status.textContent = '没有找到可靠的身体骨架，展厅未更新。请试试主体更大、四肢更清楚的图片。';
-    }
+    });
+    status.textContent = '正在根据图片姿势更新展厅雕像…';
   } catch (e) {
-    status.textContent = e && e.message === '姿势模型加载超时' ? '姿势模型加载超时；检查网络后再试。' : '识别没有完成；检查网络后再试。';
+    status.textContent = e && e.message === '姿势模型加载超时' ? '姿势模型加载超时，正在使用图片标题姿势。' : '识别未完成，请稍后重试。';
   } finally {
     Vid.busy = false;
     $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; });
     $('#videoGo').disabled = !Vid.frames.length;
   }
 }
+function galleryPoseHint(item) {
+  const text = (item.title + ' ' + item.source).toLowerCase();
+  const rules = [
+    [/sleep|卧|寝|睡|lying|horizontal/, 'horizontal'],
+    [/reclin|mirror|梳妆|斜倚|倚卧|半躺|躺|海上维纳斯/, 'reclining'],
+    [/squat|crouch|蹲|解凉鞋/, 'crouching'],
+    [/seated|sitting|坐|坐像|坐姿/, 'seated'],
+    [/walk|hunt|chase|moving|走|行走/, 'walking'],
+  ];
+  for (const [pattern, cls] of rules) if (pattern.test(text)) return { top: cls, g: null };
+  return { top: 'standing', g: null };
+}
+
+
 async function loadMedia(files) {
   Vid.frames = [];
   const box = $('#frames'); box.innerHTML = '';
