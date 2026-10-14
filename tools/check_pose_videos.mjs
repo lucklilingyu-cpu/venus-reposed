@@ -19,7 +19,7 @@ for(const file of ['js/07-inputs.js','js/10-main.js','js/05-seq.js','js/05b-ribb
   assert.equal(normal(readFileSync(join(root,file),'utf8')),normal(baseline(file)),file+' must remain unchanged');
 execFileSync(git,['diff','--exit-code',base,'--','img/pose-gallery'],{cwd:root,stdio:'pipe'});
 const data=JSON.parse(readFileSync(join(root,'data/pose-video-gallery.json'),'utf8'));
-assert.equal(data.format,'pose-video-gallery-v1');assert.equal(data.videos.length,9);
+assert.equal(data.format,'pose-video-gallery-v1');assert.equal(data.videos.length,10);
 const count=data.videos.length;
 assert.equal(new Set(data.videos.map(item=>item.file)).size,count);
 const existingVideos=JSON.parse(baseline('data/pose-video-gallery.json')).videos;
@@ -27,13 +27,14 @@ for(const item of existingVideos)assert.deepEqual(data.videos.find(entry=>entry.
 let bytes=0;
 for(const [i,item] of data.videos.entries()){
   assert.equal(item.id,String(i+1).padStart(3,'0'));
-  const goddess=i<7?'Venus / Aphrodite':'Medusa';
+  const goddess=i<7?'Venus / Aphrodite':i<9?'Medusa':'Venus / Nephthys';
   assert.equal(item.goddess,goddess);
   assert.equal(item.title,`${String(i+1).padStart(2,'0')}_${goddess.replaceAll(' / ','_')}_${item.group.replaceAll(' ','_')}_${item.song.replaceAll(' ','_')}`);
   assert(/^[\x20-\x7e]+$/.test(item.title),'all names must be English/ASCII');
   assert.equal(item.downloadName,item.title+'.mp4');assert.equal(item.skeletonOverlay,true);
   assert(!('version' in item),'no version field requested');
-  if(i>=7){assert.equal(item.group,'KISS OF LIFE');assert.equal(item.song,'Midas Touch');assert.equal(new URL(item.sourceUrl).searchParams.get('v'),['oKVYm8mIUdo','nH6MOYPEvfY'][i-7]);}
+  if(i>=7&&i<9){assert.equal(item.group,'KISS OF LIFE');assert.equal(item.song,'Midas Touch');assert.equal(new URL(item.sourceUrl).searchParams.get('v'),['oKVYm8mIUdo','nH6MOYPEvfY'][i-7]);}
+  if(i===9){assert.equal(item.group,'Dreamcatcher');assert.equal(item.song,'OOTD');assert.equal(new URL(item.sourceUrl).searchParams.get('v'),'puJyRHpbWug');}
   assert(item.duration>100&&item.width<=1280&&item.height<=720);
   assert(/^https:\/\/www.youtube.com\/watch\?v=[\w-]{11}$/.test(item.sourceUrl));
   const content=readFileSync(join(root,item.file));bytes+=content.length;

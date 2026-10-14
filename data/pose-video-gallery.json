@@ -180,6 +180,26 @@
       "height": 720,
       "bytes": 31120071,
       "sha256": "3d60d4fab8d3d6ec0466d615389bd91cb081723e6603fab43d3caedae06d0443"
+    },
+    {
+      "id": "010",
+      "title": "10_Venus_Nephthys_Dreamcatcher_OOTD",
+      "goddess": "Venus / Nephthys",
+      "group": "Dreamcatcher",
+      "song": "OOTD",
+      "relation": "Explicit goddess lyrics; visual pose comparison",
+      "note": "The song names Venus and Nephthys in its lyrics. The choreography is included for visual pose comparison; the lyric references do not confirm adaptation from a particular goddess sculpture.",
+      "sourceUrl": "https://www.youtube.com/watch?v=puJyRHpbWug",
+      "evidenceUrl": "https://www.genie.co.kr/detail/songInfo?xgnm=104451090",
+      "file": "video/pose-gallery/10_Venus_Nephthys_Dreamcatcher_OOTD.mp4",
+      "poster": "img/pose-video-gallery/010.jpg",
+      "downloadName": "10_Venus_Nephthys_Dreamcatcher_OOTD.mp4",
+      "skeletonOverlay": true,
+      "duration": 179.79,
+      "width": 1280,
+      "height": 720,
+      "bytes": 33913246,
+      "sha256": "7aa8048739ae33c98a2726fa86fea186fa2901fa4be5b61b388d72345e0a2101"
     }
   ]
 }
