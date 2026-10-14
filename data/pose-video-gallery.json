@@ -140,6 +140,46 @@
       "height": 720,
       "bytes": 40455820,
       "sha256": "92c19038f7f14ce904be19213654fec2d6b341dcc01340c31c4eec47997ce732"
+    },
+    {
+      "id": "008",
+      "title": "08_Medusa_KISS_OF_LIFE_Midas_Touch",
+      "goddess": "Medusa",
+      "group": "KISS OF LIFE",
+      "song": "Midas Touch",
+      "relation": "Mythological imagery",
+      "note": "The music video uses imagery read as Medusa-related petrification in the linked review. Midas and Medusa are different mythological figures; this does not confirm that the choreography adapts a specific Medusa sculpture.",
+      "sourceUrl": "https://www.youtube.com/watch?v=oKVYm8mIUdo",
+      "evidenceUrl": "https://www.nme.com/reviews/kiss-of-life-midas-touch-review-3616351",
+      "file": "video/pose-gallery/08_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+      "poster": "img/pose-video-gallery/008.jpg",
+      "downloadName": "08_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+      "skeletonOverlay": true,
+      "duration": 169.44,
+      "width": 1034,
+      "height": 720,
+      "bytes": 31740899,
+      "sha256": "13fe3703f666b70cc223636078e6f9b40723ca93c3c2fae2316b7cf56cede786"
+    },
+    {
+      "id": "009",
+      "title": "09_Medusa_KISS_OF_LIFE_Midas_Touch",
+      "goddess": "Medusa",
+      "group": "KISS OF LIFE",
+      "song": "Midas Touch",
+      "relation": "Visual comparison",
+      "note": "This recording is used to compare the choreography with the Medusa imagery discussed for the song music video. The pose association is a visual comparison, not a confirmed sculpture-based choreographic source.",
+      "sourceUrl": "https://www.youtube.com/watch?v=nH6MOYPEvfY",
+      "evidenceUrl": "https://www.nme.com/reviews/kiss-of-life-midas-touch-review-3616351",
+      "file": "video/pose-gallery/09_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+      "poster": "img/pose-video-gallery/009.jpg",
+      "downloadName": "09_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+      "skeletonOverlay": true,
+      "duration": 164.98,
+      "width": 1034,
+      "height": 720,
+      "bytes": 31120071,
+      "sha256": "3d60d4fab8d3d6ec0466d615389bd91cb081723e6603fab43d3caedae06d0443"
     }
   ]
 }

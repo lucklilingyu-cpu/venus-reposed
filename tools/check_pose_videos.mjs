@@ -19,15 +19,21 @@ for(const file of ['js/07-inputs.js','js/10-main.js','js/05-seq.js','js/05b-ribb
   assert.equal(normal(readFileSync(join(root,file),'utf8')),normal(baseline(file)),file+' must remain unchanged');
 execFileSync(git,['diff','--exit-code',base,'--','img/pose-gallery'],{cwd:root,stdio:'pipe'});
 const data=JSON.parse(readFileSync(join(root,'data/pose-video-gallery.json'),'utf8'));
-assert.equal(data.format,'pose-video-gallery-v1');assert.equal(data.videos.length,7);
-assert.equal(new Set(data.videos.map(item=>item.file)).size,7);
+assert.equal(data.format,'pose-video-gallery-v1');assert.equal(data.videos.length,9);
+const count=data.videos.length;
+assert.equal(new Set(data.videos.map(item=>item.file)).size,count);
+const existingVideos=JSON.parse(baseline('data/pose-video-gallery.json')).videos;
+for(const item of existingVideos)assert.deepEqual(data.videos.find(entry=>entry.id===item.id),item,'previous video records and media hashes must remain unchanged');
 let bytes=0;
 for(const [i,item] of data.videos.entries()){
   assert.equal(item.id,String(i+1).padStart(3,'0'));
-  assert.equal(item.title,`${String(i+1).padStart(2,'0')}_Venus_Aphrodite_${item.group.replaceAll(' ','_')}_${item.song.replaceAll(' ','_')}`);
+  const goddess=i<7?'Venus / Aphrodite':'Medusa';
+  assert.equal(item.goddess,goddess);
+  assert.equal(item.title,`${String(i+1).padStart(2,'0')}_${goddess.replaceAll(' / ','_')}_${item.group.replaceAll(' ','_')}_${item.song.replaceAll(' ','_')}`);
   assert(/^[\x20-\x7e]+$/.test(item.title),'all names must be English/ASCII');
   assert.equal(item.downloadName,item.title+'.mp4');assert.equal(item.skeletonOverlay,true);
-  assert.equal(item.goddess,'Venus / Aphrodite');assert(!('version' in item),'no version field requested');
+  assert(!('version' in item),'no version field requested');
+  if(i>=7){assert.equal(item.group,'KISS OF LIFE');assert.equal(item.song,'Midas Touch');assert.equal(new URL(item.sourceUrl).searchParams.get('v'),['oKVYm8mIUdo','nH6MOYPEvfY'][i-7]);}
   assert(item.duration>100&&item.width<=1280&&item.height<=720);
   assert(/^https:\/\/www.youtube.com\/watch\?v=[\w-]{11}$/.test(item.sourceUrl));
   const content=readFileSync(join(root,item.file));bytes+=content.length;
@@ -40,7 +46,8 @@ for(const [i,item] of data.videos.entries()){
   assert(moov>=0&&mdat>moov,'web video index must be before media bytes');
   assert(statSync(join(root,item.poster)).size>1000);
 }
-assert.equal(readdirSync(join(root,'video/pose-gallery')).filter(name=>name.endsWith('.mp4')).length,7);
+assert.equal(readdirSync(join(root,'video/pose-gallery')).filter(name=>name.endsWith('.mp4')).length,count);
+assert(markup.includes(`id="poseVideoCount">${count} videos</span>`));
 assert(!/[A-Z]:\\|Users\\/.test(JSON.stringify(data)),'no private local paths in public catalogue');
 const source=readFileSync(join(root,'js/07b-pose-video-gallery.js'),'utf8');
 assert(!/analyzeGalleryImage\(|applyDay\(|loadMedia\(/.test(source),'collection playback must not change existing sculpture/photo behavior');
@@ -57,7 +64,7 @@ const context=vm.createContext({URL,document,$:element,$$:()=>buttons,esc:escape
   fetch:async()=>{fetches++;return {ok:true,json:async()=>data};}});
 vm.runInContext(source+'\nglobalThis.testVideoAPI={PoseVideoCollection,loadPoseVideoCollection,selectPoseVideo,poseVideoSafeItem};',context);
 await context.testVideoAPI.loadPoseVideoCollection();
-assert.equal(fetches,1);assert.equal(buttons.length,7);assert.equal(player.src,undefined,'no videos fetched before selection');
+assert.equal(fetches,1);assert.equal(buttons.length,count);assert.equal(player.src,undefined,'no videos fetched before selection');
 for(const item of data.videos){
   assert(context.testVideoAPI.selectPoseVideo(item.id));
   assert.equal(player.src,item.file);assert.equal(player.poster,item.poster);
@@ -65,10 +72,10 @@ for(const item of data.videos){
   assert.equal(element('#poseVideoDownload').download,item.title+'.mp4');
   assert.equal(buttons.filter(button=>button.attributes['aria-pressed']==='true').length,1);
 }
-assert.equal(plays,7);assert.equal(pauses,7);
+assert.equal(plays,count);assert.equal(pauses,count);
 assert.equal(context.testVideoAPI.selectPoseVideo('missing'),false);
 assert(!context.testVideoAPI.poseVideoSafeItem({...data.videos[0],file:'https://example.com/video.mp4'}));
 assert(!context.testVideoAPI.poseVideoSafeItem({...data.videos[0],file:'../other.mp4'}));
-document.hidden=true;document.listeners.visibilitychange();assert.equal(pauses,8);
-element('#modeTabs').listeners.click({target:{closest:()=>({dataset:{mode:'camera'}})}});assert.equal(pauses,9);
-console.log(JSON.stringify({ok:true,videos:7,totalBytes:bytes,englishNamesWithoutVersions:true,photoGalleryUnchanged:true,videosAfterPhotos:true,cameraAndSculptureCodeUnchanged:true,playbackSelectionAndDownloads:true}));
+document.hidden=true;document.listeners.visibilitychange();assert.equal(pauses,count+1);
+element('#modeTabs').listeners.click({target:{closest:()=>({dataset:{mode:'camera'}})}});assert.equal(pauses,count+2);
+console.log(JSON.stringify({ok:true,videos:count,totalBytes:bytes,previousVideosUnchanged:true,englishNamesWithoutVersions:true,photoGalleryUnchanged:true,videosAfterPhotos:true,cameraAndSculptureCodeUnchanged:true,playbackSelectionAndDownloads:true}));
