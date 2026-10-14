@@ -40,13 +40,12 @@ renderer.setClearColor(0xffffff, 0);
 
 /* hall dimensions (metres). The long walls run along x at z = ±HALL.z. */
 const HALL = { x0: -24, x1: 24, z: 9, wallH: 18, galleryY: 8.4, vaultR: 9, vaultRise: 6.4 };
-/* An independent enclosure around the scan, added at the group's request.
+/* An independent glass roof above the scan; perimeter walls have been removed.
    It does not reintroduce or alter the removed procedural museum or scan geometry. */
 const ExhibitionEnvelope = (() => {
   const bounds = { x0: HALL.x0 - 2, x1: HALL.x1 + 2, z0: -13, z1: 13, height: HALL.wallH + HALL.vaultRise };
   const group = new THREE.Group(); group.name = 'venus-exhibition-envelope';
   group.userData.bounds = bounds;
-  const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 1, metalness: 0, envMapIntensity: 0.3, transparent: true, opacity: 0.3, depthWrite: false });
   const glassMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb8cbd0, roughness: 0.25, metalness: 0,
     transparent: true, opacity: 0.28, transmission: 0.35, thickness: 0.14, ior: 1.45,
     side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.18 });
@@ -56,25 +55,6 @@ const ExhibitionEnvelope = (() => {
     group.add(mesh); return mesh;
   }
   const width = bounds.x1 - bounds.x0, depth = bounds.z1 - bounds.z0, height = bounds.height;
-  // A continuous vertical colour blend, without wall textures, seams or roof-grid shadows.
-  const lowerWallColor = new THREE.Color(0x89938a), whiteWallColor = new THREE.Color(0xffffff);
-  function wall(name, w, d, x, z) {
-    const geometry = new THREE.BoxGeometry(w, height, d, 1, 48, 1);
-    const positions = geometry.attributes.position, colors = new Float32Array(positions.count * 3);
-    const color = new THREE.Color();
-    for (let i = 0; i < positions.count; i++) {
-      const y = positions.getY(i) + height / 2;
-      const blend = THREE.MathUtils.smoothstep(y, 4, 14);
-      color.copy(lowerWallColor).lerp(whiteWallColor, blend).toArray(colors, i * 3);
-    }
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const mesh = new THREE.Mesh(geometry, wallMaterial);
-    mesh.name = name; mesh.position.set(x, height / 2, z);
-    mesh.castShadow = false; mesh.receiveShadow = false;
-    group.add(mesh);
-  }
-  for (const z of [bounds.z0, bounds.z1]) wall('perimeter-long-wall', width + 0.38, 0.38, 0, z);
-  for (const x of [bounds.x0, bounds.x1]) wall('perimeter-end-wall', 0.38, depth, x, 0);
   box('glass-roof', width, 0.14, depth, 0, height + 0.07, 0, glassMaterial, false);
   const day = new THREE.Color(0xb4bec2), night = new THREE.Color(0x111b2b), background = day.clone();
   function setNight(value) { background.copy(day).lerp(night, value); }
