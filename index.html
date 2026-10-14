@@ -29,7 +29,7 @@
       <button role="tab" data-view="color" aria-selected="false">色彩与声音</button>
     </nav>
     <div class="tools">
-      <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 106 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
+      <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 118 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
       <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
       <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="显示 / 隐藏骨骼"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">骨架</span></button>
       <button class="iconbtn" id="tourBtn" title="沿展厅轴线漫游"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2.5v11l9-5.5z"/></svg><span class="lbl">漫游</span></button>
@@ -164,7 +164,7 @@
 
   <div class="atlas" id="atlas" hidden>
     <div class="atlas-head">
-      <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub" id="atlasSub">106 件模型 · 组内研究网站的数据与网格</span></div>
+      <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub" id="atlasSub">118 件模型 · 白色陶瓷 · 精细版按需加载</span></div>
       <div class="atlas-filters" id="atlasFilters"></div>
       <input id="atlasSearch" type="search" placeholder="搜索标题、作者、收藏地" aria-label="搜索图谱">
       <button class="iconbtn" id="atlasClose">关闭</button>
@@ -267,7 +267,7 @@
       <ul>
         <li><b>文字日记</b>：写下“我的一天”，点“生成姿势序列”，按关键词规则拆分活动并标注姿势。</li>
         <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则算出百分比，保持 2 秒加入序列。</li>
-        <li><b>图谱</b>：浏览 106 件模型，打开任一件看陶瓷渲染和骨骼，可以把它放到展厅里选中的位置。</li>
+        <li><b>图谱</b>：浏览 118 件模型，打开任一件查看白色陶瓷渲染和骨骼。精细版按需加载，也可以把姿势已分类的雕像放到展厅里选中的位置。</li>
         <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
         <li><b>视图</b>：雕塑序列、表皮序列、两者叠加，以及按姿势显示色板与声音。</li>
         <li><b>修改</b>：序列卡片可以拖动排序、改类别、删除；复杂姿势按钮作用于选中的卡片。</li>
@@ -283,7 +283,7 @@
       </div>
       <h3>说明</h3>
       <ul>
-        <li>雕塑来自组内的 Goddess Sculpture Atlas：105 条记录、网页展示用的网格、姿势标注和骨骼候选（RTMPose 多视角、UniRig、人工标注），另加小组新收录的 Demeter of Knidos（SMK 石膏像扫描，公有领域）。其中 64 件独立雕像进入替换序列，浮雕与建筑类只在图谱里浏览。几件原先被归为浮雕的独立雕像已改回雕像，并补了“也可代表的姿势”（data/atlas-extra.json）。</li>
+        <li>雕塑来自组内的 Goddess Sculpture Atlas：同步 118 条记录，包含原有 105 件及新增 13 件博物馆扫描；117 件提供精细网格和保留折角的平滑法线。姿势已分类的独立雕像进入替换序列，其他模型在图谱中浏览。保留平台的姿势修正和骨骼候选（未确认），新增作品附来源、许可和署名。</li>
         <li>所有模型统一用白色陶瓷材质渲染；地面上的金色、青色细环分别表示“保留”和“替换”。骨骼都是候选结果，只做显示，不评判身体。</li>
         <li>展厅的“现有序列”是从图谱里挑的 21 件不同雕塑，可以在图谱里为任何位置手动指定。替换时同一件雕塑不会在棋盘上出现两次：先用同类姿势的雕塑，再用“也可代表”这一姿势的，最后用相近姿势的。</li>
         <li>声音是按姿势合成的占位音色，可以在数据栏为每一类上传组员录制的声音；色板可以从图片中提取。</li>

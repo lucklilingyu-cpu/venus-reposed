@@ -46,6 +46,8 @@ const DEFAULT_PALETTES = {
 const SKETCH_SRC = 'img/sketch.jpg'; // the group's concept sketch (not hung in the hall at the moment)
 const ATLAS = await fetch('data/atlas.json').then(r => { if (!r.ok) throw new Error('atlas data ' + r.status); return r.json(); });
 const REC = {}; ATLAS.records.forEach(r => { REC[r.id] = r; });
+const MODEL_DETAILS = await fetch('data/atlas-models.json', { cache: 'no-cache' })
+  .then(r => r.ok ? r.json() : null).then(x => x ? x.models || {} : {}).catch(() => ({}));
 /* data/atlas-extra.json: corrected pose classes (fix) and newly acquired models (records); see AGENTS.md */
 await fetch('data/atlas-extra.json').then(r => (r.ok ? r.json() : null)).then(x => {
   if (!x) return;

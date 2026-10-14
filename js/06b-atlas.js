@@ -7,7 +7,7 @@ const Atlas = (() => {
   const el = $('#atlas'), grid = $('#atlasGrid'), spec = $('#spec'), info = $('#specInfo');
   let filter = 'all', query = '', built = false, cur = null;
   let r2 = null, sc2, cam2, ctl2, holder, bonesObj = null, raf = 0, spin = true, showBones = true;
-  const FILTERS = [['all', '全部'], ...CLS.map(c => [c, CLASS[c].zh]), ['relief', '浮雕与建筑']];
+  const FILTERS = [['all', '全部'], ...CLS.map(c => [c, CLASS[c].zh]), ['relief', '浮雕 / 待分类']];
   const count = (f) => f === 'all' ? ATLAS.records.length : f === 'relief' ? ATLAS.records.filter(r => r.kind !== 'figure' || !r.cls).length : FIGS.filter(r => r.cls === f).length;
   function renderFilters() {
     $('#atlasFilters').innerHTML = FILTERS.map(([k, t]) => `<button class="chip" data-f="${k}" aria-pressed="${k === filter}">${t} <span class="muted">${count(k)}</span></button>`).join('');
@@ -25,7 +25,7 @@ const Atlas = (() => {
     grid.innerHTML = list.map(r => `<button class="acard" data-id="${r.id}">
         <span class="aimg"><img loading="lazy" alt="" src="${thumbURL(r.id)}"></span>
         <span class="at">${esc(recTitle(r))}</span>
-        <span class="am">#${r.id} · ${r.cls ? CLASS[r.cls].zh : '浮雕 / 建筑'}${r.sk ? ' · 骨骼' : ''}</span></button>`).join('') || '<p class="muted">没有符合条件的模型。</p>';
+        <span class="am">#${r.id} · ${r.cls ? CLASS[r.cls].zh : r.kind === 'figure' ? '姿势待确认' : '浮雕 / 建筑'}${r.sk ? ' · 骨骼' : ''}</span></button>`).join('') || '<p class="muted">没有符合条件的模型。</p>';
     $$('.acard', grid).forEach(b => b.onclick = () => show(b.dataset.id));
   }
   function ensureViewer() {
@@ -54,6 +54,7 @@ const Atlas = (() => {
     ctl2.update(); r2.render(sc2, cam2);
   }
   async function show(id) {
+    const previous = cur, oldGeometries = holder ? holder.children.filter(m => m.isMesh && m.userData.detail).map(m => m.geometry) : [];
     cur = id;
     const r = REC[id];
     grid.hidden = true; spec.hidden = false;
@@ -61,12 +62,22 @@ const Atlas = (() => {
     info.innerHTML = specInfo(r);
     bindInfo(r);
     holder.clear(); bonesObj = null;
+    if (previous && MODEL_DETAILS[previous]) for (const geo of oldGeometries) releaseDetailGeometry(previous, geo);
     holder.rotation.y = 0;
     try {
       const mesh = await meshOf(id);
       if (cur !== id) return;
       const m = new THREE.Mesh(mesh.geo, ceramic); m.castShadow = true; m.receiveShadow = true;
       holder.add(m);
+      $('#specCanvas').dataset.modelId = id;
+      $('#specCanvas').dataset.triangles = String(mesh.geo.index.count / 3);
+      detailedMeshOf(id).then(detail => {
+        if (cur !== id || !holder.children.includes(m)) return;
+        if (detail.detail) m.geometry = detail.geo;
+        m.userData.detail = !!detail.detail;
+        $('#specCanvas').dataset.triangles = String(m.geometry.index.count / 3);
+        $('#specMeshStatus').textContent = (detail.detail ? '精细版' : '轻量版') + ' · ' + (m.geometry.index.count / 3).toLocaleString() + ' 个三角面 · 白色陶瓷';
+      }).catch(() => {});
       bonesObj = skeletonObject(mesh.skel, 0.006 * Math.max(1, (mesh.bounds.max.y) / 1.6)); if (bonesObj) { bonesObj.visible = showBones; holder.add(bonesObj); }
       const b = mesh.bounds, c = new THREE.Vector3(0, b.max.y / 2, 0);
       const rad = Math.max(b.max.y, b.max.x - b.min.x, b.max.z - b.min.z) * 0.62;
@@ -83,9 +94,10 @@ const Atlas = (() => {
       <div class="den">${esc(recMeta(r))}</div>
       <dl class="meta">
         ${r.m ? `<dt>收藏</dt><dd>${esc(r.m)}</dd>` : ''}
-        <dt>平台类别</dt><dd>${r.cls ? CLASS[r.cls].zh : '浮雕 / 建筑（不进入雕塑序列）'}${r.cls && r.alt && r.alt.length ? '（也可代表：' + r.alt.map(c => CLASS[c].zh).join('、') + '）' : ''}</dd>
+        <dt>平台类别</dt><dd>${r.cls ? CLASS[r.cls].zh : r.kind === 'figure' ? '姿势待确认（暂不进入雕塑序列）' : '浮雕 / 建筑（不进入雕塑序列）'}${r.cls && r.alt && r.alt.length ? '（也可代表：' + r.alt.map(c => CLASS[c].zh).join('、') + '）' : ''}</dd>
         <dt>图谱姿势</dt><dd>${esc((r.pose || []).map(x => ZH.pose[x] || x).join('、') || '—')}</dd>
         <dt>骨骼</dt><dd>${esc(skn)}</dd>
+        <dt>模型</dt><dd id="specMeshStatus">${MODEL_DETAILS[r.id] ? '轻量预览 · 正在载入精细版' : '轻量版 · 白色陶瓷'}</dd>
         <dt>可信度</dt><dd>${r.conf != null ? Math.round(r.conf * 100) + '%' : '—'}</dd>
       </dl>
       <div class="tags">${tagList(r.gest, ZH.gest)}${tagList(r.cloth, ZH.cloth)}</div>
@@ -110,7 +122,7 @@ const Atlas = (() => {
     };
   }
   function open(id) {
-    if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 组内研究网站的数据与网格`; }
+    if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 白色陶瓷 · 精细版按需加载`; }
     el.hidden = false; Atlas.isOpen = true;
     if (id) show(id); else { spec.hidden = true; grid.hidden = false; }
   }
@@ -119,5 +131,5 @@ const Atlas = (() => {
   $('#atlasSearch').addEventListener('input', (e) => { query = e.target.value.trim(); renderGrid(); });
   $('#specBones').onclick = (e) => { showBones = !showBones; e.currentTarget.setAttribute('aria-pressed', String(showBones)); if (bonesObj) bonesObj.visible = showBones; };
   $('#specSpin').onclick = (e) => { spin = !spin; e.currentTarget.setAttribute('aria-pressed', String(spin)); };
-  return { open, close, isOpen: false };
+  return { open, close, isOpen: false, usesGeometry: geo => !!holder && holder.children.some(m => m.geometry === geo) };
 })();
