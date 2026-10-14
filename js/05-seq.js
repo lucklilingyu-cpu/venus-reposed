@@ -382,19 +382,10 @@ function makePosition() {
   ring.rotation.x = -Math.PI / 2; ring.position.y = -0.085; g.add(ring);
   const moveHalo = new THREE.Mesh(new THREE.RingGeometry(0.94, 1.02, 64), new THREE.MeshBasicMaterial({ color: 0x82d9ef, transparent: true, opacity: 0, toneMapped: false, side: THREE.DoubleSide, depthWrite: false }));
   moveHalo.rotation.x = -Math.PI / 2; moveHalo.position.y = 0.015; g.add(moveHalo);
-  const colorGroup = new THREE.Group(); colorGroup.visible = false; g.add(colorGroup);
-  const slabs = [];
-  for (let j = 0; j < 5; j++) {
-    const mm = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, transparent: true, opacity: 0.94, emissive: 0xffffff, emissiveIntensity: 0.12, clearcoat: 1 });
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.4, 0.05), mm);
-    s.position.set(0, PT + 0.28 + j * 0.45, -0.05); s.castShadow = true; colorGroup.add(s); slabs.push(s);
-  }
-  const soundRing = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.012, 8, 96), new THREE.MeshBasicMaterial({ color: 0xb59a63, transparent: true, opacity: 0.6 }));
-  soundRing.rotation.x = Math.PI / 2; soundRing.position.y = PT + 0.04; colorGroup.add(soundRing);
   const tag = document.createElement('div'); tag.className = 'sculpture-caption hidden';
   tag.innerHTML = '<span class="sculpture-name"></span><span class="sculpture-year"></span>';
   labelsEl.appendChild(tag);
-  const vp = { g, plinth, tiers, drum, trim, ring, moveHalo, colorGroup, slabs, soundRing, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
+  const vp = { g, plinth, tiers, drum, trim, ring, moveHalo, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
 }
 /* ---------- the board: plinths stand on a staggered chessboard over the water ----------
@@ -762,31 +753,29 @@ async function applyDay(day, opts = {}) {
 let skinMesh = null, skinJob = 0, skinTimer = null, skinGrow = null;
 
 /* ---------- views ---------- */
-/* views: 雕塑序列 = the sculptures only, no ribbons; 表皮序列 = sculptures wrapped by the sequence ribbon;
-   叠加 = the sequence ribbon plus the pose ribbons of the other sculptures; 色彩与声音 = palettes.
-   Ribbons only ever show once the skin is on (表皮序列 or 叠加). */
+/* views (tabs): 雕塑序列 'sculpture' = the sculptures only, no ribbons;
+   表皮序列 'skin' = sculptures wrapped by the sequence ribbon;
+   叠加 'both' = the sequence ribbon plus the pose ribbons of the other sculptures;
+   雕塑与丝带 'ribbons' = every sculpture with its own pose ribbons (replaced the former 色彩与声音 view). */
 function applyViewTo(vp) {
   const v = S.view;
-  const showFig = v !== 'color';
-  if (vp.fig) vp.fig.visible = showFig;
-  if (vp.riseBeam) vp.riseBeam.visible = showFig && !!vp.beamTween;
+  if (vp.fig) vp.fig.visible = true;
+  if (vp.riseBeam) vp.riseBeam.visible = !!vp.beamTween;
   vp.plinth.visible = true;
-  vp.colorGroup.visible = v === 'color';
   if (vp.rib) { // in 叠加 the sequence ribbon takes over from the pose ribbons of the day's sculptures
     const p = S.pos[V.indexOf(vp)], wrapped = !S.day.length || !!(p && p.act);
-    vp.rib.visible = S.own && v === 'both' && !wrapped;
+    vp.rib.visible = v === 'ribbons' || (S.own && v === 'both' && !wrapped);
   }
   if (vp.bones) vp.bones.visible = S.bones;
 }
 function applyView() {
   V.forEach(applyViewTo);
   if (skinMesh) skinMesh.visible = S.view === 'skin' || S.view === 'both';
-  updateColorView();
   const bb = document.getElementById('bonesQuick'); if (bb) bb.setAttribute('aria-pressed', String(S.bones));
 }
 function setView(v) {
-  if (v === 'skin' || v === 'color') clearSculptureFocus();
-  const had = S.view === 'skin' || S.view === 'both';
+  if (v === 'skin') clearSculptureFocus();
+  const had = S.view === 'skin' || S.view === 'both', prev = S.view;
   S.view = v;
   document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
   applyView();
@@ -794,15 +783,9 @@ function setView(v) {
     if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); }
     skinGrow = growGroup(skinMesh, 3.2); // the sequence ribbon unrolls from the vault, sculpture after sculpture
   }
-  if (v === 'both' && !reduceMotion) V.forEach((vp, k) => { if (vp.rib && vp.rib.visible) { if (vp.ribTween) { const q = tweens.indexOf(vp.ribTween); if (q >= 0) tweens.splice(q, 1); } vp.ribTween = growGroup(vp.rib, 1.6, 0.3 + 0.05 * k); } });
+  if ((v === 'both' || v === 'ribbons') && v !== prev && !reduceMotion) V.forEach((vp, k) => { if (vp.rib && vp.rib.visible) { if (vp.ribTween) { const q = tweens.indexOf(vp.ribTween); if (q >= 0) tweens.splice(q, 1); } vp.ribTween = growGroup(vp.rib, 1.6, 0.3 + 0.05 * k); } });
 }
 function paletteFor(i) { const p = S.pos[i]; if (!p) return DEFAULT_PALETTES.standing; return S.posPal[i] || S.palettes[clsOf(p.work)]; }
-function updateColorView() {
-  V.forEach((vp, i) => {
-    const pal = paletteFor(i);
-    vp.slabs.forEach((s, j) => { const c = new THREE.Color(pal[j]); s.material.color.copy(c); s.material.emissive.copy(c); });
-  });
-}
 
 /* ---------- camera moves ---------- */
 let camTween = null;

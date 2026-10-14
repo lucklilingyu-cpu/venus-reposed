@@ -52,7 +52,7 @@ $('#moreBtn').addEventListener('click', (e) => { e.stopPropagation(); menu.hidde
 document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('#moreMenu,#moreBtn')) { menu.hidden = true; $('#moreBtn').setAttribute('aria-expanded', 'false'); } });
 $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
   menu.hidden = true; setRibbonStyle(b.dataset.skin);
-  if (S.view === 'color') setView('both');
+  if (S.view === 'sculpture') setView('ribbons');
   toast('表皮：' + RIBBON_STYLES[S.skinStyle].zh);
 }));
 $('#ownBtn').addEventListener('click', () => { S.own = !S.own; menu.hidden = true; if (S.own && S.view !== 'both') setView('both'); else applyView(); toast(S.own ? '叠加视图：其他雕塑也显示自己的姿态丝带' : '叠加视图：只看序列丝带'); });
@@ -176,14 +176,6 @@ function frame() {
   }
   water.material.uniforms.time.value = t;
   updateShards(dt);
-  // sound-reactive ring in the colour view
-  const lvl = Sound.on ? Sound.level() : 0;
-  V.forEach((vp, i) => {
-    if (!vp.colorGroup.visible) return;
-    const active = Sound.on && i === S.sel;
-    const k = active ? 1 + lvl * 5 : 1 + Math.sin(t * 1.4 + i) * 0.04;
-    vp.soundRing.scale.set(k, k, k); vp.soundRing.material.opacity = active ? 0.9 : 0.35;
-  });
   const wave = document.getElementById('wave'); if (wave) Sound.drawWave(wave);
   if (Atlas.isOpen || Group.isOpen) return;
   updateLabels();

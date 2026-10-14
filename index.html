@@ -26,7 +26,7 @@
       <button role="tab" data-view="sculpture" aria-selected="true">雕塑序列</button>
       <button role="tab" data-view="skin" aria-selected="false">表皮序列</button>
       <button role="tab" data-view="both" aria-selected="false">叠加</button>
-      <button role="tab" data-view="color" aria-selected="false">色彩与声音</button>
+      <button role="tab" data-view="ribbons" aria-selected="false">雕塑与丝带</button>
     </nav>
     <div class="tools">
       <button class="iconbtn lighting-toggle" id="lightingBtn" type="button" aria-pressed="false" aria-label="切换到夜晚灯光" title="切换白天 / 夜晚灯光"><span class="lighting-symbol" aria-hidden="true">☾</span><span id="lightingLabel">夜晚</span></button>
@@ -304,7 +304,7 @@
         <li id="aboutCam"><b>摄像头</b>：浏览器会询问是否允许使用摄像头。用 MediaPipe 在浏览器里取关节点（画面不会上传），按六类规则算出百分比，保持 2 秒加入序列。</li>
         <li><b>图谱</b>：浏览 118 件模型，打开任一件查看白色陶瓷渲染和骨骼。精细版按需加载，也可以把姿势已分类的雕像放到展厅里选中的位置。</li>
         <li><b>视频 / 照片</b>：抽取关键帧读出姿势序列，并取每段的主色调。</li>
-        <li><b>视图</b>：雕塑序列（只有雕塑）、表皮序列（缠绕当天雕塑的巨大丝带）、叠加（再加上其余雕塑各自的姿态丝带），以及按姿势显示色板与声音。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>
+        <li><b>视图</b>：雕塑序列（只有雕塑）、表皮序列（缠绕当天雕塑的巨大丝带）、叠加（再加上其余雕塑各自的姿态丝带），以及雕塑与丝带（每件雕塑和它自己的姿态丝带）。丝带样式在“表皮与导出”菜单里换：褶皱、平滑、折面。</li>
         <li><b>修改</b>：序列卡片可以拖动排序、改类别、删除；复杂姿势按钮作用于选中的卡片。</li>
         <li><b>小组</b>：组员的作品汇总——图片、视频、PDF、扫描与建模的 3D 模型、声音、笔记和链接，以及每个人保存的“一天”。模型可以放到展厅的任一位置，“一天”可以在展厅中载入。</li>
       </ul>

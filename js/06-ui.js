@@ -200,7 +200,7 @@ function renderData() {
   $('#sndUp').onclick = () => { soundTarget = cls; $('#soundFile').click(); };
 }
 let paletteTarget = null, soundTarget = null;
-function refreshPalettes(cls) { updateColorView(); renderData(); scheduleSkin(50, { own: true }); }
+function refreshPalettes(cls) { renderData(); scheduleSkin(50, { own: true }); } // palettes tint the ribbons
 function updateLabels() {
   const w = window.innerWidth, h = window.innerHeight;
   V.forEach((vp, i) => {
