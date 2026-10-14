@@ -537,3 +537,63 @@ function paletteFromCanvases(canvases, k = 5) {
   C.sort((a, b) => (b[0] * 0.3 + b[1] * 0.59 + b[2] * 0.11) - (a[0] * 0.3 + a[1] * 0.59 + a[2] * 0.11));
   return C.map(c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join(''));
 }
+
+const GALLERY_ANNOTATION_KEY = 'venus.pose-gallery-annotations.v1';
+const GALLERY_JOINTS = [
+  ['nose', '头部中心'], ['lsh', '人物左肩'], ['rsh', '人物右肩'], ['lel', '人物左肘'], ['rel', '人物右肘'],
+  ['lwr', '人物左手腕'], ['rwr', '人物右手腕'], ['lhip', '人物左髋'], ['rhip', '人物右髋'],
+  ['lkn', '人物左膝'], ['rkn', '人物右膝'], ['lank', '人物左脚踝'], ['rank', '人物右脚踝'],
+];
+let gallerySelectedId = null, galleryEditPoints = {}, galleryEditSkipped = [], galleryAnnotations = {};
+try { galleryAnnotations = JSON.parse(localStorage.getItem(GALLERY_ANNOTATION_KEY) || '{}') || {}; } catch (_) { galleryAnnotations = {}; }
+function galleryAnnotationCount() {
+  const count = Object.keys(galleryAnnotations).length, total = poseGalleryItems ? poseGalleryItems.length : 77;
+  const el = $('#poseAnnotationCount'); if (el) el.textContent = count + ' / ' + total + ' 已校正';
+}
+function saveGalleryAnnotations() {
+  try { localStorage.setItem(GALLERY_ANNOTATION_KEY, JSON.stringify(galleryAnnotations)); galleryAnnotationCount(); return true; }
+  catch (_) { $('#poseAnnotatorStatus').textContent = '浏览器存储空间不足；请先导出标注文件。'; return false; }
+}
+function drawGalleryPoints(canvas, points) {
+  const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height; ctx.clearRect(0, 0, w, h);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2, w * 0.004); ctx.strokeStyle = '#ffd34f'; ctx.fillStyle = '#ffd34f';
+  for (const [a, b] of K_EDGES) if (points[a] && points[b]) { ctx.beginPath(); ctx.moveTo(points[a].x * w, points[a].y * h); ctx.lineTo(points[b].x * w, points[b].y * h); ctx.stroke(); }
+  for (const [k, name] of GALLERY_JOINTS) { const p = points[k]; if (!p) continue; ctx.beginPath(); ctx.arc(p.x * w, p.y * h, Math.max(5, w * 0.007), 0, Math.PI * 2); ctx.fill(); ctx.font = 'bold ' + Math.max(12, w * 0.014) + 'px sans-serif'; ctx.fillStyle = '#111'; ctx.fillText(name, p.x * w + 8, p.y * h - 7); ctx.fillStyle = '#ffd34f'; }
+}
+function setGalleryEditorPoint() {
+  const canvas = $('#poseAnnotatorCanvas'), key = $('#poseJointSelect').value; drawGalleryPoints(canvas, galleryEditPoints);
+  if (key) { const p = galleryEditPoints[key], label = GALLERY_JOINTS.find(j => j[0] === key)?.[1] || key; $('#poseAnnotatorStatus').textContent = p ? label + ' 已标记；点击图片可调整位置。' : galleryEditSkipped.includes(key) ? label + ' 已标记为遮挡。' : '请在图片上点击标记「' + label + '」，看不清时可标记为遮挡。'; }
+}
+function openGalleryAnnotator() {
+  const item = poseGalleryItems?.find(x => x.id === gallerySelectedId); if (!item) return;
+  const saved = galleryAnnotations[item.id]; galleryEditPoints = saved ? { ...(saved.points || {}) } : {}; galleryEditSkipped = saved ? [...(saved.skipped || [])] : [];
+  const editor = $('#poseAnnotator'), img = $('#poseAnnotatorImage'), canvas = $('#poseAnnotatorCanvas');
+  $('#poseAnnotatorTitle').textContent = '校正 ' + item.id + ' · ' + item.title;
+  $('#poseClassSelect').value = saved?.cls || 'standing'; $('#poseGestureSelect').value = saved?.g || '';
+  editor.hidden = false; $('#poseAnnotatorStatus').textContent = '正在载入原图…';
+  img.onload = () => { canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; setGalleryEditorPoint(); };
+  img.onerror = () => { $('#poseAnnotatorStatus').textContent = '图片载入失败，请稍后再试。'; }; img.src = item.file;
+  editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function updateHallFromGalleryAnnotation(item, annotation) {
+  const cls = CLS.includes(annotation.cls) ? annotation.cls : 'standing';
+  const validGesture = annotation.g && GESTURES[annotation.g]?.cls.includes(cls) ? annotation.g : null;
+  S.posPal = {}; S.sel = 0;
+  return applyDay([{ cls, g: validGesture, label: item.title.slice(0, 28) + ' · 校正' + CLASS[cls].zh, time: null, hours: CLASS[cls].dur }], { source: '骨骼图集人工校正', fresh: true });
+}
+function exportGalleryAnnotations() {
+  const blob = new Blob([JSON.stringify({ version: 1, images: galleryAnnotations }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'pose-gallery-annotations.json'; a.click(); URL.revokeObjectURL(url);
+}
+async function importGalleryAnnotations(file) {
+  try {
+    const data = JSON.parse(await file.text()), images = data.images || data;
+    if (!images || typeof images !== 'object' || Array.isArray(images)) throw new Error('format');
+    for (const [id, item] of Object.entries(images)) {
+      if (!/^\d{3}$/.test(id) || !item || !CLS.includes(item.cls)) continue;
+      const points = {}; for (const [key] of GALLERY_JOINTS) { const p = item.points?.[key]; if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) points[key] = { x: THREE.MathUtils.clamp(p.x, 0, 1), y: THREE.MathUtils.clamp(p.y, 0, 1) }; }
+      galleryAnnotations[id] = { cls: item.cls, g: item.g || null, points, skipped: Array.isArray(item.skipped) ? item.skipped : [] };
+    }
+    if (!saveGalleryAnnotations()) return; $('#poseGalleryStatus').textContent = '标注文件已导入到此浏览器。';
+  } catch (_) { $('#poseGalleryStatus').textContent = '导入失败：请选择本图集导出的 JSON 标注文件。'; }
+}
