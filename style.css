@@ -1,7 +1,7 @@
 /* Layout: full-bleed 3D hall; input panel left, data panel right, pose-sequence strip along the bottom (bottom sheet on phones); atlas as a white full-screen gallery. Single white-ceramic look shared with the group's atlas site. */
 :root{
   color-scheme: light;
-  --ground:#f6f5f2;
+  --ground:#ffffff;
   --panel:rgba(255,255,255,.92);
   --panel-solid:#ffffff;
   --line:#e8e8e8;

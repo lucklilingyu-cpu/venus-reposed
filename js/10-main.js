@@ -153,7 +153,6 @@ window.addEventListener('resize', onResize);
 /* loop */
 const clock = new THREE.Clock();
 NightLighting.init();
-const dust = hall.getObjectByName('dust');
 let shadowTick = 0; // the hall is static: shadows are redrawn while something moves, and twice a second otherwise
 const LIM = { x: [-21.4, 22.6], y: [0.4, 21.5], z: [-7.1, 7.1] }; // stay inside the colonnade and under the vault
 function frame() {
@@ -171,11 +170,7 @@ function frame() {
     camera.position.z = THREE.MathUtils.clamp(camera.position.z, LIM.z[0], LIM.z[1]);
   }
   if (!reduceMotion) {
-    floaters.forEach(f => { f.m.position.y = f.y0 + Math.sin(t * 0.5 + f.ph) * 0.25; });
-    if (dust) dust.rotation.y = t * 0.01;
-  }
-  water.material.uniforms.time.value = t;
-  updateShards(dt);
+    floaters.forEach(f => { f.m.position.y = f.y0 + Math.sin(t * 0.5 + f.ph) * 0.25; });  }  updateShards(dt);
   const wave = document.getElementById('wave'); if (wave) Sound.drawWave(wave);
   if (Atlas.isOpen || Group.isOpen) return;
   updateLabels();
@@ -433,3 +428,5 @@ $('#poseGallery').addEventListener('click', async (e) => {
 })();
 
 window.__vr.Architecture = Architecture; window.__vr.NightLighting = NightLighting;
+
+window.__vr.VAHallScan = VAHallScan;
