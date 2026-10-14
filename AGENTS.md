@@ -12,7 +12,7 @@ A static website for a Bartlett B-Pro Architectural Design group project (Worksh
 
 - **The hall**: a 3D virtual hall of the V&A Cast Courts.
 - **The sequence**: a "day in my life" becomes a sequence of body poses. The poses come from a text diary, the webcam (MediaPipe) or a video/photos. Each pose swaps a goddess sculpture along the court's axis for one with the same pose class, taken from the group's *Goddess Sculpture Atlas* (105 models).
-- **The skin**: a continuous architectural skin grows around the sequence. It is a signed-distance-field surface, built in a Web Worker.
+- **The skin**: cast-plaster ribbons (js/05b-ribbons.js). Every sculpture has its own pose ribbons; the "表皮序列" view shows one giant ribbon that coils around the day's sculptures in sequence order and arcs between them — a spatial installation. (The earlier signed-distance-field "bubble" skin was removed in October 2026.)
 - **The group space**: members without accounts share works there — images, video, PDF, 3D scans/models, sounds, files, notes, links and saved "days". Visitors browse the public works without logging in. Members unlock editing with a shared **edit code**. Right now `config.js` contains `editCode`, so every visitor can edit without logging in ("open mode", the group's choice); removing that line brings back the login.
 
 ## Stack
@@ -35,7 +35,6 @@ style.css         all styles; design tokens on :root; phone layout under @media 
 js/               the app code, joined in PARTS order into one module:
   01-data.js      imports; pose classes (CLS, CLASS), gestures, default palettes; loads data/atlas.json (top-level await) → ATLAS, REC, FIGS; EXISTING hall sequence; sample diaries
   02-pose.js      procedural stick poses (icons, camera demo, canonical poses)
-  03-sdf.js       SDF primitives, surface nets, the skin builder; SDF_WORKER_SRC runs in a Web Worker pool (Geo)
   04-scene.js     renderer, lights, materials (M, colours in COL), the hall: sage-green walls + colonnade, entablature, gallery balcony,
                   upper arcade with green niches, red chevron floor, pool + water, glazed barrel vault with iron ribs/trusses,
                   end lunettes; the sun (SUN_DIR) and its shadow fit; sunbeams
@@ -44,8 +43,11 @@ js/               the app code, joined in PARTS order into one module:
                   tympanum, trumeau, jamb statues, its own spot light); WALK = floor plan for walk mode
   05-seq.js       atlas mesh loading (fetchMesh, meshOf, figureGeometry), white ceramic material, skeleton overlay, state S,
                   the chessboard (BOARD, CELLS, MAX_POS) and tracks (skeletonSegments, trackPoints, planLayout), plinths/positions (V)
-                  with chess moves (ensurePositions, relayout), replacement logic (chooseWork, computeSequence, applyDay), skin build,
-                  views, camera moves
+                  with chess moves (arrangeBoard, relayout), replacement logic (chooseWork, computeSequence, applyDay), views (applyView),
+                  camera moves
+  05b-ribbons.js  the skin as plaster ribbons: sweepRibbon (swept strip with twist, ruffled edges, thickness, growth by drawRange),
+                  body profiles, pose ribbons per sculpture (poseRecipe, buildPoseRibbons), the sequence ribbon (sequencePath, buildSkin),
+                  styles (RIBBON_STYLES, setRibbonStyle)
   06-ui.js        DOM helpers ($, $$, esc, toast), sequence strip, data panel (renderData), bars, gesture chips, 3D labels
   06b-atlas.js    Atlas overlay: gallery, filters, search, white "specimen" viewer, "放到展厅第 NN 位"
   07-inputs.js    text diary → poses (keyword rules), camera + MediaPipe classifier, video/photo analysis, palette extraction
@@ -87,7 +89,7 @@ python tools/add_model.py <scan.stl|obj> <id> [--up z] [--front -y]   # add a ne
 There is no automated test suite. After a change, open the preview (and `http://localhost:8000/?debug` if you need `window.__vr`), then check:
 
 1. The hall loads, with 21 different white ceramic sculptures on plinths, staggered on the chessboard over the pool, and labels above them.
-2. "生成姿势序列" with a sample diary changes the sequence; the skin view ("表皮序列") builds.
+2. "生成姿势序列" with a sample diary changes the sequence; every sculpture has its own ribbons, and the skin view ("表皮序列") unrolls the sequence ribbon around the day's sculptures.
 3. "图谱 ATLAS" opens; a model rotates in the specimen viewer.
 4. "小组 GROUP" opens and lists the works from the live database. Don't create test works on the live database unless the user asks; if you do, delete them afterwards.
 5. There are no errors in the browser console. Also check the phone layout (DevTools device toolbar, 390×844).
@@ -165,7 +167,12 @@ Movement update: green-tile bounds are `GREEN_BOUNDS` (x ±16.7, z ±4.8). The 3
   - all plinths start together with the same 4.5 s duration, including unchanged positions lifting in place; generation uses a 350 ms shared preparation delay and all land at 4850 ms. Never add sequence staggering or occupied-square waiting;
   - it returns the landing time of each position; `applyDay` waits for it before `setFigure` grows the new sculpture (shard/rise effect — keep it). `relayout()` re-plans after the track changes. `?debug` exposes the last plan as `__vr.moves`.
 - Each `V[i]` has `x`, `z`; anything that places things at a position (labels, picking, camera moves, export, walk collisions) must use both.
-- **Skin**: grows only through the day's positions (in track order), bridges stretched along the track tangent. The cut view (`S.cut`) is a horizontal plane at `PT + 1.1`, so you look down into the poses.
+- **Skin = plaster ribbons** (js/05b-ribbons.js):
+  - `sweepRibbon(ctrl, opts)`: control points `{p, w, roll, amp, col, up?}` → a strip along a centripetal Catmull-Rom curve. The band's width follows `up` (world up by default, so it faces the body while wrapping; the limb or body axis for limbs and lying figures), `roll` twists it, `amp` ruffles the edges like cast drapery; 1–3 cm thick. Indices run along the length, so `growRibbon(geo, f)` / `growGroup` grow ribbons.
+  - Pose ribbons (`poseRecipe(mesh, work)`, cached per work, in the figure's own frame; `vp.rib`): vertical figures — a band wraps the body following `verticalProfile` (centre and radius in 16 directions at 20 heights) a few cm off the surface and leaves the shoulders in a scroll (`volute`); a ribbon flies off a raised or held-out hand (`gestureLimbs`, from the atlas skeleton candidate), otherwise a second band winds down and settles on the plinth. Lying figures (`lyingProfile`) — bands drape over the body in waves and rise into a scroll at the head end. Built in `setFigure`, removed in `disposeFigure`, grown after the figure rises.
+  - Sequence ribbon (`buildSkin` → `skinMesh` + a thinner second strand as its child): through the day's positions in order (all positions when there is no day). It comes down from the vault, coils down (inner) and up (outer) round each sculpture, then arcs over the board — above every sculpture and pose ribbon under the arc, at heights that vary from arc to arc — to the next one, and finally rises away. Coil radius comes from the figure's bounds and is limited by the neighbours' distance; width grows with the activity's duration; each coil is tinted lightly with its palette.
+  - Views: 雕塑序列 = sculptures + pose ribbons; 表皮序列 = sculptures + sequence ribbon (unrolls on entering); 叠加 = both (the day's sculptures drop their pose ribbons, the sequence ribbon wraps them); `S.own` toggles pose ribbons. Styles: 褶皱 `drape` (default), 平滑 `smooth`, 折面 `fold` (flat-shaded panels).
+  - Export: `skinOBJ()` writes the sequence ribbon, its strand and every pose ribbon (world coordinates) plus the skeleton candidates.
 - **Choosing sculptures** (`computeSequence`, `chooseWork`): no sculpture stands on the board twice. Sculptures that keep their place (outside the day, or chosen by hand) are reserved first. For a pose the candidates are: same main class (gesture first) → records whose `alt` lists the class → a neighbouring class (`KIN`) → only then the least-used repeat. Labels of day positions show the day's pose (`fitsCls`).
 - **Water** (04-scene.js, `waterShader`): a still, deep sage-green pool — dark body, a mirror only at grazing angles (Fresnel), lighter at the stone edge, small slow ripples. It sits between the red floor and the white sculptures; keep it muted. The plinth steps (`M.tier`) are sage glass to match.
 
@@ -208,7 +215,7 @@ Sculptures are scaled per pose class (`TARGET` in `05-seq.js`), sit on a plinth 
 - **UI text**: keep it short and plain. Messages tell the user what happened and what to do next.
 - **Accessibility**: keep buttons as `<button>` and keep `aria-*` attributes. Every new control must work on phones (≤760 px).
 - **Performance**: target 60 fps on a laptop.
-  - Heavy geometry (the skin) runs in the worker.
+  - Ribbons are cheap to build (about 0.1 s for the whole board) and run on the main thread; keep their triangle counts in check (pose ribbons ~100k, sequence ribbon ~100–150k in total).
   - Do not add per-frame allocations in `frame()`.
   - Keep uploaded display meshes at or below about 60k triangles (`TARGET_TRIS`).
 - **Secrets and privacy**:

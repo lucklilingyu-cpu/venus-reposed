@@ -51,11 +51,11 @@ const menu = $('#moreMenu');
 $('#moreBtn').addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; $('#moreBtn').setAttribute('aria-expanded', String(!menu.hidden)); });
 document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('#moreMenu,#moreBtn')) { menu.hidden = true; $('#moreBtn').setAttribute('aria-expanded', 'false'); } });
 $$('#moreMenu [data-skin]').forEach(b => b.addEventListener('click', () => {
-  S.skinStyle = b.dataset.skin; menu.hidden = true;
-  if (S.view === 'sculpture' || S.view === 'color') setView('skin');
-  scheduleSkin(0); toast({ smooth: '表皮：光滑曲面', ribs: '表皮：肋片（等高线）', fold: '表皮：折叠面' }[S.skinStyle]);
+  menu.hidden = true; setRibbonStyle(b.dataset.skin);
+  if (S.view === 'color') setView('both');
+  toast('表皮：' + RIBBON_STYLES[S.skinStyle].zh);
 }));
-$('#cutBtn').addEventListener('click', () => { S.cut = !S.cut; applyView(); menu.hidden = true; toast(S.cut ? '剖开表皮上半部，从上面看见里面的姿势' : '完整包裹'); if (S.view === 'sculpture' || S.view === 'color') setView('both'); });
+$('#ownBtn').addEventListener('click', () => { S.own = !S.own; applyView(); menu.hidden = true; toast(S.own ? '显示每件雕塑自己的姿态丝带' : '隐藏雕塑自己的丝带，只看序列丝带'); if (S.view === 'color') setView('sculpture'); });
 $('#bonesBtn').addEventListener('click', () => { S.bones = !S.bones; applyView(); menu.hidden = true; toast(S.bones ? '显示骨架火柴人' : '隐藏骨架'); });
 const CAMS = {
   vault: [[-8, 14.2, 5.4], [6, 15.2, -2.2]],
@@ -115,11 +115,11 @@ function pickSculpture(e) {
   if (Walk.active) { if (!Walk.locked) return -1; ndc.set(0, 0); } // walking: pick what the crosshair points at
   else { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
   ray.setFromCamera(ndc, camera);
-  const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); });
+  const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); if (vp.rib && vp.rib.visible) targets.push(...vp.rib.children); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
   const hit = ray.intersectObjects(targets, false)[0];
   if (!hit) return -1;
-  let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object);
+  let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object || (vp.rib && hit.object.parent === vp.rib));
   if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.hypot(vp.x - hit.point.x, vp.z - hit.point.z); if (d < best) { best = d; i = k; } }); }
   return i;
 }
@@ -205,6 +205,7 @@ function frame() {
       $('#textStatus').innerHTML = `示例：<b>${day.map(d => CLASS[d.cls].zh).join(' → ')}</b>。改写日记后点“生成姿势序列”。`;
     }
   } catch (e) { console.error(e); toast('初始化出错：' + e.message, 6000); }
+  setLoading(null);
   renderGestures();
 })();
 (() => {
@@ -263,7 +264,7 @@ function frame() {
   })();
 })();
 /* DEBUG */
-window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, SRC: SDF_WORKER_SRC, composer, bloom, renderer, hall, THREE, V, S, scene, camera, controls, get skin() { return skinMesh; }, flyToPosition, setView, applyDay, Geo };
+window.__vr = { classifyPose, poseToK, buildPose, CANON, parseRules, mergeDay, composer, bloom, renderer, hall, THREE, V, S, scene, camera, controls, get skin() { return skinMesh; }, flyToPosition, setView, applyDay, poseRecipe, sweepRibbon, skinOBJ };
 window.__vr.showWorks = async (ids) => {
   S.day = ids.map(id => ({ cls: REC[id].cls || 'standing', g: null, label: '#' + id, time: null, hours: 1 }));
   S.pos = ids.map((id, k) => ({ orig: null, act: S.day[k], work: id, status: 'keep' }));

@@ -10,7 +10,7 @@ function sequenceData() {
     source: S.source,
     units: 'metres, Y up; sequence runs along X; figures face +Z; plinth top at y = ' + PT,
     atlas: 'Goddess Sculpture Atlas (group research site); meshes are its display copies, scaled per pose class',
-    skin: { style: S.skinStyle, cutFront: S.cut, clearance_m: 0.26, blend: 'smooth union, k = 0.7', stretchByDuration: true },
+    skin: { form: 'cast-plaster ribbons', style: S.skinStyle, poseRibbons: S.own, sequenceRibbon: 'one ribbon + second strand: coils down and up around each sculpture of the day in order, high arcs between them', widthByDuration: true },
     positions: S.pos.map((p, i) => {
       const r = REC[p.work];
       return {
@@ -26,15 +26,21 @@ function sequenceData() {
 }
 async function skinOBJ() {
   if (!skinMesh || !skinMesh.userData.ready) return null;
-  const g = skinMesh.geometry, P = g.attributes.position, N = g.attributes.normal;
-  const lines = ['# Venus, Re-posed — skin generated around the pose sequence', '# metres, Y up; import in Blender with Forward -Z, Up Y', 'o skin'];
-  for (let i = 0; i < P.count; i++) lines.push(`v ${P.getX(i).toFixed(4)} ${P.getY(i).toFixed(4)} ${P.getZ(i).toFixed(4)}`);
-  for (let i = 0; i < P.count; i++) lines.push(`vn ${N.getX(i).toFixed(3)} ${N.getY(i).toFixed(3)} ${N.getZ(i).toFixed(3)}`);
-  const keep = (k) => !S.cut || P.getZ(k) <= 0.12;
-  const tri = (a, b, c) => { if (keep(a) && keep(b) && keep(c)) lines.push(`f ${a + 1}//${a + 1} ${b + 1}//${b + 1} ${c + 1}//${c + 1}`); };
-  if (g.index) { const I = g.index.array; for (let i = 0; i < I.length; i += 3) tri(I[i], I[i + 1], I[i + 2]); }
-  else for (let i = 0; i < P.count; i += 3) tri(i, i + 1, i + 2);
-  let base = P.count;
+  const lines = ['# Venus, Re-posed — plaster ribbons around the pose sequence', '# metres, Y up; import in Blender with Forward -Z, Up Y'];
+  let base = 0;
+  const _p = new THREE.Vector3(), _n = new THREE.Vector3(), _nm = new THREE.Matrix3();
+  const add = (name, mesh) => { // one object per ribbon, in world coordinates
+    const g = mesh.geometry, P = g.attributes.position, N = g.attributes.normal, I = g.index.array;
+    mesh.updateWorldMatrix(true, false); _nm.getNormalMatrix(mesh.matrixWorld);
+    lines.push('o ' + name);
+    for (let i = 0; i < P.count; i++) { _p.fromBufferAttribute(P, i).applyMatrix4(mesh.matrixWorld); lines.push(`v ${_p.x.toFixed(4)} ${_p.y.toFixed(4)} ${_p.z.toFixed(4)}`); }
+    for (let i = 0; i < P.count; i++) { _n.fromBufferAttribute(N, i).applyMatrix3(_nm).normalize(); lines.push(`vn ${_n.x.toFixed(3)} ${_n.y.toFixed(3)} ${_n.z.toFixed(3)}`); }
+    for (let i = 0; i < I.length; i += 3) { const a = I[i] + base + 1, b = I[i + 1] + base + 1, c = I[i + 2] + base + 1; lines.push(`f ${a}//${a} ${b}//${b} ${c}//${c}`); }
+    base += P.count;
+  };
+  add('sequence_ribbon', skinMesh);
+  skinMesh.children.forEach((m, k) => add('sequence_ribbon_strand_' + (k + 2), m));
+  V.forEach((vp, i) => { if (vp.rib) vp.rib.children.forEach((m, k) => add(`pose_ribbon_${pad2(i + 1)}_${k + 1}_atlas${vp.work}`, m)); });
   for (let i = 0; i < S.pos.length; i++) {
     const p = S.pos[i], x = V[i] ? V[i].x : 0, z = V[i] ? V[i].z : 0;
     let mesh; try { mesh = await meshOf(p.work); } catch (e) { continue; }
@@ -53,15 +59,11 @@ function blenderPrompt() {
   return `In the open Blender scene, import skin.obj (Forward -Z, Up Y) and read sequence.json from the same folder.
 The sequence runs along the X axis of the Cast Court model; each position names a Goddess Atlas model (atlas_id), its pose_class and a duration in hours.
 For each position, import that atlas model's original OBJ from the research folder, scale it to the same height, and place it on a plinth whose top is at y = ${PT}.
-Use skin.obj as the starting surface. Refine it so each part accommodates its pose:
-- standing: a vertical folded wall behind the figure, height = 1.3 x figure height, folds shifted toward the weight-bearing leg
-- seated: a shell that supports the hips and curves up behind the back, seat height = hip height
-- crouching: a low dome around the figure, radius = bounding sphere + 0.3 m
-- reclining: a horizontal curved surface following the spine and legs
-- horizontal: a flat slab under the body plus a low canopy above it
-- walking: a long ribbon along the walking direction
-Keep every surface at least 0.3 m away from the body. Loft consecutive surfaces into one continuous skin; the length of each transition is proportional to its duration.
-Give sculptures and skin a white glazed-ceramic material; colour each skin part lightly with its palette. Put the result in a new collection "Skin". Report what you created.
+skin.obj holds cast-plaster ribbons in world coordinates:
+- sequence_ribbon (and its second strand): one continuous ribbon that comes down from the vault, coils down and up around each sculpture of the day in sequence order, and arcs high over the board from one sculpture to the next; its width grows with the duration of each activity
+- pose_ribbon_NN_k: each sculpture's own ribbons — a band wrapping the body a little off its silhouette and leaving the shoulders in a scroll, ribbons flying off raised hands, or a band settling on the plinth
+Refine them as cast plaster drapery: keep the centre lines, give the ribbons 2–4 cm thickness with softened edges and deeper folds where the edges ruffle, and keep every ribbon at least 5 cm away from the sculptures and from each other.
+Give the sculptures a white glazed-ceramic material and the ribbons a matt white plaster with a light tint of each pose's palette. Put the result in a new collection "Skin". Report what you created.
 
 Current sequence:
 ${seq}`;
@@ -108,7 +110,7 @@ async function exportZip() {
     { name: 'skin.obj', data: obj },
     { name: 'sequence.json', data: JSON.stringify(sequenceData(), null, 2) },
     { name: 'blender_prompt.txt', data: blenderPrompt() },
-    { name: 'README.txt', data: 'Venus, Re-posed — exported from the virtual Cast Courts.\nskin.obj: blended skin around the pose sequence (front cut ' + (S.cut ? 'on' : 'off') + ') plus the atlas skeleton candidates as polylines.\nsequence.json: positions, pose classes, activities, Goddess Atlas models, palettes.\nblender_prompt.txt: prompt for Blender MCP / Codex.\n' },
+    { name: 'README.txt', data: 'Venus, Re-posed — exported from the virtual Cast Courts.\nskin.obj: the plaster ribbons — the sequence ribbon and every sculpture\'s own pose ribbons — plus the atlas skeleton candidates as polylines.\nsequence.json: positions, pose classes, activities, Goddess Atlas models, palettes.\nblender_prompt.txt: prompt for Blender MCP / Codex.\n' },
   ]);
   await saveFile('venus-reposed-skin.zip', zip);
 }

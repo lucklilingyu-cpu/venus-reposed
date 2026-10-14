@@ -236,7 +236,7 @@ function skeletonObject(skel, rad = 0.0075) {
 
 /* state */
 const S = {
-  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'ribs', cut: true, bones: false, merge: true, layout: 'skeleton',
+  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'drape', own: true, bones: false, merge: true, layout: 'skeleton',
   palettes: JSON.parse(JSON.stringify(DEFAULT_PALETTES)), posPal: {}, barsMode: 'day', source: '', override: {},
 };
 
@@ -611,6 +611,7 @@ function relayout() {
 }
 function disposeFigure(vp, animate) {
   stopRiseBeam(vp);
+  removePoseRibbons(vp, animate);
   if (vp.riseTween) { const k = tweens.indexOf(vp.riseTween); if (k >= 0) tweens.splice(k, 1); vp.riseTween = null; }
   if (vp.riseMaterial) { if (vp.fig) vp.fig.material = ceramic; vp.riseMaterial.dispose(); vp.riseMaterial = null; }
   const old = vp.fig;
@@ -662,6 +663,7 @@ async function setFigure(i, p, animate) {
   vp.bones = skeletonObject(mesh.skel);
   if (vp.bones) { vp.bones.position.y = PT; vp.g.add(vp.bones); }
   plinthFit(vp, mesh.bounds, animate);
+  buildPoseRibbons(vp, mesh, animate, 1.0); // its own plaster ribbons, grown after the figure has risen
   if (animate) { // rise out of the plinth
     const h = mesh.bounds.max.y + 0.05;
     const mat = ceramic.clone(); mat.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)];
@@ -756,137 +758,41 @@ async function applyDay(day, opts = {}) {
   if (Sound.on) Sound.play(seq[S.sel] ? clsOf(seq[S.sel].work) : null);
 }
 
-/* ---------- skin ---------- */
-const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), PT + 1.1); // 'cut' opens the skin above 2 m, so the poses show from above
-const skinUniforms = { uRib: { value: 1 }, uRibColor: { value: new THREE.Color(0xc5a86c) } };
-const skinMat = new THREE.MeshPhysicalMaterial({
-  vertexColors: true, side: THREE.DoubleSide, roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.12,
-  transparent: true, opacity: 0.97, clippingPlanes: [cutPlane], envMapIntensity: 1.0,
-});
-skinMat.onBeforeCompile = (sh) => {
-  sh.uniforms.uRib = skinUniforms.uRib; sh.uniforms.uRibColor = skinUniforms.uRibColor;
-  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
-    .replace('#include <project_vertex>', '#include <project_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos; uniform float uRib; uniform vec3 uRibColor;')
-    .replace('#include <color_fragment>', `#include <color_fragment>
-      float rl = abs(fract(vWPos.y * 6.0) - 0.5);
-      float rib = (1.0 - smoothstep(0.0, 0.035, rl)) * uRib;
-      diffuseColor.rgb = mix(diffuseColor.rgb, uRibColor, clamp(rib * 0.75, 0.0, 1.0));`);
-};
-let skinMesh = null, skinJob = 0, skinTimer = null;
-function scheduleSkin(delay = 150) { clearTimeout(skinTimer); skinTimer = setTimeout(buildSkin, delay); }
-function helperPrims(cls, b) {
-  const H = b.max.y, out = [];
-  const v = (x, y, z) => new THREE.Vector3(x, y, z);
-  const cap = (a, c, r) => out.push({ t: 'c', a, b: c, ra: r, rb: r });
-  if (cls === 'standing') cap(v(0, 0.2, b.min.z - 0.02), v(0, H * 1.3, b.min.z - 0.04), 0.11);
-  if (cls === 'walking') { cap(v(b.min.x - 0.7, H * 0.55, b.min.z), v(b.max.x + 0.7, H * 0.55, b.min.z), 0.1); cap(v(b.min.x - 0.5, H * 0.18, b.min.z - 0.05), v(b.max.x + 0.5, H * 0.18, b.min.z - 0.05), 0.08); }
-  if (cls === 'seated') cap(v(0, 0.15, b.min.z - 0.05), v(0, H + 0.1, b.min.z - 0.12), 0.12);
-  if (cls === 'crouching') cap(v(0, H * 0.5, -0.05), v(0, H * 0.5, -0.05), H * 0.5);
-  if (cls === 'reclining') cap(v(b.min.x, 0.12, b.min.z + 0.1), v(b.max.x, 0.12, b.min.z + 0.1), 0.16);
-  if (cls === 'horizontal') cap(v(b.min.x + 0.1, H + 0.42, -0.12), v(b.max.x - 0.1, H + 0.42, -0.12), 0.07);
-  return out;
-}
-function shiftPts(pts, dx, dy, dz = 0) { const o = new Float32Array(pts.length); for (let i = 0; i < pts.length; i += 3) { o[i] = pts[i] + dx; o[i + 1] = pts[i + 1] + dy; o[i + 2] = pts[i + 2] + dz; } return o; }
-async function buildSkin() {
-  const job = ++skinJob;
-  if (!S.pos.length) return;
-  let meshes;
-  try { meshes = await Promise.all(S.pos.map(p => meshOf(p.work))); } catch (e) { return; }
-  if (job !== skinJob) return;
-  const figs = [];
-  let maxH = 0;
-  const P = S.pos.map((p, i) => V[i] ? { x: V[i].x, z: V[i].z } : { x: 0, z: 0 });
-  // the skin grows along the day's track only; sculptures outside the day's story stay free on the board
-  const T = S.day.length ? S.pos.map((p, i) => i).filter(i => S.pos[i].act) : S.pos.map((p, i) => i);
-  const tangent = (k) => { // direction of the track through its k-th position
-    const a = P[T[Math.max(0, k - 1)]], b = P[T[Math.min(T.length - 1, k + 1)]], dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1;
-    return [dx / l, dz / l];
-  };
-  T.forEach((i, k) => {
-    const p = S.pos[i], mesh = meshes[i], b = mesh.bounds, cls = clsOf(p.work), { x, z } = P[i];
-    const prims = helperPrims(cls, b);
-    prims.push({ t: 'c', a: new THREE.Vector3(0, -PT - 0.35, 0), b: new THREE.Vector3(0, -0.28, 0), ra: 0.42, rb: 0.42 });
-    const hours = p.act ? (p.act.hours || CLASS[p.act.cls].dur) : 1;
-    const s = p.act ? THREE.MathUtils.clamp(0.82 + 0.28 * Math.log2(1 + hours), 0.85, 1.75) : 1;
-    const pal = S.posPal[i] || S.palettes[cls];
-    const c = new THREE.Color(pal[2]).lerp(new THREE.Color(0xffffff), 0.35);
-    const rho = (Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2 + 2.0) * s, [tx, tz] = tangent(k);
-    figs.push({ cx: x, cz: z, tx, tz, s, c: 0.26, prims: packPrims(prims, x, PT, z), pts: shiftPts(mesh.pts, x, PT, z), r: 0.05, xmin: x - rho, xmax: x + rho, zmin: z - rho, zmax: z + rho, color: [c.r, c.g, c.b] });
-    maxH = Math.max(maxH, b.max.y);
-  });
-  for (let k = 0; k + 1 < T.length; k++) { // bridges along the track, from each sculpture to the next
-    const i = T[k], j = T[k + 1], A = meshes[i].bounds, B = meshes[j].bounds, a = P[i], b = P[j];
-    const dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz) || 1, ux = dx / l, uz = dz / l;
-    const ra = (A.max.x - A.min.x) * 0.2, rb = (B.max.x - B.min.x) * 0.2;
-    const v = (x, y, z) => new THREE.Vector3(x, y, z);
-    const prims = [
-      { t: 'c', a: v(a.x + ux * ra, PT + A.max.y * 0.5, a.z + uz * ra - 0.36), b: v(b.x - ux * rb, PT + B.max.y * 0.5, b.z - uz * rb - 0.36), ra: 0.15, rb: 0.15 },
-      { t: 'c', a: v(a.x, PT * 0.42, a.z - 0.22), b: v(b.x, PT * 0.42, b.z - 0.22), ra: 0.2, rb: 0.2 },
-    ];
-    const ca = figs[k].color, cb = figs[k + 1].color;
-    figs.push({ cx: (a.x + b.x) / 2, cz: (a.z + b.z) / 2, s: 1, c: 0.26, prims: packPrims(prims), xmin: Math.min(a.x, b.x) - 0.8, xmax: Math.max(a.x, b.x) + 0.8, zmin: Math.min(a.z, b.z) - 1.2, zmax: Math.max(a.z, b.z) + 0.8, color: [(ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2, (ca[2] + cb[2]) / 2] });
-  }
-  const xs = T.map(i => P[i].x), zs = T.map(i => P[i].z);
-  const min = [Math.min(...xs) - 2.6, -0.25, Math.min(...zs) - 2.2], max = [Math.max(...xs) + 2.6, PT + maxH * 1.3 + 0.75, Math.max(...zs) + 1.8];
-  const vol = (max[0] - min[0]) * (max[1] - min[1]) * (max[2] - min[2]);
-  const cell = Math.max(S.skinStyle === 'fold' ? 0.17 : 0.078, Math.cbrt(vol / 2.4e6)); // keep the grid size bounded on a wide board
-  const msg = { type: 'skin', figs, cell, kSeq: 0.7, kBody: 0.08, min, max };
-  setLoading('正在生成表皮…');
-  let r;
-  try { r = await Geo.run(msg); } catch (e) { setLoading(null); toast('表皮生成失败：' + e.message); return; }
-  if (job !== skinJob) return;
-  setLoading(null);
-  const geo = toGeometry(r, S.skinStyle === 'fold');
-  skinMat.flatShading = S.skinStyle === 'fold';
-  skinUniforms.uRib.value = S.skinStyle === 'ribs' ? 1 : 0;
-  skinMat.needsUpdate = true;
-  if (!skinMesh) {
-    skinMesh = new THREE.Mesh(geo, skinMat); skinMesh.castShadow = true; skinMesh.receiveShadow = true; scene.add(skinMesh);
-  } else { skinMesh.geometry.dispose(); skinMesh.geometry = geo; }
-  skinMesh.userData.ready = true;
-  applyView();
-  const target = S.view === 'both' ? 0.5 : 0.97;
-  if (!reduceMotion && (S.view === 'skin' || S.view === 'both')) { skinMat.opacity = 0; tween(0.9, e => { skinMat.opacity = target * e; }); }
-}
-function toGeometry(r, flat) {
-  let g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(r.pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(r.nor, 3));
-  if (r.col) g.setAttribute('color', new THREE.BufferAttribute(r.col, 3));
-  g.setIndex(new THREE.BufferAttribute(r.idx, 1));
-  if (flat) { g = g.toNonIndexed(); g.deleteAttribute('normal'); g.computeVertexNormals(); }
-  g.computeBoundingSphere(); g.computeBoundingBox();
-  return g;
-}
+/* ---------- the skin: plaster ribbons (js/05b-ribbons.js) ---------- */
+let skinMesh = null, skinJob = 0, skinTimer = null, skinGrow = null;
 
 /* ---------- views ---------- */
+/* views: 雕塑序列 = sculptures with their pose ribbons; 表皮序列 = sculptures wrapped by the sequence ribbon;
+   叠加 = both kinds of ribbon; 色彩与声音 = palettes */
 function applyViewTo(vp) {
   const v = S.view;
-  const showFig = v === 'sculpture' || v === 'both';
+  const showFig = v !== 'color';
   if (vp.fig) vp.fig.visible = showFig;
   if (vp.riseBeam) vp.riseBeam.visible = showFig && !!vp.beamTween;
-  vp.plinth.visible = v !== 'skin';
+  vp.plinth.visible = true;
   vp.colorGroup.visible = v === 'color';
-  if (vp.bones) vp.bones.visible = S.bones || v === 'skin';
+  if (vp.rib) { // in 叠加 the sequence ribbon takes over from the pose ribbons of the day's sculptures
+    const p = S.pos[V.indexOf(vp)], wrapped = !S.day.length || !!(p && p.act);
+    vp.rib.visible = S.own && (v === 'sculpture' || (v === 'both' && !wrapped));
+  }
+  if (vp.bones) vp.bones.visible = S.bones;
 }
 function applyView() {
   V.forEach(applyViewTo);
-  if (skinMesh) {
-    skinMesh.visible = S.view === 'skin' || S.view === 'both';
-    skinMat.opacity = S.view === 'both' ? 0.5 : 0.97;
-    skinMat.depthWrite = S.view !== 'both';
-  }
-  cutPlane.constant = S.cut ? PT + 1.1 : 50;
+  if (skinMesh) skinMesh.visible = S.view === 'skin' || S.view === 'both';
   updateColorView();
   const bb = document.getElementById('bonesQuick'); if (bb) bb.setAttribute('aria-pressed', String(S.bones));
 }
 function setView(v) {
   if (v === 'skin' || v === 'color') clearSculptureFocus();
+  const had = S.view === 'skin' || S.view === 'both';
   S.view = v;
   document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
   applyView();
-  if ((v === 'skin' || v === 'both') && skinMesh && !reduceMotion) { const t = skinMat.opacity; skinMat.opacity = 0; tween(0.6, e => { skinMat.opacity = t * e; }); }
+  if ((v === 'skin' || v === 'both') && skinMesh && !reduceMotion && !had) {
+    if (skinGrow) { const k = tweens.indexOf(skinGrow); if (k >= 0) tweens.splice(k, 1); }
+    skinGrow = growGroup(skinMesh, 3.2); // the sequence ribbon unrolls from the vault, sculpture after sculpture
+  }
 }
 function paletteFor(i) { const p = S.pos[i]; if (!p) return DEFAULT_PALETTES.standing; return S.posPal[i] || S.palettes[clsOf(p.work)]; }
 function updateColorView() {
