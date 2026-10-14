@@ -292,14 +292,64 @@ function updateShards(dt) {
 const V = [];
 const labelsEl = document.getElementById('labels');
 let focusedSculpture = null;
-const focusBeamHeight = HALL.wallH + HALL.vaultRise + 8;
-const focusBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 1.15, focusBeamHeight, 48, 1, true), glowMat.clone());
-focusBeam.material.opacity = 0.035; focusBeam.visible = false; scene.add(focusBeam);
+// Both focus and arrival beams extend sixteen metres above the crown of the vault.
+const focusBeamHeight = HALL.wallH + HALL.vaultRise + 16;
+const sculptureBeamGeometry = new THREE.CylinderGeometry(0.18, 1.35, focusBeamHeight, 48, 1, true);
+function makeSculptureBeam(color) {
+  const material = new THREE.ShaderMaterial({
+    uniforms: { tint: { value: new THREE.Color(color) }, strength: { value: 0 } },
+    vertexShader: `varying vec2 beamUV; varying vec3 beamNormal; varying vec3 beamView;
+      void main() { beamUV = uv; beamNormal = normalize(normalMatrix * normal);
+        vec4 p = modelViewMatrix * vec4(position, 1.0); beamView = -p.xyz;
+        gl_Position = projectionMatrix * p; }`,
+    fragmentShader: `uniform vec3 tint; uniform float strength;
+      varying vec2 beamUV; varying vec3 beamNormal; varying vec3 beamView;
+      void main() { float face = pow(abs(dot(normalize(beamNormal), normalize(beamView))), 1.6);
+        float ends = smoothstep(0.0, 0.035, beamUV.y) * (1.0 - smoothstep(0.88, 1.0, beamUV.y));
+        gl_FragColor = vec4(tint, strength * face * ends * 0.04); }`,
+    transparent: true, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    depthWrite: false, toneMapped: false,
+  });
+  const beam = new THREE.Mesh(sculptureBeamGeometry, material);
+  beam.position.y = PT + focusBeamHeight / 2; beam.visible = false;
+  return beam;
+}
+const focusBeam = makeSculptureBeam(0xfff4e0); scene.add(focusBeam);
 const focusLight = new THREE.SpotLight(0xfff4e0, 1400, focusBeamHeight + 10, Math.atan(1.35 / focusBeamHeight), 0.75, 2);
-focusLight.visible = false; scene.add(focusLight); scene.add(focusLight.target);
+focusLight.intensity = 0; scene.add(focusLight); scene.add(focusLight.target);
+let focusTween = null;
+// Four real spotlights illuminate arrivals; every rising sculpture also gets its own visible beam.
+// Keeping the light count fixed avoids shader recompilation during a collective arrival.
+const arrivalLights = Array.from({ length: 4 }, () => {
+  const light = new THREE.SpotLight(0xe1f7ff, 0, focusBeamHeight + 10, Math.atan(1.55 / focusBeamHeight), 0.8, 2);
+  scene.add(light); scene.add(light.target); return { light, owner: null };
+});
+function stopRiseBeam(vp) {
+  if (vp.beamTween) { const k = tweens.indexOf(vp.beamTween); if (k >= 0) tweens.splice(k, 1); vp.beamTween = null; }
+  if (vp.riseBeam) { vp.riseBeam.visible = false; vp.riseBeam.material.uniforms.strength.value = 0; }
+  for (const slot of arrivalLights) if (slot.owner === vp) { slot.light.intensity = 0; slot.owner = null; }
+}
+function startRiseBeam(vp) {
+  stopRiseBeam(vp);
+  if (reduceMotion) return;
+  if (!vp.riseBeam) { vp.riseBeam = makeSculptureBeam(0xe1f7ff); vp.g.add(vp.riseBeam); }
+  const beam = vp.riseBeam; beam.visible = true;
+  const slot = arrivalLights.find(s => !s.owner);
+  if (slot) {
+    slot.owner = vp;
+    slot.light.position.set(vp.x, PT + focusBeamHeight, vp.z);
+    slot.light.target.position.set(vp.x, PT + 0.6, vp.z);
+  }
+  vp.beamTween = tween(2.5, (e, raw) => {
+    const k = Math.min(1, raw / 0.12) * Math.min(1, (1 - raw) / 0.36);
+    beam.material.uniforms.strength.value = k;
+    if (slot && slot.owner === vp) slot.light.intensity = 2400 * k;
+  }, () => stopRiseBeam(vp));
+}
 function clearSculptureFocus() {
   if (focusedSculpture) focusedSculpture.tag.classList.add('hidden');
-  focusedSculpture = null; focusBeam.visible = focusLight.visible = false;
+  if (focusTween) { const k = tweens.indexOf(focusTween); if (k >= 0) tweens.splice(k, 1); focusTween = null; }
+  focusedSculpture = null; focusBeam.visible = false; focusLight.intensity = 0;
   canvas.dataset.focusWork = '';
 }
 function focusSculpture(i) {
@@ -308,7 +358,10 @@ function focusSculpture(i) {
   focusBeam.position.set(vp.x, PT + focusBeamHeight / 2, vp.z);
   focusLight.position.set(vp.x, PT + focusBeamHeight, vp.z);
   focusLight.target.position.set(vp.x, PT, vp.z);
-  focusBeam.visible = focusLight.visible = true;
+  focusBeam.visible = true;
+  focusBeam.material.uniforms.strength.value = 0;
+  vp.tag.classList.remove('hidden');
+  focusTween = tween(0.65, e => { focusBeam.material.uniforms.strength.value = 2 * e; focusLight.intensity = 2000 * e; }, () => { focusTween = null; });
   canvas.dataset.focusWork = vp.work;
 }
 const STATUS_COL = { keep: 0xb59a63, swap: 0x246d75, new: 0x6f68a0, beyond: 0xc9c4bc, manual: 0x232323 };
@@ -441,7 +494,7 @@ function pairUp(A, B, d2) {
   const r = assignMin(B.map(b => A.map(a => d2(a, b)))); return B.map((b, k) => [A[r[k]], b]);
 }
 const PH = (t, a, b) => { const k = THREE.MathUtils.clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-const cancelMove = (vp) => { clearTimeout(vp.moveTimer); vp.moveHalo.material.opacity = 0; if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; } };
+const cancelMove = (vp) => { clearTimeout(vp.moveTimer); if (vp.beamTween) stopRiseBeam(vp); vp.moveHalo.material.opacity = 0; if (vp.moveTween) { const k = tweens.indexOf(vp.moveTween); if (k >= 0) tweens.splice(k, 1); vp.moveTween = null; } };
 function boardMotion(position, from, to, xFirst, straight, raw, y0 = 0) {
   const lift = PH(raw, 0, 0.14) - PH(raw, 0.86, 1);
   const p1 = straight ? PH(raw, 0.14, 0.86) : PH(raw, 0.14, 0.52), p2 = straight ? p1 : PH(raw, 0.48, 0.86);
@@ -501,6 +554,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
   canvas.dataset.shatterCount = String(shatterCount);
   for (const vp of V) if (!taken.has(vp)) { // no square left: sink into the water
     disposeFigure(vp, animate); vp.tag.remove();
+    if (vp.riseBeam) vp.riseBeam.material.dispose();
     if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.9, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }
     else scene.remove(vp.g);
   }
@@ -556,6 +610,9 @@ function relayout() {
   scheduleSkin(Math.max(0, ...arrive) + 300);
 }
 function disposeFigure(vp, animate) {
+  stopRiseBeam(vp);
+  if (vp.riseTween) { const k = tweens.indexOf(vp.riseTween); if (k >= 0) tweens.splice(k, 1); vp.riseTween = null; }
+  if (vp.riseMaterial) { if (vp.fig) vp.fig.material = ceramic; vp.riseMaterial.dispose(); vp.riseMaterial = null; }
   const old = vp.fig;
   if (vp.bones) { vp.g.remove(vp.bones); vp.bones = null; }
   if (!old) return;
@@ -609,12 +666,14 @@ async function setFigure(i, p, animate) {
     const h = mesh.bounds.max.y + 0.05;
     const mat = ceramic.clone(); mat.clippingPlanes = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)];
     m.material = mat;
-    tween(1.6, (e, raw) => {
+    vp.riseMaterial = mat;
+    startRiseBeam(vp);
+    vp.riseTween = tween(1.6, (e, raw) => {
       m.position.y = PT - h * (1 - e);
       vp.g.updateWorldMatrix(true, false);
       mat.clippingPlanes[0].constant = -(vp.g.position.y + PT);
       mat.clippingPlanes[0].normal.set(0, 1, 0);
-    }, () => { m.material = ceramic; mat.dispose(); pulseRing(vp); });
+    }, () => { m.material = ceramic; mat.dispose(); vp.riseTween = null; vp.riseMaterial = null; pulseRing(vp); });
   } else { m.position.set(0, PT, 0); }
   applyViewTo(vp);
 }
@@ -805,6 +864,7 @@ function applyViewTo(vp) {
   const v = S.view;
   const showFig = v === 'sculpture' || v === 'both';
   if (vp.fig) vp.fig.visible = showFig;
+  if (vp.riseBeam) vp.riseBeam.visible = showFig && !!vp.beamTween;
   vp.plinth.visible = v !== 'skin';
   vp.colorGroup.visible = v === 'color';
   if (vp.bones) vp.bones.visible = S.bones || v === 'skin';
@@ -821,6 +881,7 @@ function applyView() {
   const bb = document.getElementById('bonesQuick'); if (bb) bb.setAttribute('aria-pressed', String(S.bones));
 }
 function setView(v) {
+  if (v === 'skin' || v === 'color') clearSculptureFocus();
   S.view = v;
   document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
   applyView();

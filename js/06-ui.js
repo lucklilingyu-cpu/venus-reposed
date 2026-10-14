@@ -211,8 +211,6 @@ function updateLabels() {
     const tag = vp.tag;
     tag.classList.toggle('hidden', !vis);
     if (!vis) return;
-    tag.style.left = ((_v.x + 1) / 2 * w) + 'px';
-    tag.style.top = Math.max(170, (1 - _v.y) / 2 * h) + 'px';
     const r = REC[p.work];
     const key = p.work + '|' + recTitle(r) + '|' + r.d;
     if (tag.dataset.k !== key) {
@@ -220,5 +218,9 @@ function updateLabels() {
       tag.querySelector('.sculpture-name').textContent = recTitle(r);
       tag.querySelector('.sculpture-year').textContent = r.d || (r.y != null ? (r.y < 0 ? '公元前 ' + Math.abs(r.y) : r.y + ' 年') : 'unknown');
     }
+    const half = tag.offsetWidth / 2;
+    tag.style.left = THREE.MathUtils.clamp((_v.x + 1) / 2 * w, half + 12, w - half - 12) + 'px';
+    const minTop = Math.max(170, (isSmall() ? 180 : 80) + tag.offsetHeight);
+    tag.style.top = Math.max(minTop, (1 - _v.y) / 2 * h) + 'px';
   });
 }

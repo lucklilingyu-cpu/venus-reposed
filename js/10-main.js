@@ -82,7 +82,7 @@ $$('#sheetTabs button').forEach(b => b.addEventListener('click', () => {
 $('#strip').classList.add('m-on');
 document.addEventListener('keydown', (e) => {
   if (e.target.closest && e.target.closest('textarea,input,select')) return; // keys sent to the document itself have no closest()
-  if (e.key === 'Escape') { $('#about').hidden = true; menu.hidden = true; stopTour(); if (Group.formOpen) { Group.closeModals(); return; } if (Atlas.isOpen) Atlas.close(); if (Group.isOpen) Group.close(); }
+  if (e.key === 'Escape') { clearSculptureFocus(); $('#about').hidden = true; menu.hidden = true; stopTour(); if (Group.formOpen) { Group.closeModals(); return; } if (Atlas.isOpen) Atlas.close(); if (Group.isOpen) Group.close(); }
   if (e.key === 'ArrowRight') select(Math.min(S.pos.length - 1, S.sel + 1), { fly: true });
   if (e.key === 'ArrowLeft') select(Math.max(0, S.sel - 1), { fly: true });
 });
@@ -108,20 +108,37 @@ $('#tourStop').addEventListener('click', stopTour);
 
 /* picking */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-let downXY = null;
+let downXY = null, lastTouchPick = null;
 canvas.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; });
-canvas.addEventListener('pointerup', (e) => {
-  if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;
-  if (Walk.active) { if (!Walk.locked) return; ndc.set(0, 0); } // walking: pick what the crosshair points at
+canvas.addEventListener('pointercancel', () => { downXY = lastTouchPick = null; });
+function pickSculpture(e) {
+  if (Walk.active) { if (!Walk.locked) return -1; ndc.set(0, 0); } // walking: pick what the crosshair points at
   else { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
   ray.setFromCamera(ndc, camera);
   const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
   const hit = ray.intersectObjects(targets, false)[0];
-  if (!hit) return;
+  if (!hit) return -1;
   let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object);
   if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.hypot(vp.x - hit.point.x, vp.z - hit.point.z); if (d < best) { best = d; i = k; } }); }
-  if (i >= 0) select(i, { fly: false });
+  return i;
+}
+canvas.addEventListener('pointerup', (e) => {
+  const start = downXY; downXY = null;
+  if (!start || Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 6) { lastTouchPick = null; return; }
+  const i = pickSculpture(e);
+  if (i < 0) { lastTouchPick = null; clearSculptureFocus(); return; }
+  select(i, { fly: false });
+  if (e.pointerType === 'touch') {
+    const now = performance.now();
+    if (lastTouchPick && lastTouchPick.vp === V[i] && now - lastTouchPick.time < 350 && Math.hypot(e.clientX - lastTouchPick.x, e.clientY - lastTouchPick.y) < 24) {
+      lastTouchPick = null; focusSculpture(i);
+    } else lastTouchPick = { vp: V[i], time: now, x: e.clientX, y: e.clientY };
+  }
+});
+canvas.addEventListener('dblclick', (e) => {
+  e.preventDefault(); const i = pickSculpture(e);
+  if (i >= 0) focusSculpture(i); else clearSculptureFocus();
 });
 
 /* resize */

@@ -36,6 +36,11 @@ button{cursor:pointer}
 .tag.quiet{z-index:1;opacity:.82;padding-right:7px}  /* sculptures outside the day: number + class only, under the day's labels */
 .tag.quiet .st{display:none}
 .tag.hidden{opacity:0;pointer-events:none}
+.sculpture-caption{position:absolute;width:max-content;box-sizing:border-box;max-width:min(420px,70vw);padding:12px 18px;display:flex;flex-direction:column;gap:4px;text-align:center;pointer-events:none;border:1px solid rgba(181,154,99,.4);border-radius:6px;background:rgba(255,255,255,.93);box-shadow:0 8px 28px rgba(30,28,24,.14);backdrop-filter:blur(12px);transform:translate(-50%,-100%);opacity:1;transition:opacity .55s,transform .65s cubic-bezier(.2,.8,.2,1);z-index:3}
+.sculpture-caption.hidden{opacity:0;transform:translate(-50%,calc(-100% + 18px))}
+.sculpture-name{font-family:var(--font-display);font-size:clamp(18px,2vw,25px);font-weight:600;line-height:1.2}
+.sculpture-year{font-size:12px;line-height:1.5;color:var(--ink-soft)}
+@media(prefers-reduced-motion:reduce){.sculpture-caption{transition:none}}
 
 .topbar{position:absolute;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;pointer-events:none}
 .topbar>*{pointer-events:auto}
