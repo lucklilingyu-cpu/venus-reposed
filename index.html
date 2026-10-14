@@ -126,6 +126,24 @@
         </div>
         <div class="status" id="videoStatus"></div>
         <p class="small muted" style="margin:0">只读取身体姿势，不识别人脸；画面不会保存。每段的主色调会传给对应位置的表皮。</p>
+        <!-- POSE VIDEO COLLECTION START -->
+        <section class="pose-video-collection" id="poseVideoCollection" aria-label="Skeleton Video Collection">
+          <div class="row pose-video-heading"><h3 class="ph">Skeleton Video Collection</h3><span class="small muted" id="poseVideoCount">7 videos</span></div>
+          <p class="small muted pose-video-intro">点击缩略图播放已添加骨骼的视频。名称包含女神、女团和歌曲；“Visual comparison”表示姿态视觉对照。</p>
+          <div class="pose-video-gallery" id="poseVideoGallery" aria-label="Skeleton video list"></div>
+          <div class="pose-video-selected" id="poseVideoSelected" hidden>
+            <h4 id="poseVideoTitle"></h4>
+            <video id="poseCollectionPlayer" controls playsinline preload="none" aria-label="Selected skeleton video"></video>
+            <p class="small muted" id="poseVideoRelation"></p>
+            <div class="row">
+              <a class="btn" id="poseVideoDownload" download>下载视频</a>
+              <a class="btn" id="poseVideoSource" target="_blank" rel="noopener noreferrer">视频来源</a>
+            </div>
+            <details class="small pose-video-evidence"><summary>女神关联说明</summary><p id="poseVideoNote"></p><a id="poseVideoEvidence" target="_blank" rel="noopener noreferrer">查看关联依据</a></details>
+          </div>
+          <div class="status" id="poseVideoStatus" aria-live="polite">正在载入视频集…</div>
+        </section>
+        <!-- POSE VIDEO COLLECTION END -->
         <div class="row pose-gallery-head"><h3 class="ph">骨骼图集</h3><span class="small muted" id="poseGalleryCount">77 张</span></div>
         <p class="small muted" style="margin:0">点选图片可识别骨架并更新展厅雕塑。识别在浏览器本地运行；遮挡、侧身或多人画面可能导致关节不完整。</p>
         <div class="pose-gallery" id="poseGallery" aria-label="骨骼识别图片图集"></div>
@@ -403,7 +421,7 @@
   const PARTS = [
     '01-data.js', '02-pose.js', '03b-architecture.js', '04-scene.js',
     '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan-2eaee907ac7abeaa.js', '05-seq.js', '05b-ribbons.js', '06-ui.js', '06b-atlas.js',
-    '07-inputs.js', '08-sound.js', '09-export.js', '09b-group.js',
+    '07-inputs.js', '07b-pose-video-gallery.js', '08-sound.js', '09-export.js', '09b-group.js',
     '09c-walk.js', '10-main.js',
   ];
   const SCAN_MODULE = "04d-va-hall-scan-2eaee907ac7abeaa.js", SCAN_MODULE_SHA256 = "2eaee907ac7abeaa010f5bf156b5dee14a62848c8a562338c0c89d802e9f47fd";

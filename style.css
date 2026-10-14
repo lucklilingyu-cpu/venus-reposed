@@ -582,3 +582,22 @@ hr.soft{border:0;height:1px;background:linear-gradient(90deg,transparent,rgba(18
 .intro-cta:hover{background:linear-gradient(135deg,#523a46,#33232b)}
 .intro-cta i{background:var(--grad-gold);color:#2e2229}
 .intro-foot{font-family:var(--font-display);font-size:13px;letter-spacing:.12em;color:var(--ink-soft)}
+/* POSE VIDEO COLLECTION START */
+.pose-video-collection{margin:4px 0 12px;min-width:0}
+.pose-video-heading{justify-content:space-between;gap:6px}
+.pose-video-heading .ph{font-size:13px}
+.pose-video-intro{margin:8px 0;line-height:1.6}
+.pose-video-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pose-video-item{min-width:0;display:block;width:100%;padding:0;overflow:hidden;border:0;border-radius:10px;background:var(--card);box-shadow:0 4px 12px rgba(46,34,41,.08);text-align:left;color:var(--ink);cursor:pointer}
+.pose-video-item:hover,.pose-video-item[aria-pressed="true"]{box-shadow:0 0 0 2px var(--gold)}
+.pose-video-thumb{position:relative;display:block;background:var(--sand)}
+.pose-video-thumb img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.pose-video-duration{position:absolute;right:5px;bottom:5px;padding:2px 5px;border-radius:5px;background:rgba(0,0,0,.72);color:white;font-size:10px;line-height:1.4}
+.pose-video-name{display:block;padding:7px 6px;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.pose-video-selected{margin-top:12px;min-width:0}
+.pose-video-selected h4{margin:0 0 8px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+#poseCollectionPlayer{display:block;width:100%;max-width:100%;height:auto;border-radius:10px;background:#171318}
+.pose-video-selected p{line-height:1.6;overflow-wrap:anywhere}
+.pose-video-evidence{margin-top:10px;line-height:1.6;overflow-wrap:anywhere}
+.pose-video-evidence summary{cursor:pointer;color:var(--ink-soft)}
+/* POSE VIDEO COLLECTION END */
