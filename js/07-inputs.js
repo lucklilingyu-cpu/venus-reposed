@@ -344,6 +344,22 @@ function addCamPose(r) {
 /* ---------- video / photos ---------- */
 const Vid = { frames: [], busy: false };
 let poseGalleryItems = null, lastGalleryFocus = -1;
+let galleryOverviewTimer = 0;
+function showGalleryFocusThenReturn(i, status, focusedMessage, readyMessage) {
+  clearTimeout(galleryOverviewTimer);
+  $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; });
+  focusSculpture(i);
+  status.textContent = focusedMessage;
+  galleryOverviewTimer = setTimeout(() => {
+    status.textContent = '近景展示结束，正在返回展厅全景…';
+    flyHome();
+    galleryOverviewTimer = setTimeout(() => {
+      galleryOverviewTimer = 0;
+      status.textContent = readyMessage;
+      $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; });
+    }, 1700);
+  }, 5000);
+}
 async function loadPoseGallery() {
   if (poseGalleryItems) return poseGalleryItems;
   const box = $('#poseGallery'), status = $('#poseGalleryStatus');
@@ -390,8 +406,8 @@ async function analyzeGalleryImage(id, button) {
       onVisualComplete: seq => {
         const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
         if (i < 0) return;
-        Walk.exit(); focusSculpture(i);
-        status.textContent = '姿势动画完成，正在近景展示对应雕像。';
+        Walk.exit(); showGalleryFocusThenReturn(i, status, '近景展示对应雕像；稍后将返回展厅全景。', '已回到展厅全景，可以继续选择下一张图片。');
+        // Status is managed through the close-up and overview transition.
       }
     });
     status.textContent = '正在根据图片姿势更新展厅雕像…';
@@ -622,8 +638,8 @@ updateHallFromGalleryAnnotation = function (item, annotation) {
       const i = seq.findIndex(p => p.act && p.act.cls === cls && (p.act.g || null) === validGesture);
       if (i < 0) return;
       Walk.exit();
-      focusSculpture(i);
-      $('#poseGalleryStatus').textContent = `校正为「${CLASS[cls].zh}」，展厅动画已完成，正在近景展示对应雕像。`;
+      showGalleryFocusThenReturn(i, $('#poseGalleryStatus'), `校正为「${CLASS[cls].zh}」；近景展示结束后将返回展厅全景。`, '已回到展厅全景，可以继续选择下一张图片。');
+      // Status is managed through the close-up and overview transition.
     },
   });
 }
