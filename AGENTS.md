@@ -6,6 +6,8 @@ Atlas update (2026-10-14): the main catalogue now has 118 records (original 105 
 
 ## What this is
 
+Day/night lighting: `js/04c-lighting.js` (after the casts, before sequence code) exposes `NightLighting`; the main render loop calls `update(dt)`. The topbar toggle stores `venus.lighting`. Keep day restoration exact, interrupted transitions smooth, and reduced-motion handling. The four night spotlights do not cast shadows. Night fixtures and water tint are hall-only; Atlas specimen lighting remains independent. Run `node tools/check_lighting.mjs` after lighting-controller changes.
+
 A static website for a Bartlett B-Pro Architectural Design group project (Workshop 7, V&A Cast Courts).
 
 - **The hall**: a 3D virtual hall of the V&A Cast Courts.

@@ -29,6 +29,7 @@
       <button role="tab" data-view="color" aria-selected="false">色彩与声音</button>
     </nav>
     <div class="tools">
+      <button class="iconbtn lighting-toggle" id="lightingBtn" type="button" aria-pressed="false" aria-label="切换到夜晚灯光" title="切换白天 / 夜晚灯光"><span class="lighting-symbol" aria-hidden="true">☾</span><span id="lightingLabel">夜晚</span></button>
       <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 118 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
       <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
       <button class="iconbtn" id="bonesQuick" aria-pressed="false" title="显示 / 隐藏骨骼"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="2.8" r="1.6"/><path d="M8 4.4v5M8 9.4l-2.6 4.4M8 9.4l2.6 4.4M4.2 6.2h7.6"/></svg><span class="lbl">骨架</span></button>
@@ -315,7 +316,7 @@
   // 新建 js 文件时，要把文件名加进这个列表。
   const PARTS = [
     '01-data.js', '02-pose.js', '03-sdf.js', '04-scene.js',
-    '04b-casts.js', '05-seq.js', '06-ui.js', '06b-atlas.js',
+    '04b-casts.js', '04c-lighting.js', '05-seq.js', '06-ui.js', '06b-atlas.js',
     '07-inputs.js', '08-sound.js', '09-export.js', '09b-group.js',
     '09c-walk.js', '10-main.js',
   ];

@@ -4,6 +4,8 @@ Bartlett B-Pro Architectural Design · Workshop 7（V&A Cast Courts）小组项�
 
 2026-10-14 已同步新版图谱：118 件作品，117 件精细网格。展厅所有雕塑自动分批加载精细版，图谱单件也使用精细版，统一白色陶瓷渲染；详见 [图谱同步说明](docs/图谱同步.md)。运行 `node tools/check_atlas.mjs` 可校验所有网格及源文件哈希。新增模型编号请从 119 起使用，避免覆盖已同步的 106–118。
 
+顶部「夜晚 / 白天」按钮可切换粉蓝夜景与日光展厅，带约 2.6 秒灯光渐变，自动记住这台设备的选择。详见 [昼夜灯光说明](docs/昼夜灯光.md)。
+
 - **网址**：https://lucklilingyu-cpu.github.io/venus-reposed/
   - 旧网址 venus-reposed.netlify.app 会自动跳转到这里。
 - **代码仓库**：https://github.com/lucklilingyu-cpu/venus-reposed

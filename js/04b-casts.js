@@ -457,6 +457,7 @@ const PORTICO = { w: 17.4, h: 10.57 };
   addMesh(mergeGeometries(D), M.green, hall); // the openings show the green wall behind
   // museum light on the Pórtico: the sun comes from behind this wall, so a raking spot brings out the carving
   const spot = new THREE.SpotLight(0xfff0dc, 640, 0, 0.66, 0.7, 2);
+  spot.name = 'portico-light';
   spot.position.set(HALL.x0 + 8.5, 14, 7.2); spot.target.position.set(HALL.x0 + 0.6, 5.0, -0.6);
   spot.castShadow = true; spot.shadow.mapSize.set(isSmall() ? 1024 : 2048, isSmall() ? 1024 : 2048); spot.shadow.bias = -0.0004; spot.shadow.normalBias = 0.02;
   scene.add(spot, spot.target);
