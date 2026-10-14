@@ -88,9 +88,7 @@ composer.addPass(new OutputPass());
 
 /* Only shared interactive-plinth materials remain. No procedural space geometry. */
 const M = {
-  gold: new THREE.MeshStandardMaterial({ color: 0xc9a253, roughness: 0.3, metalness: 1.0, envMapIntensity: 0.7 }),
   tier: new THREE.MeshPhysicalMaterial({ color: 0x6f897c, roughness: 0.18, metalness: 0.0, transparent: true, opacity: 0.5, clearcoat: 0.8, envMapIntensity: 0.5 }),
-  drum: new THREE.MeshPhysicalMaterial({ color: 0xd8cfc1, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
 };
 // Retained debug/lifecycle handle, deliberately detached and empty.
 const hall = new THREE.Group(); hall.name = 'removed-procedural-space';

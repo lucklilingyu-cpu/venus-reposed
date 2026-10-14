@@ -115,11 +115,11 @@ function pickSculpture(e) {
   if (Walk.active) { if (!Walk.locked) return -1; ndc.set(0, 0); } // walking: pick what the crosshair points at
   else { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
   ray.setFromCamera(ndc, camera);
-  const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.plinth.visible) targets.push(vp.drum); if (vp.rib && vp.rib.visible) targets.push(...vp.rib.children); });
+  const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.rib && vp.rib.visible) targets.push(...vp.rib.children); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
   const hit = ray.intersectObjects(targets, false)[0];
   if (!hit) return -1;
-  let i = V.findIndex(vp => vp.fig === hit.object || vp.drum === hit.object || (vp.rib && hit.object.parent === vp.rib));
+  let i = V.findIndex(vp => vp.fig === hit.object || (vp.rib && hit.object.parent === vp.rib));
   if (i < 0 && hit.object === skinMesh) { let best = 1e9; V.forEach((vp, k) => { const d = Math.hypot(vp.x - hit.point.x, vp.z - hit.point.z); if (d < best) { best = d; i = k; } }); }
   return i;
 }

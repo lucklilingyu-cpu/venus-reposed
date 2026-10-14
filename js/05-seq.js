@@ -2,19 +2,9 @@
 /* ---------------------------------------------------------------
    Atlas meshes on the plinths, replacement, skeletons, skin
 ---------------------------------------------------------------- */
-// Derive the common vertical translation from the white drum's WORLD minimum.
-// The unchanged alignment.json declares the display floor at world y=0.
+// Sculpture meshes sit directly on the display floor; no plinth is rendered.
 const DISPLAY_FLOOR_Y = 0;
-const WHITE_DRUM_HEIGHT = 0.3;
-const PT = (() => {
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, WHITE_DRUM_HEIGHT, 72));
-  drum.position.y = 0.92 - WHITE_DRUM_HEIGHT / 2;
-  drum.updateWorldMatrix(true, false);
-  const minimum = new THREE.Box3().setFromObject(drum).min.y;
-  const top = 0.92 + DISPLAY_FLOOR_Y - minimum;
-  drum.geometry.dispose(); drum.material.dispose();
-  return top;
-})();
+const PT = DISPLAY_FLOOR_Y;
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clsOf = (id) => (REC[id] && REC[id].cls) || 'standing';
 
@@ -365,12 +355,6 @@ function focusSculpture(i) {
 const STATUS_COL = { keep: 0xb59a63, swap: 0x246d75, new: 0x6f68a0, beyond: 0xc9c4bc, manual: 0x232323 };
 function makePosition() {
   const g = new THREE.Group(); scene.add(g);
-  const plinth = new THREE.Group(); g.add(plinth);
-  const tiers = [];
-  // Removed glass tiers are never constructed, including rebuild/reset.
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.3, 72), M.drum);
-  drum.position.y = PT - 0.15; drum.castShadow = true; drum.receiveShadow = true; plinth.add(drum);
-  const trim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 8, 96), M.gold); trim.rotation.x = Math.PI / 2; trim.position.y = PT; plinth.add(trim);
   const ringMat = new THREE.MeshBasicMaterial({ color: STATUS_COL.beyond, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false });
   const ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.035, 96), ringMat);
   ring.rotation.x = -Math.PI / 2; ring.position.y = -0.085; ring.visible = false; // detached compatibility handle
@@ -379,7 +363,7 @@ function makePosition() {
   const tag = document.createElement('div'); tag.className = 'sculpture-caption hidden';
   tag.innerHTML = '<span class="sculpture-name"></span><span class="sculpture-year"></span>';
   labelsEl.appendChild(tag);
-  const vp = { g, plinth, tiers, drum, trim, ring, moveHalo, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
+  const vp = { g, ring, moveHalo, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
 }
 /* ---------- the board: plinths stand on a staggered chessboard over the water ----------
@@ -620,19 +604,17 @@ function disposeFigure(vp, animate) {
 }
 function groundWhitePosition(vp) {
   vp.g.updateWorldMatrix(true, true);
-  const minimum = new THREE.Box3().setFromObject(vp.drum).min.y;
-  // Translate the parent in world Y: figure, trim, bones and pose ribbons move together.
+  const minimum = vp.fig ? new THREE.Box3().setFromObject(vp.fig).min.y : vp.g.position.y;
+  // Translate the parent in world Y: figure, bones and pose ribbons move together.
   vp.g.position.y += DISPLAY_FLOOR_Y - minimum;
   vp.g.updateWorldMatrix(true, true);
-  vp.g.userData.groundedMinimum = new THREE.Box3().setFromObject(vp.drum).min.y;
+  vp.g.userData.groundedMinimum = DISPLAY_FLOOR_Y;
 }
-function plinthFit(vp, b, animate) {
+function figureFit(vp, b, animate) {
   const sx = Math.max(0.66, (b.max.x - b.min.x) / 2 + 0.26), sz = Math.max(0.6, (b.max.z - b.min.z) / 2 + 0.24);
   const x0 = vp.scaleX, z0 = vp.scaleZ;
   const apply = (e) => {
     const X = x0 + (sx - x0) * e, Z = z0 + (sz - z0) * e;
-    vp.drum.scale.set(X, 1, Z); vp.trim.scale.set(X, Z, 1);
-    vp.tiers.forEach((t, k) => t.scale.set(X * (1.32 - k * 0.12), 1, Z * (1.32 - k * 0.12)));
     vp.ring.scale.set(X * 1.42, Z * 1.42, 1);
   };
   vp.scaleX = sx; vp.scaleZ = sz;
@@ -655,7 +637,7 @@ async function setFigure(i, p, animate) {
   refineFigure(i, p).catch(() => {});
   vp.bones = skeletonObject(mesh.skel);
   if (vp.bones) { vp.bones.position.y = PT; vp.g.add(vp.bones); }
-  plinthFit(vp, mesh.bounds, animate);
+  figureFit(vp, mesh.bounds, animate);
   buildPoseRibbons(vp, mesh, animate, 1.0); // its own plaster ribbons, grown after the figure has risen
   if (animate) { // rise out of the plinth
     const h = mesh.bounds.max.y + 0.05;
@@ -765,7 +747,6 @@ function applyViewTo(vp) {
   const v = S.view;
   if (vp.fig) vp.fig.visible = true;
   if (vp.riseBeam) vp.riseBeam.visible = !!vp.beamTween;
-  vp.plinth.visible = true;
   if (vp.rib) { // in 叠加 the sequence ribbon takes over from the pose ribbons of the day's sculptures
     const p = S.pos[V.indexOf(vp)], wrapped = !S.day.length || !!(p && p.act);
     vp.rib.visible = v === 'ribbons' || (S.own && v === 'both' && !wrapped);
