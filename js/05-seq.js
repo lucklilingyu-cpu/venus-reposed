@@ -746,6 +746,10 @@ async function applyDay(day, opts = {}) {
   const late = performance.now() - t0;
   seq.forEach((p, i) => setTimeout(() => setFigure(i, p, animate), animate ? Math.max(0, arrive[i] + 120 - late) : 0));
   scheduleSkin(animate ? Math.max(0, ...arrive) + 1300 - late : 0);
+  if (typeof opts.onVisualComplete === 'function') {
+    const finishDelay = animate ? Math.max(0, ...arrive) + 120 + 1600 : 0;
+    setTimeout(() => { if (my === applySeq) opts.onVisualComplete(seq); }, finishDelay);
+  }
   if (Sound.on) Sound.play(seq[S.sel] ? clsOf(seq[S.sel].work) : null);
 }
 
