@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@500;600;700&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=goddess-20261021">
+<link rel="stylesheet" href="style.css?v=lobby-20261022">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -20,13 +20,20 @@
     <div class="intro-plate"><span>VENUS, RE-POSED</span></div>
     <div class="intro-main">
       <h1 class="intro-title"><span>Venus,</span><span class="rose">Re-posed</span></h1>
-      <p class="intro-lede">写下你的一天，让它成为一串姿势。<br>在 V&amp;A Cast Courts 的轴线上，换掉与你不同的女神雕塑。</p>
-      <button class="intro-cta" id="introEnter" type="button"><span>进入展厅</span><i aria-hidden="true">›</i></button>
+      <p class="intro-lede">两种方式走近女神：步入 V&amp;A Cast Courts 的虚拟展馆，<br>或翻阅女神雕塑 Gallery 图谱。</p>
+      <div class="intro-choices">
+        <button class="intro-choice primary" id="introEnter" type="button"><span class="ic-t">展馆<em>Exhibition</em></span><span class="ic-d">步入虚拟展厅，与雕塑同行</span><i aria-hidden="true">›</i></button>
+        <button class="intro-choice" id="introGallery" type="button"><span class="ic-t">Gallery<em>图谱</em></span><span class="ic-d">浏览女神雕塑三维图谱</span><i aria-hidden="true">›</i></button>
+      </div>
     </div>
     <div class="intro-foot">
       <span>Bartlett B-Pro Architectural Design · Workshop 7</span>
-      <span class="intro-hint">拖动环顾 · 滚轮缩放 · W A S D 步行</span>
+      <span class="intro-hint">展馆内：拖动环顾 · 滚轮缩放 · W A S D 步行</span>
     </div>
+  </section>
+  <section class="gallery-view" id="galleryView" aria-label="Gallery" hidden>
+    <iframe id="galleryFrame" title="Goddess Sculpture Atlas" allow="fullscreen; xr-spatial-tracking" referrerpolicy="no-referrer"></iframe>
+    <div class="gallery-bar"><button type="button" id="galleryBack">‹ 返回大厅</button><a href="https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/" target="_blank" rel="noopener">新窗口打开 ↗</a></div>
   </section>
   <canvas id="scene" aria-label="V&amp;A Cast Courts 虚拟展厅三维视图"></canvas>
   <div id="labels"></div>
@@ -43,6 +50,7 @@
       <button role="tab" data-view="ribbons" aria-selected="false">雕塑与丝带</button>
     </nav>
     <div class="tools">
+      <button class="iconbtn" id="lobbyBtn" type="button" title="返回大厅">大厅</button>
       <button class="iconbtn lighting-toggle" id="lightingBtn" type="button" aria-pressed="false" aria-label="切换到夜晚灯光" title="切换白天 / 夜晚灯光"><span class="lighting-symbol" aria-hidden="true">☾</span><span id="lightingLabel">夜晚</span></button>
       <button class="iconbtn strong" id="atlasBtn" title="组内研究网站的 118 件模型"><span>图谱<span class="en"> ATLAS</span></span></button>
       <button class="iconbtn strong" id="groupBtn" title="组员的作品汇总"><span>小组<span class="en"> GROUP</span></span><span class="cnt" id="groupCnt"></span></button>
@@ -365,24 +373,29 @@
 
 <!-- ===== 下面是启动部分，一般不用改 ===== -->
 <script>
-  // 开场入口页：同一标签页里只显示一次；点按钮、按 Enter 或空格进入
+  // 大厅：两个入口 —— 展馆（进入虚拟展厅）和 Gallery（图谱，嵌入显示）；顶栏“大厅”按钮可随时回到这里
   (function () {
-    var el = document.getElementById('intro'), btn = document.getElementById('introEnter');
-    if (!el) return;
-    var seen = false;
-    try { seen = sessionStorage.getItem('venusIntroSeen') === '1'; } catch (e) {}
-    if (seen) { el.hidden = true; return; }
-    document.body.classList.add('intro-on');
-    function enter() {
-      try { sessionStorage.setItem('venusIntroSeen', '1'); } catch (e) {}
-      el.classList.add('leaving'); document.body.classList.remove('intro-on');
-      document.removeEventListener('keydown', onKey, true);
-      setTimeout(function () { el.hidden = true; }, 900);
+    var GALLERY_URL = 'https://goddess-sculpture-atlas.silkykoala4.chatgpt.site/';
+    var lobby = document.getElementById('intro'), gal = document.getElementById('galleryView'), frame = document.getElementById('galleryFrame');
+    if (!lobby) return;
+    function hideLobbySoon() { setTimeout(function () { if (lobby.classList.contains('leaving')) lobby.hidden = true; }, 900); }
+    function showLobby() {
+      gal.hidden = true; document.body.classList.remove('gallery-on');
+      lobby.hidden = false; void lobby.offsetWidth; lobby.classList.remove('leaving'); document.body.classList.add('intro-on');
+      document.getElementById('introEnter').focus({ preventScroll: true });
     }
-    function onKey(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enter(); } }
-    btn.addEventListener('click', enter);
-    document.addEventListener('keydown', onKey, true);
-    btn.focus({ preventScroll: true });
+    function enterHall() { lobby.classList.add('leaving'); document.body.classList.remove('intro-on'); hideLobbySoon(); }
+    function enterGallery() {
+      if (!frame.getAttribute('src')) frame.setAttribute('src', GALLERY_URL);
+      gal.hidden = false; document.body.classList.add('gallery-on'); document.body.classList.remove('intro-on');
+      lobby.classList.add('leaving'); hideLobbySoon();
+    }
+    document.body.classList.add('intro-on');
+    document.getElementById('introEnter').addEventListener('click', enterHall);
+    document.getElementById('introGallery').addEventListener('click', enterGallery);
+    document.getElementById('galleryBack').addEventListener('click', showLobby);
+    document.getElementById('lobbyBtn').addEventListener('click', showLobby);
+    document.getElementById('introEnter').focus({ preventScroll: true });
   })();
 </script>
 <script>
