@@ -256,7 +256,8 @@ function runTweens(now) {
 }
 
 /* ---------- porcelain shards when a sculpture leaves ---------- */
-const SHARDS = 240;
+// Enough slots for a collective burst without overwriting the earlier sculptures' shards.
+const SHARDS = 1280;
 const shardMesh = new THREE.InstancedMesh(new THREE.TetrahedronGeometry(0.06), ceramic, SHARDS);
 shardMesh.frustumCulled = false; scene.add(shardMesh);
 const shardData = Array.from({ length: SHARDS }, () => ({ life: 0 }));
@@ -461,7 +462,24 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
   const spare = V.filter(v => !taken.has(v)), open = [];
   for (let i = 0; i < n; i++) if (!next[i]) open.push(i);
   for (const [vp, i] of pairUp(spare, open, (vp, i) => d2(at(vp), target[i]))) { next[i] = vp; taken.add(vp); }
-  V.forEach(vp => { const i = next.indexOf(vp); if (vp.fig && (i < 0 || seq[i].work !== vp.work)) { disposeFigure(vp, animate); vp.work = null; } });
+  // On generation, also dissolve 70% of retained sculptures, then rebuild the same work at arrival.
+  // Leave a few intact so the collective movement remains visible.
+  const retained = animate && shuffleRest ? V.filter(vp => {
+    const i = next.indexOf(vp); return vp.fig && i >= 0 && seq[i].work === vp.work;
+  }) : [];
+  for (let i = retained.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1)); [retained[i], retained[j]] = [retained[j], retained[i]];
+  }
+  const dissolve = new Set(retained.slice(0, Math.ceil(retained.length * 0.7)));
+  let shatterCount = 0;
+  V.forEach(vp => {
+    const i = next.indexOf(vp);
+    if (vp.fig && (i < 0 || seq[i].work !== vp.work || dissolve.has(vp))) {
+      if (animate) shatterCount++;
+      disposeFigure(vp, animate); vp.work = null;
+    }
+  });
+  canvas.dataset.shatterCount = String(shatterCount);
   for (const vp of V) if (!taken.has(vp)) { // no square left: sink into the water
     disposeFigure(vp, animate); vp.tag.remove();
     if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.9, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }

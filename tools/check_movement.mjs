@@ -40,6 +40,7 @@ for (let run = 0; run < 50; run++) {
   assert.equal(api.moves.length, next.length, 'All sculptures participate, including unchanged positions');
   assert(api.moves.every(m => m.start === 350 && m.dur === 4.5), 'All moves share a 4.5 second timeline');
   assert(arrivals.every(t => t === 4850), 'All plinths land within 5 seconds together');
+  assert.equal(Number(context.canvas.dataset.shatterCount), day.length + Math.ceil((next.length - day.length) * 0.7), 'Changed sculptures and 70% of retained sculptures dissolve');
   assert.equal(api.moves.filter(m => m.background).length, next.length - day.length, 'Every background sculpture moves');
   const plan = api.planLayout(next.length);
   day.forEach((_, i) => { assert.equal(context.V[i].x, plan.day[i].x); assert.equal(context.V[i].z, plan.day[i].z); });
@@ -47,6 +48,8 @@ for (let run = 0; run < 50; run++) {
 }
 context.S.override = { 0: '7' };
 assert.equal(api.computeSequence(day, seq, true)[0].work, '7', 'Manual placement preserved');
+api.arrangeBoard(seq, false, 0, true);
+assert.equal(context.canvas.dataset.shatterCount, '0', 'Reduced motion does not trigger shard bursts');
 const p = position(), b = api.GREEN_BOUNDS, margin = 2.3;
 for (const ext of [[1, 1, 1], [100, 1, 20], [1, 0.01, 100], [1, 10, 1]]) {
   const scale = api.figureScale(ext, 'standing');
