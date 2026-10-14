@@ -17,11 +17,11 @@ function createArchitectureDisplay(parent, renderer) {
         }
       });
       for (const material of materials) {
-        material.opacity *= 0.7;
+        material.opacity = 0.94; // keep scanned textures readable with only 6% transparency
         if (!material.transparent) { material.transparent = true; material.needsUpdate = true; }
         material.depthWrite = false;
       }
-      canvas.dataset.scanOpacityFactor = '0.7';
+      canvas.dataset.scanOpacity = '0.94';
     }
     renderer.shadowMap.needsUpdate = true;
   }
