@@ -350,10 +350,11 @@
   // 新建 js 文件时，要把文件名加进这个列表。
   const PARTS = [
     '01-data.js', '02-pose.js', '03b-architecture.js', '04-scene.js',
-    '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan.js', '05-seq.js', '05b-ribbons.js', '06-ui.js', '06b-atlas.js',
+    '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan-2eaee907ac7abeaa.js', '05-seq.js', '05b-ribbons.js', '06-ui.js', '06b-atlas.js',
     '07-inputs.js', '08-sound.js', '09-export.js', '09b-group.js',
     '09c-walk.js', '10-main.js',
   ];
+  const SCAN_MODULE = "04d-va-hall-scan-2eaee907ac7abeaa.js", SCAN_MODULE_SHA256 = "2eaee907ac7abeaa010f5bf156b5dee14a62848c8a562338c0c89d802e9f47fd";
   const debug = /[?&]debug\b/.test(location.search); // 网址后加 ?debug 会保留测试用的 window.__vr
   const t = document.getElementById('loadingText');
   try {
@@ -368,6 +369,11 @@
     const texts = await Promise.all(PARTS.map(async (p) => {
       const r = await get(p);
       const s = await r.text();
+      if (p === SCAN_MODULE) {
+        const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+        const hash = Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+        if (hash !== SCAN_MODULE_SHA256) throw new Error('扫描加载代码版本校验失败');
+      }
       return '/* ===== js/' + p + ' ===== */\n' + (debug ? s : s.split('/* DEBUG */')[0]);
     }));
     const url = URL.createObjectURL(new Blob([texts.join('\n') + '\n//# sourceURL=venus-app.js\n'], { type: 'text/javascript' }));
