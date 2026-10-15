@@ -14,7 +14,7 @@
    the plane of the facet before it, so no facet is warped. Plates are a centimetre thick, hatched with fine lines,
    and outlined like a drawing. Panels are ordered along the chain, so the structure unfolds from start to end.
 ---------------------------------------------------------------- */
-const SURF = { group: new THREE.Group(), mesh: null, lines: null, job: 0, dirty: true, grow: null, panels: 0 };
+const SURF = { group: new THREE.Group(), mesh: null, lines: null, job: 0, dirty: true, grow: null, panels: 0, cur: null, saved: [], link: null, doneSig: '', only: false };
 SURF.group.name = 'surface-structure'; SURF.group.visible = false; scene.add(SURF.group);
 const surfU = { uGrow: { value: 1 } };
 const surfTex = (() => { // fine hatch lines: one line per tile, the tile is 3.4 cm wide on the plate
@@ -201,6 +201,8 @@ async function buildSurface(grow) {
   if (!S.pos.length || !V.length) return;
   const T = (S.day.length ? S.pos.map((p, i) => i).filter(i => S.pos[i].act) : S.pos.map((p, i) => i)).filter(i => V[i] && V[i].fig);
   if (!T.length) return;
+  const sig = T.map(i => S.pos[i].work + '@' + V[i].x.toFixed(2) + ',' + V[i].z.toFixed(2)).join('|');
+  if (sig === SURF.doneSig) return; // this very structure was just saved or discarded
   const meshes = await Promise.all(T.map(i => meshOf(S.pos[i].work).catch(() => null)));
   if (job !== SURF.job) return;
   try {
@@ -208,7 +210,7 @@ async function buildSurface(grow) {
     const walls = [];
     T.forEach((i, k) => {
       const vp = V[i], pv = k ? V[T[k - 1]] : null, nx = k < T.length - 1 ? V[T[k + 1]] : null, seed = seedOf(vp.work);
-      const thIn = pv ? Math.atan2(pv.z - vp.z, pv.x - vp.x) : (nx ? Math.atan2(nx.z - vp.z, nx.x - vp.x) + Math.PI * 0.8 : seed * 6.283);
+      const lk = SURF.link, thIn = pv ? Math.atan2(pv.z - vp.z, pv.x - vp.x) : lk ? Math.atan2((lk.B.z + lk.T.z) / 2 - vp.z, (lk.B.x + lk.T.x) / 2 - vp.x) : (nx ? Math.atan2(nx.z - vp.z, nx.x - vp.x) + Math.PI * 0.8 : seed * 6.283);
       const thOut = nx ? Math.atan2(nx.z - vp.z, nx.x - vp.x) : thIn + Math.PI * 0.9;
       const limits = [];
       V.forEach((o, j) => { if (j === i || !o.bounds) return; const d = Math.hypot(o.x - vp.x, o.z - vp.z); if (d > 5) return; limits.push({ th: Math.atan2(o.z - vp.z, o.x - vp.x), max: T.includes(j) ? d / 2 - 0.05 : d - feet[j](Math.atan2(vp.z - o.z, vp.x - o.x)) - 0.22 }); });
@@ -218,44 +220,70 @@ async function buildSurface(grow) {
     // obstacles for the free spans: every sculpture, and the pavilions of the day (filled in as the walls are made)
     const obst = V.map((vp, j) => { let r = 0; for (let q = 0; q < 32; q++) r = Math.max(r, feet[j](q / 32 * 2 * Math.PI)); return { j, x: vp.x, z: vp.z, r: r + 0.3, top: (vp.bounds ? vp.bounds.max.y : 1.8) + 0.3 }; });
     const clearFor = (skip) => (x, z) => { let y = 0; for (const o of obst) { if (skip.includes(o.j)) continue; if (Math.hypot(x - o.x, z - o.z) < o.r) y = Math.max(y, o.top); } return y; };
-    const info = [];
-    // chain order: tail, wall, band, wall, band ... wall, tail (panels are numbered in this order so the structure unfolds along it)
-    walls.forEach((w, k) => {
-      const c = { ...w, T, meshes, feet };
-      if (k === 0) info.push(null);
-      const r = surfWall(bd, c); info.push(r);
-      obst[w.i].r = r.outer; obst[w.i].top = r.top;
-    });
-    // bands are built after all walls (they need the obstacles) but appended in chain order by rebuilding the builder
-    const bd2 = surfBuilder(), W = info.filter(Boolean);
-    walls.forEach((w, k) => {
-      const c = { ...w, T, meshes, feet }, r = surfWall(bd2, c);
-      if (k === 0) { // tail rising from the first crease
-        const tg = r.first.tan, Mc = r.first.B.clone().add(r.first.T).multiplyScalar(0.5), hl = r.first.T.distanceTo(r.first.B) / 2, away = tg.clone().negate();
-        const tip = Mc.clone().addScaledVector(away, 1.5).add(sv3(0, 2.3, 0)), perp = sv3(-away.z, 0, away.x);
-        surfBridge(bd2, tip, sv3().subVectors(Mc, tip).normalize().add(sv3(0, -0.4, 0)).normalize(), 0.03, perp, Mc, tg, hl, r.first.T.clone().sub(r.first.B).normalize(), w.col, w.col, null, { a0: tip.clone().addScaledVector(perp, -0.03), b0: tip.clone().addScaledVector(perp, 0.03), a1: r.first.B.clone(), b1: r.first.T.clone() });
-      }
-      const nxt = walls[k + 1];
-      if (nxt) { // fold-in of the next wall happens in the next iteration; here only the band that leads to it
-        const c2 = { ...nxt, T, meshes, feet }, tmp = surfBuilder(), r2 = surfWall(tmp, c2);
-        const Ma = r.last.B.clone().add(r.last.T).multiplyScalar(0.5), Mb = r2.first.B.clone().add(r2.first.T).multiplyScalar(0.5);
-        const hla = r.last.T.distanceTo(r.last.B) / 2, hlb = r2.first.T.distanceTo(r2.first.B) / 2;
-        surfBridge(bd2, Ma, r.last.tan, hla, r.last.T.clone().sub(r.last.B).normalize(), Mb, r2.first.tan, hlb, r2.first.T.clone().sub(r2.first.B).normalize(), w.col, nxt.col, clearFor([w.i, nxt.i]), { a0: r.last.B.clone(), b0: r.last.T.clone(), a1: r2.first.B.clone(), b1: r2.first.T.clone() });
-      } else { // tail rising from the last crease
-        const tg = r.last.tan, Mc = r.last.B.clone().add(r.last.T).multiplyScalar(0.5), hl = r.last.T.distanceTo(r.last.B) / 2, perp = sv3(-tg.z, 0, tg.x);
-        const tip = Mc.clone().addScaledVector(tg, 1.7).add(sv3(0, 2.5, 0)).addScaledVector(perp, 0.6);
-        surfBridge(bd2, Mc, tg, hl, r.last.T.clone().sub(r.last.B).normalize(), tip, sv3().subVectors(tip, Mc).normalize().add(sv3(0, 0.8, 0)).normalize(), 0.03, perp, w.col, w.col, null, { a0: r.last.B.clone(), b0: r.last.T.clone(), a1: tip.clone().addScaledVector(perp, -0.03), b1: tip.clone().addScaledVector(perp, 0.03) });
-      }
-    });
+    const R = walls.map((w) => surfWall(bd, { ...w, T, meshes, feet }));
+    walls.forEach((w, k) => { obst[w.i].r = R[k].outer; obst[w.i].top = R[k].top; });
+    const mid = (c) => c.B.clone().add(c.T).multiplyScalar(0.5), hlOf = (c) => c.T.distanceTo(c.B) / 2, upOf = (c) => c.T.clone().sub(c.B).normalize();
+    const link = SURF.link, lastW = walls.length - 1;
+    // chain order: wall, band (to the saved structure or a free tail), wall, band, ... wall, tail: panels are numbered in this order so the structure unfolds along it
+    const make = (withTail) => {
+      const b = surfBuilder();
+      walls.forEach((w, k) => {
+        const r = R[k]; surfWall(b, { ...w, T, meshes, feet });
+        if (k === 0) {
+          if (link) { // the new structure is joined to the end of the one saved before
+            surfBridge(b, mid(link), link.tan, hlOf(link), upOf(link), mid(r.first), r.first.tan, hlOf(r.first), upOf(r.first), link.col, w.col, clearFor([w.i]), { a0: link.B.clone(), b0: link.T.clone(), a1: r.first.B.clone(), b1: r.first.T.clone() });
+          } else { // tail rising from the first crease
+            const tg = r.first.tan, Mc = mid(r.first), hl = hlOf(r.first), away = tg.clone().negate();
+            const tip = Mc.clone().addScaledVector(away, 1.5).add(sv3(0, 2.3, 0)), perp = sv3(-away.z, 0, away.x);
+            surfBridge(b, tip, sv3().subVectors(Mc, tip).normalize().add(sv3(0, -0.4, 0)).normalize(), 0.03, perp, Mc, tg, hl, upOf(r.first), w.col, w.col, null, { a0: tip.clone().addScaledVector(perp, -0.03), b0: tip.clone().addScaledVector(perp, 0.03), a1: r.first.B.clone(), b1: r.first.T.clone() });
+          }
+        }
+        if (k < lastW) { const nxt = walls[k + 1], r2 = R[k + 1];
+          surfBridge(b, mid(r.last), r.last.tan, hlOf(r.last), upOf(r.last), mid(r2.first), r2.first.tan, hlOf(r2.first), upOf(r2.first), w.col, nxt.col, clearFor([w.i, nxt.i]), { a0: r.last.B.clone(), b0: r.last.T.clone(), a1: r2.first.B.clone(), b1: r2.first.T.clone() });
+        } else if (withTail) { // tail rising from the last crease
+          const tg = r.last.tan, Mc = mid(r.last), hl = hlOf(r.last), perp = sv3(-tg.z, 0, tg.x);
+          const tip = Mc.clone().addScaledVector(tg, 1.7).add(sv3(0, 2.5, 0)).addScaledVector(perp, 0.6);
+          surfBridge(b, Mc, tg, hl, upOf(r.last), tip, sv3().subVectors(tip, Mc).normalize().add(sv3(0, 0.8, 0)).normalize(), 0.03, perp, w.col, w.col, null, { a0: r.last.B.clone(), b0: r.last.T.clone(), a1: tip.clone().addScaledVector(perp, -0.03), b1: tip.clone().addScaledVector(perp, 0.03) });
+        }
+      });
+      return b.geometry();
+    };
     if (job !== SURF.job) return;
-    const { geo, lines, count } = bd2.geometry();
-    if (SURF.mesh) { SURF.group.remove(SURF.mesh, SURF.lines); SURF.mesh.geometry.dispose(); SURF.lines.geometry.dispose(); }
+    const { geo, lines, count } = make(true);
+    surfDropCurrent();
     SURF.mesh = new THREE.Mesh(geo, surfMat); SURF.mesh.castShadow = true; SURF.mesh.receiveShadow = true; SURF.mesh.customDepthMaterial = surfDepth; SURF.mesh.frustumCulled = false;
     SURF.lines = new THREE.LineSegments(lines, surfLineMat); SURF.lines.frustumCulled = false;
     SURF.group.add(SURF.mesh, SURF.lines); SURF.panels = count; SURF.dirty = false;
+    const lw = R[lastW].last; SURF.cur = { make, sig, last: { B: lw.B.clone(), T: lw.T.clone(), tan: lw.tan.clone(), col: walls[lastW].col.clone() } };
     applyView();
     if (grow && S.view === 'surface') growSurface();
   } catch (e) { console.warn('surface:', e); }
+}
+/* ---------- keeping, discarding, and growing the structure over several diary entries ---------- */
+function surfDropCurrent() {
+  if (SURF.mesh) { SURF.group.remove(SURF.mesh, SURF.lines); SURF.mesh.geometry.dispose(); SURF.lines.geometry.dispose(); SURF.mesh = SURF.lines = null; }
+  surfStopTween(); SURF.cur = null;
+}
+const surfOne = { value: 1 };
+const surfStatic = (() => { // saved parts stay fully grown, whatever the growth animation of the current structure is doing
+  const patch = (sh) => { surfGrowPatch(sh); sh.uniforms.uGrow = surfOne; };
+  const mat = new THREE.MeshStandardMaterial({ map: surfTex, vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, flatShading: true, envMapIntensity: 0.5 }); mat.onBeforeCompile = patch;
+  const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }); depth.onBeforeCompile = patch;
+  const line = new THREE.LineBasicMaterial({ color: 0x38342f, transparent: true, opacity: 0.85 }); line.onBeforeCompile = patch;
+  return { mat, depth, line };
+})();
+function saveSurface() {
+  const cur = SURF.cur; if (!cur) return;
+  const { geo, lines } = cur.make(false), m = new THREE.Mesh(geo, surfStatic.mat), l = new THREE.LineSegments(lines, surfStatic.line);
+  m.castShadow = true; m.receiveShadow = true; m.customDepthMaterial = surfStatic.depth; m.frustumCulled = false; l.frustumCulled = false;
+  SURF.group.add(m, l); SURF.saved.push({ mesh: m, lines: l }); SURF.link = cur.last; SURF.doneSig = cur.sig;
+  surfDropCurrent(); renderer.shadowMap.needsUpdate = true; applyView();
+}
+function discardSurface() { const cur = SURF.cur; if (!cur) return; SURF.doneSig = cur.sig; surfDropCurrent(); renderer.shadowMap.needsUpdate = true; applyView(); }
+function clearSavedSurface() {
+  for (const s of SURF.saved) { SURF.group.remove(s.mesh, s.lines); s.mesh.geometry.dispose(); s.lines.geometry.dispose(); }
+  SURF.saved = []; SURF.link = null; SURF.doneSig = ''; renderer.shadowMap.needsUpdate = true; applyView();
+  buildSurface(S.view === 'surface');
 }
 function surfStopTween() { if (SURF.grow) { const k = tweens.indexOf(SURF.grow); if (k >= 0) tweens.splice(k, 1); SURF.grow = null; } }
 function growSurface() {
@@ -273,13 +301,14 @@ function retractSurface() {
 
 /* ---------- hooks into the existing views ---------- */
 {
+  let surfUI = function () {};
   const _applyView = applyView, _setView = setView, _buildSkin = buildSkin, _arrangeBoard = arrangeBoard;
   const _applyViewTo = applyViewTo;
   // "Surface only": inside the Surface view the sculptures can be hidden, leaving the folded structure alone on its plinths
   const only = () => S.view === 'surface' && SURF.only;
   applyViewTo = function (vp) { _applyViewTo(vp); if (only()) { if (vp.fig) vp.fig.visible = false; if (vp.bones) vp.bones.visible = false; } };
   applyView = function () {
-    _applyView(); SURF.group.visible = S.view === 'surface' && !!SURF.mesh;
+    _applyView(); SURF.group.visible = S.view === 'surface' && (!!SURF.mesh || SURF.saved.length > 0); surfUI();
     surfBtn.hidden = S.view !== 'surface'; surfBtn.setAttribute('aria-pressed', String(!!SURF.only)); renderer.shadowMap.needsUpdate = true;
   };
   const surfBtn = document.createElement('button');
@@ -288,10 +317,25 @@ function retractSurface() {
   st.textContent = '#surfOnly{position:fixed;left:22px;top:146px;z-index:20;border:0;border-radius:999px;padding:7px 16px;font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.06em;color:#4a3a45;background:linear-gradient(135deg,rgba(255,250,243,.92),rgba(246,226,222,.88));box-shadow:0 4px 18px rgba(80,50,60,.14);cursor:pointer}#surfOnly[hidden]{display:none}#surfOnly[aria-pressed=true]{color:#fff6e6;background:linear-gradient(135deg,#3a2832,#5a3a48)}';
   document.head.appendChild(st); document.body.appendChild(surfBtn);
   surfBtn.addEventListener('click', () => { SURF.only = !SURF.only; applyView(); });
+  // buttons under the diary text: keep or delete the structure of the current entry; the next entry joins what was kept
+  const diary = document.getElementById('journal'), row = document.createElement('div');
+  row.className = 'row'; row.id = 'surfRow';
+  const mk = (t, id) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = id; b.textContent = t; row.appendChild(b); return b; };
+  const sBtn = mk('Save surface', 'surfSave'), dBtn = mk('Delete surface', 'surfDel'), cBtn = mk('Clear all', 'surfClear');
+  const note = document.createElement('p'); note.className = 'small muted'; note.id = 'surfNote'; note.style.margin = '6px 2px 0';
+  const anchor = diary && (diary.parentElement.querySelector('.row') || diary);
+  if (anchor) { anchor.after(row); row.after(note); }
+  surfUI = function () {
+    const has = !!SURF.cur, n = SURF.saved.length;
+    sBtn.disabled = dBtn.disabled = !has; cBtn.hidden = !n;
+    note.textContent = has ? 'Save keeps this structure; the next entry will grow from it. Delete throws it away.' : n ? n + ' saved. Write another entry and generate to extend the structure.' : 'Generate a sequence, then save its Surface structure.';
+  };
+  sBtn.addEventListener('click', saveSurface); dBtn.addEventListener('click', discardSurface); cBtn.addEventListener('click', clearSavedSurface);
+  surfUI();
   setView = function (v) {
     _setView(v);
-    if (v === 'surface') { clearSculptureFocus(); if (SURF.dirty || !SURF.mesh) buildSurface(true); else growSurface(); }
+    if (v === 'surface') { clearSculptureFocus(); if (SURF.dirty || !SURF.mesh) buildSurface(true); else growSurface(); surfUI(); }
   };
-  buildSkin = async function () { await _buildSkin(); SURF.dirty = true; if (S.view === 'surface') await buildSurface(true); };
+  buildSkin = async function () { await _buildSkin(); SURF.dirty = true; await buildSurface(S.view === 'surface'); };
   arrangeBoard = function (...a) { if (a[1]) retractSurface(); return _arrangeBoard.apply(this, a); };
 }
