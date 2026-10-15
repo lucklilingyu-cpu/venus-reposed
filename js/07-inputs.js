@@ -238,10 +238,10 @@ function mpDetect(source) {
 }
 
 /* ---------- camera mode ---------- */
-const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, presentationPhase: '', returnTimer: 0, presentationToken: 0, session: 0, musicTicket: null };
+const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, presentationPhase: '', returnTimer: 0, presentationToken: 0, session: 0, musicTicket: null, lastCloseupIndex: -1 };
 function camStatus(t) { $('#camStatus').innerHTML = t; }
 function startSession() {
-  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; stopPoseSlideshow();
+  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; Cam.lastCloseupIndex = -1; stopPoseSlideshow();
   if (S.source !== '摄像头') { S.posPal = {}; applyDay([], { source: '摄像头', fresh: true }); }
   Cam.hist = []; Cam.holdCls = null; Cam.lastAdded = null;
 }
@@ -346,6 +346,18 @@ function camFrame(K, P2, mirror) {
     if (p >= 1 && Cam.lastAdded !== r.top) { addCamPose(r); Cam.lastAdded = r.top; }
   } else { Cam.holdCls = r.top; Cam.holdT0 = now; $('#holdBar').style.width = '0'; }
 }
+function randomCameraSculptureIndex(cls, gesture) {
+  const candidates = V.map((vp, i) => ({ vp, i, rec: vp.work != null ? REC[vp.work] : null }))
+    .filter(({ vp, rec }) => vp.fig && fitsCls(rec, cls));
+  const gestureMatches = gesture ? candidates.filter(({ rec }) => rec.g === gesture) : [];
+  const pool = gestureMatches.length ? gestureMatches : candidates;
+  const alternatives = pool.filter(({ i }) => i !== Cam.lastCloseupIndex);
+  const choices = alternatives.length ? alternatives : pool;
+  if (!choices.length) return -1;
+  const picked = choices[Math.floor(Math.random() * choices.length)].i;
+  Cam.lastCloseupIndex = picked;
+  return picked;
+}
 function addCamPose(r) {
   if (Cam.presentationBusy) return;
   if (S.day.length >= 10) { toast('序列已有 10 个位置'); return; }
@@ -362,8 +374,9 @@ function addCamPose(r) {
   applyDay(day, { source: '摄像头', musicTicket, onVisualComplete: () => {
     if (token !== Cam.presentationToken) return;
     Cam.presentationPhase = 'closeup';
-    focusSculpture(day.length - 1);
-    camStatus('场景变化完成，正在近景展示与实时姿势对应的雕像…');
+    const focusIndex = randomCameraSculptureIndex(r.top, r.g);
+    focusSculpture(focusIndex >= 0 ? focusIndex : day.length - 1);
+    camStatus('场景变化完成，正在近景展示随机选取的姿势对应雕像…');
     poseImagesReady.then(items => {
       if (token !== Cam.presentationToken || Cam.presentationPhase !== 'closeup') return;
       const related = items.filter(item => (galleryAnnotations[item.id]?.cls || galleryPoseHint(item).top) === r.top);
