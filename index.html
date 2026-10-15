@@ -251,11 +251,13 @@
     <div class="atlas-head">
       <div class="atlas-title"><span class="mark">GODDESS ATLAS</span><span class="sub" id="atlasSub">118 models · matte plaster · detailed versions load on demand</span></div>
       <div class="atlas-filters" id="atlasFilters"></div>
+      <button class="chip" id="atlasMediaBtn" type="button" aria-pressed="false" aria-controls="atlasMedia">Videos / Images</button>
       <input id="atlasSearch" type="search" placeholder="Search title, author, collection" aria-label="Search the atlas">
       <button class="iconbtn" id="atlasClose">Close</button>
     </div>
     <div class="atlas-body">
       <div class="atlas-grid" id="atlasGrid"></div>
+      <section class="atlas-media" id="atlasMedia" aria-label="Videos / Images" hidden></section>
       <div class="spec" id="spec" hidden>
         <div class="spec-view"><canvas id="specCanvas" aria-label="Plaster render of the model"></canvas>
           <div class="spec-tools"><button class="chip" id="specBones" aria-pressed="true">Skeleton</button><button class="chip" id="specSpin" aria-pressed="true">Auto-rotate</button></div></div>
@@ -446,7 +448,7 @@
   // When adding a new js file, add its name to this list.
   const PARTS = [
     '01-data.js', '02-pose.js', '03b-architecture.js', '04-scene.js',
-    '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan-2eaee907ac7abeaa.js', '04e-random-music.js', '05-seq.js', '05b-ribbons.js', '05c-surface.js', '06-ui.js', '06b-atlas.js',
+    '04b-casts.js', '04c-lighting.js', '04d-va-hall-scan-2eaee907ac7abeaa.js', '04e-random-music.js', '05-seq.js', '05b-ribbons.js', '05c-surface.js', '06-ui.js', '06b-atlas.js', '06c-atlas-media.js',
     '07-inputs.js', '07b-pose-video-gallery.js', '08-sound.js', '09-export.js', '09b-group.js',
     '09c-walk.js', '10-main.js',
   ];

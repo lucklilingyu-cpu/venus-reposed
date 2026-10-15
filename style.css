@@ -261,6 +261,28 @@ hr.soft{border:0;border-top:1px dashed var(--line-strong);margin:4px 0}
 .spec-info{display:flex;flex-direction:column;gap:10px;min-width:0;overflow:auto}
 .spec-info .desc{font-size:12.5px;line-height:1.75;color:var(--ink-soft);margin:0;max-width:62ch}
 
+/* The media collection is confined to its own Atlas pane. */
+#atlasMediaBtn{white-space:nowrap}
+#atlasMedia h2{font-family:var(--font-display);font-size:28px;font-weight:600;margin:0 0 8px}
+#atlasMedia .atlas-media-heading{margin-bottom:22px}
+#atlasMedia .atlas-media-heading p{margin:0;font-size:12px}
+#atlasMedia .atlas-media-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:20px}
+#atlasMedia .atlas-media-card{align-items:stretch;gap:7px;padding:10px 10px 16px}
+#atlasMedia .atlas-media-thumb{position:relative;aspect-ratio:16/9;display:block;overflow:hidden;background:#201c1c;border-radius:18px;margin-bottom:7px}
+#atlasMedia .atlas-media-thumb img{width:100%;height:100%;object-fit:contain;mix-blend-mode:normal}
+#atlasMedia .atlas-media-play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:26px;text-shadow:0 1px 8px #000}
+#atlasMedia .atlas-media-duration{position:absolute;bottom:7px;right:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.72);padding:1px 6px;border-radius:5px}
+#atlasMedia .atlas-media-credit{font-size:12px;color:var(--ink-soft)}
+#atlasMedia .atlas-media-card[aria-pressed="true"]{border-color:var(--gold)}
+#atlasMedia .atlas-media-detail{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(250px,1fr);gap:26px;margin-bottom:28px;padding:18px;border-radius:var(--r-lg);background:rgba(255,251,245,.65)}
+#atlasMedia .atlas-media-watch{min-width:0}
+#atlasMedia video{display:block;width:100%;max-height:65vh;background:#151313;border-radius:14px}
+#atlasMedia .atlas-media-info{display:flex;flex-direction:column;gap:12px;min-width:0}
+#atlasMedia h3{font-family:var(--font-display);font-size:26px;font-weight:600;line-height:1.2;margin:0}
+#atlasMedia .atlas-media-info p{margin:0;line-height:1.7}
+#atlasMedia .meta dd{overflow-wrap:anywhere}
+@media(max-width:760px){#atlasMedia .atlas-media-detail{grid-template-columns:1fr;padding:12px;gap:16px}#atlasMedia .atlas-media-cards{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}#atlasMedia video{max-height:50vh}}
+
 .toast{position:absolute;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:9px 20px;border-radius:var(--pill);font-size:12.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s;max-width:min(92vw,560px);text-align:center;z-index:60}
 .toast.on{opacity:.96}
 .loading{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);background:var(--cream);border:1px solid var(--line);border-radius:var(--pill);padding:11px 22px;font-size:12.5px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;z-index:20}

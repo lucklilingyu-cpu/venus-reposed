@@ -11,7 +11,7 @@ const Atlas = (() => {
   const count = (f) => f === 'all' ? ATLAS.records.length : f === 'relief' ? ATLAS.records.filter(r => r.kind !== 'figure' || !r.cls).length : FIGS.filter(r => r.cls === f).length;
   function renderFilters() {
     $('#atlasFilters').innerHTML = FILTERS.map(([k, t]) => `<button class="chip" data-f="${k}" aria-pressed="${k === filter}">${t} <span class="muted">${count(k)}</span></button>`).join('');
-    $$('#atlasFilters button').forEach(b => b.onclick = () => { filter = b.dataset.f; renderFilters(); renderGrid(); });
+    $$('#atlasFilters button').forEach(b => b.onclick = () => { AtlasMedia.close(); filter = b.dataset.f; renderFilters(); renderGrid(); });
   }
   function match(r) {
     if (filter === 'relief' && (r.kind === 'figure' && r.cls)) return false;
@@ -54,6 +54,7 @@ const Atlas = (() => {
     ctl2.update(); r2.render(sc2, cam2);
   }
   async function show(id) {
+    AtlasMedia.close();
     const previous = cur, oldGeometries = holder ? holder.children.filter(m => m.isMesh && m.userData.detail).map(m => m.geometry) : [];
     cur = id;
     const r = REC[id];
@@ -83,7 +84,7 @@ const Atlas = (() => {
       const rad = Math.max(b.max.y, b.max.x - b.min.x, b.max.z - b.min.z) * 0.62;
       cam2.position.set(rad * 1.3, c.y + rad * 0.35, rad * 3.1); ctl2.target.copy(c); ctl2.update();
     } catch (e) { info.insertAdjacentHTML('afterbegin', '<p class="muted">模型加载失败。</p>'); }
-    if (!raf) loop();
+    if (!raf && !spec.hidden && !el.hidden) loop();
   }
   function specInfo(r) {
     const placeable = r.kind === 'figure' && r.cls;
@@ -123,14 +124,17 @@ const Atlas = (() => {
     };
   }
   function open(id) {
+    AtlasMedia.close();
     if (!built) { renderFilters(); renderGrid(); built = true; $('#atlasSub').textContent = `${ATLAS.records.length} 件模型 · 哑光石膏 · 精细版按需加载`; }
     el.hidden = false; Atlas.isOpen = true;
     if (id) show(id); else { spec.hidden = true; grid.hidden = false; }
   }
-  function close() { el.hidden = true; Atlas.isOpen = false; cancelAnimationFrame(raf); raf = 0; }
+  function close() { AtlasMedia.close(); el.hidden = true; Atlas.isOpen = false; cancelAnimationFrame(raf); raf = 0; }
   $('#atlasClose').onclick = close;
-  $('#atlasSearch').addEventListener('input', (e) => { query = e.target.value.trim(); renderGrid(); });
+  $('#atlasSearch').addEventListener('input', (e) => { if (AtlasMedia.active) { AtlasMedia.search(e.target.value); return; } query = e.target.value.trim(); renderGrid(); });
   $('#specBones').onclick = (e) => { showBones = !showBones; e.currentTarget.setAttribute('aria-pressed', String(showBones)); if (bonesObj) bonesObj.visible = showBones; };
   $('#specSpin').onclick = (e) => { spin = !spin; e.currentTarget.setAttribute('aria-pressed', String(spin)); };
-  return { open, close, isOpen: false, usesGeometry: geo => !!holder && holder.children.some(m => m.geometry === geo) };
+  return { open, close, isOpen: false, usesGeometry: geo => !!holder && holder.children.some(m => m.geometry === geo),
+    pauseViewer() { cancelAnimationFrame(raf); raf = 0; },
+    resumeViewer() { if (r2 && !raf && !el.hidden && !spec.hidden) loop(); } };
 })();
