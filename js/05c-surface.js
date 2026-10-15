@@ -126,17 +126,19 @@ function surfWall(bd, c) {
   if (Math.abs(ccw - Math.PI) < 0.4) { dir = k % 2 ? -1 : 1; sweep = Math.PI; } else if (ccw > cwA) { dir = 1; sweep = ccw; } else { dir = -1; sweep = cwA; }
   sweep = THREE.MathUtils.clamp(sweep, 0.9 * Math.PI, 1.25 * Math.PI);
   let rMean = 0; for (let q = 0; q < 8; q++) rMean += foot(c.thIn + dir * sweep * q / 7) + 0.2; rMean /= 8;
-  const NP = THREE.MathUtils.clamp(Math.round(sweep * rMean / Pc.wPan), 6, 16);
+  const NP = THREE.MathUtils.clamp(Math.round(sweep * rMean / (Pc.wPan * 0.5)), 12, 30), ph0 = seed * 6.283;
   const Bg = [], Tp = [], th = [], hs = [];
   for (let i = 0; i <= NP; i++) {
     const u = i / NP, t = c.thIn + dir * sweep * u, ft = foot(t);
-    let r = ft + 0.3 + Pc.fold * (i % 2 ? 1 : -1);
+    const wave = Math.sin(6.283 * 1.4 * u + ph0), env0 = Math.sin(Math.PI * u);
+    let r = ft + 0.3 + Pc.fold * (1.5 * wave * Math.pow(env0, 0.6) + 0.18 * (i % 2 ? 1 : -1));
     r = Math.max(ft + 0.1, Math.min(r, rooms(t)));
     const env = 0.5 + 0.5 * Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * u)), 0.8), ramp = 1 + Pc.slope * (0.5 - u);
     const h = Math.max(base * env * ramp, sil(t) + 0.18);
     const out = sv3(Math.cos(t), 0, Math.sin(t)), b = sv3(c.x, 0.002, c.z).addScaledVector(out, r);
-    const rTop = Math.max(r + Pc.tilt * h + Pc.fold * 0.9 * (i % 2 ? -1 : 1) * Math.sin(Math.PI * u), ft + 0.12);
-    const tp = sv3(c.x + out.x * rTop, h, c.z + out.z * rTop);
+    const rTop = Math.max(r + Pc.tilt * h + Pc.fold * 2.2 * Math.sin(6.283 * 1.1 * u + ph0 + 1.6) * env0, ft + 0.12);
+    const lean = 0.5 * env0 * Math.sin(6.283 * 1.25 * u + ph0) / Math.max(1, rTop), oT = sv3(Math.cos(t + dir * lean), 0, Math.sin(t + dir * lean));
+    const tp = sv3(c.x + oT.x * rTop, h, c.z + oT.z * rTop);
     Bg.push(b); Tp.push(tp); th.push(t); hs.push(h);
   }
   const wallFirst = bd.count;
@@ -144,9 +146,9 @@ function surfWall(bd, c) {
   // canopy plates: parallelograms hinged on the top edge, leaning in over the head
   const nC = Pc.canopy;
   for (let q = 0; q < nC; q++) {
-    const j = Math.min(NP - 1, Math.max(0, Math.round(NP * (0.22 + 0.56 * (q + 0.5) / nC)))), A = Tp[j], B = Tp[j + 1];
+    const j = Math.min(NP - 3, Math.max(0, Math.round(NP * (0.22 + 0.56 * (q + 0.5) / nC)))), j2 = j + 3, A = Tp[j], B = Tp[j2];
     if (Math.min(A.y, B.y) < H + 0.1) continue;
-    const mid = (th[j] + th[j + 1]) / 2, u = j / NP, Lc = Pc.cLen * (0.65 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * (0.8 + 0.4 * ((seed * 7 + q * 0.37) % 1));
+    const mid = (th[j] + th[j2]) / 2, u = j / NP, Lc = Pc.cLen * (0.65 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * (0.8 + 0.4 * ((seed * 7 + q * 0.37) % 1));
     const inward = sv3(-Math.cos(mid), 0, -Math.sin(mid)), D = inward.multiplyScalar(Lc).add(sv3(0, 0.18 + 0.22 * ((seed * 3 + q * 0.41) % 1) , 0).multiplyScalar(Lc));
     bd.plate([A.clone(), B.clone(), B.clone().add(D), A.clone().add(D)], color);
   }
@@ -165,7 +167,7 @@ function surfWall(bd, c) {
 
 /* ---------- the band between two creases (or a free tail) ---------- */
 function surfBridge(bd, M0, t0, hl0, u0, M1, t1, hl1, u1, c0, c1, clearAt, hardEnds) {
-  const Ld = M0.distanceTo(M1), n = THREE.MathUtils.clamp(Math.round(Ld / 0.5), 5, 30), m0 = t0.clone().multiplyScalar(Ld * 1.1), m1 = t1.clone().multiplyScalar(Ld * 1.1);
+  const Ld = M0.distanceTo(M1), n = THREE.MathUtils.clamp(Math.round(Ld / 0.3), 8, 56), m0 = t0.clone().multiplyScalar(Ld * 1.4), m1 = t1.clone().multiplyScalar(Ld * 1.4);
   const C = [], Tn = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n, t2 = t * t, t3 = t2 * t, h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
@@ -173,6 +175,8 @@ function surfBridge(bd, M0, t0, hl0, u0, M1, t1, hl1, u1, c0, c1, clearAt, hardE
     const d00 = 6 * t2 - 6 * t, d10 = 3 * t2 - 4 * t + 1, d01 = -6 * t2 + 6 * t, d11 = 3 * t2 - 2 * t;
     Tn.push(sv3().addScaledVector(M0, d00).addScaledVector(m0, d10).addScaledVector(M1, d01).addScaledVector(m1, d11).normalize());
   }
+  { const side = sv3().crossVectors(sv3(0, 1, 0), sv3().subVectors(M1, M0)).normalize(), sg = ((M0.x * 7.3 + M0.z * 3.1) % 2) > 1 ? 1 : -1;
+    for (let i = 1; i < n; i++) { const t = i / n; C[i].addScaledVector(side, sg * 0.16 * Ld * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * t)); } }
   // heights: ease between the two ends, rise over what is in the way, keep the whole band off the floor
   const hlAt = (t) => { const hmid = 0.62, e = hl0 * (1 - t) + hl1 * t; return hmid + (e - hmid) * Math.pow(1 - Math.sin(Math.PI * t), 1.4); };
   const phiAt = (t) => (Math.PI / 2) * surfSm(THREE.MathUtils.clamp((t - 0.1) / 0.28, 0, 1)) * (1 - surfSm(THREE.MathUtils.clamp((t - 0.62) / 0.28, 0, 1)));
@@ -185,7 +189,7 @@ function surfBridge(bd, M0, t0, hl0, u0, M1, t1, hl1, u1, c0, c1, clearAt, hardE
     const t = i / n, p = C[i]; p.y = i === 0 ? M0.y : i === n ? M1.y : y[i];
     const tg = Tn[i], vv = sv3().addScaledVector(u0, 1 - t).addScaledVector(u1, t); vv.addScaledVector(tg, -vv.dot(tg)); if (vv.lengthSq() < 1e-8) vv.set(0, 1, 0); vv.normalize();
     const pp = sv3().crossVectors(tg, sv3(0, 1, 0)); if (pp.lengthSq() < 1e-8) pp.set(1, 0, 0); pp.normalize();
-    const ph = phiAt(t), roll = 0.1 * (i % 2 ? 1 : -1) * Math.sin(Math.PI * t) * (i > 0 && i < n ? 1 : 0);
+    const ph = phiAt(t), roll = 0.32 * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * t) * (i > 0 && i < n ? 1 : 0);
     let u = sv3().addScaledVector(vv, Math.cos(ph)).addScaledVector(pp, Math.sin(ph)).normalize();
     if (roll) u = u.clone().multiplyScalar(Math.cos(roll)).addScaledVector(sv3().crossVectors(tg, u), Math.sin(roll));
     const hl = hlAt(t);
@@ -368,4 +372,21 @@ function retractSurface() {
   silkMat.onBeforeCompile = gauze; silkDepth.onBeforeCompile = gauze;
   silkMat.transparent = true; silkMat.opacity = 0.66; silkMat.depthWrite = false; silkMat.sheen = 1; silkMat.roughness = 0.5; silkMat.clearcoat = 0; silkMat.envMapIntensity = 0.9;
   silkMat.needsUpdate = true; silkDepth.needsUpdate = true;
+}
+
+/* ---------- more sample diaries for "A day in my life": every one is at least eight activities, so each fills the hall with eight or more sculptures ---------- */
+{
+  const MORE = {
+    museum: ['Sample · Museum day', '7am woke up late in bed, 8am washed my hair, walked to the station, took the tube to the museum, stood in a queue for tickets, walked through the galleries, crouched to tie my shoe, had lunch at the café, evening lying on the sofa scrolling.'],
+    garden: ['Sample · Garden weekend', 'Woke at nine and stayed in bed, put on my shoes by the door, walked to the market, crouched to pick up apples, sat on a bench with coffee, cooked a big pot of soup, lay on the couch to watch a movie, went to sleep.'],
+    studio: ['Sample · Studio crunch', 'Woke up at seven, brushed my teeth, went for a run, sat at my desk modelling, standing at the printer, sat in the review meeting, crouched on the floor to assemble the model, walked home, lay down on the couch, went to sleep.'],
+    travel: ['Sample · Travel day', '6am woke in a hotel bed, took a shower and washed my hair, walked to the station, sat on the train for three hours, stood in a queue at customs, walked along the river, crouched to look at the shells, had dinner by the water, evening on the sofa scrolling photos, went to sleep early.'],
+    dance: ['Sample · Dance rehearsal', 'Woke up stiff in bed, felt cold at the window, walked to the studio, sat to lace my boots, crouched to stretch, standing at the barre rehearsing, looked back in the mirror, sat to eat lunch, lay on the couch to rest, went to sleep.'],
+    rainy: ['Sample · Rainy Sunday', 'Woke late and stayed in bed, standing at the window, walked to the bakery, sat reading by the window, crouched to pick up the dropped keys, lay on the sofa watching the rain, cooked a stew, had dinner, scrolling in bed, went to sleep.'],
+  };
+  const sel = document.getElementById('samples');
+  for (const [k, [label, text]] of Object.entries(MORE)) {
+    SAMPLE_DAYS[k] = text;
+    if (sel && !sel.querySelector('option[value="' + k + '"]')) { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); }
+  }
 }
