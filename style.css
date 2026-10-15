@@ -637,3 +637,19 @@ body.intro-on .topbar,body.gallery-on .topbar{visibility:hidden}
 .intro.bust-narrow .intro-title,.intro.bust-narrow .intro-lede,.intro.bust-narrow .intro-plate span{text-shadow:0 0 26px rgba(250,245,236,.95),0 0 8px rgba(250,245,236,.9)}
 .intro.bust-narrow .lobby-bust.on{opacity:.42}
 .intro.bust-narrow .lobby-credit{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+
+/* ===== performance: no backdrop blur over the live 3D canvas, no blurred animated layers ===== */
+.panel,.strip,.seg,.iconbtn,.menu,.addmenu,.brand,.tag,.walkpad button,.walkbar,.pose-orbit-card,.pose-slide-note,.modal,.gallery-bar,.sheet-tabs,.toast,.tourbar,.loading{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.panel,.strip{background:linear-gradient(165deg,rgba(252,248,241,.97) 0%,rgba(243,230,222,.95) 58%,rgba(234,221,218,.94) 100%)}
+.iconbtn:not(.strong):not([aria-pressed="true"]):not(.lighting-toggle){background:linear-gradient(135deg,rgba(255,252,246,.94),rgba(243,228,220,.9))}
+html[data-lighting="night"] .topbar .iconbtn:not(.strong):not([aria-pressed="true"]){background:linear-gradient(135deg,rgba(70,52,64,.9),rgba(38,28,36,.88))}
+.sheet-tabs,.menu,.addmenu,.gallery-bar{background:rgba(250,245,236,.97)}
+.walkpad button{background:rgba(250,245,236,.92)}
+.modal{background:rgba(46,30,38,.58)}
+.pose-orbit-card{background:rgba(246,237,226,.55)}
+.intro-sky i{filter:none!important}
+.intro-sky i:nth-child(1){background:radial-gradient(closest-side,rgba(235,195,182,.95),rgba(235,195,182,0))!important}
+.intro-sky i:nth-child(2){background:radial-gradient(closest-side,rgba(205,216,218,.95),rgba(205,216,218,0))!important}
+.intro-sky i:nth-child(3){background:radial-gradient(closest-side,rgba(255,250,241,1),rgba(255,250,241,0))!important}
+.intro-sky i:nth-child(4){background:radial-gradient(closest-side,rgba(223,199,143,.7),rgba(223,199,143,0))!important}
+.intro-sky i{will-change:transform}

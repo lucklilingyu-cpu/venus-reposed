@@ -19,7 +19,7 @@ const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-mo
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); }
 catch (e) { console.warn('lobby bust: WebGL unavailable', e); throw e; }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.3;
@@ -36,7 +36,7 @@ const mesh = new THREE.Mesh(new THREE.BufferGeometry(), plaster); mesh.castShado
 
 /* the beam on the face, a cool rim to lift the silhouette off the backdrop, and a low warm ambient */
 const key = new THREE.SpotLight(0xfff0da, 200, 0, 0.34, 0.9, 2);
-key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; key.shadow.camera.near = 1; key.shadow.camera.far = 30;
+key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; key.shadow.camera.near = 1; key.shadow.camera.far = 30;
 scene.add(key, key.target);
 const rim = new THREE.DirectionalLight(0xe4ebf7, 0.9); rim.position.set(4.5, 2.5, -2.5); scene.add(rim);
 scene.add(new THREE.HemisphereLight(0xfff6ea, 0xb39c8e, 0.45));
@@ -111,8 +111,11 @@ async function step() {
   if (await show(next)) order = next;
   if (running) fade(true);
 }
+let lastDraw = 0;
 function frame(now) {
   raf = running ? requestAnimationFrame(frame) : 0;
+  if (now - lastDraw < 30) return;            // ~30 fps is plenty for a slow sway and keeps the GPU free for the hall
+  lastDraw = now;
   const t = (now - t0) / 1000;
   holder.rotation.y = reduceMotion ? 0 : Math.sin(t * 0.5) * 0.3;          // a gentle turn either side of the front
   holder.rotation.x = reduceMotion ? 0 : Math.sin(t * 0.33 + 1.2) * 0.025;

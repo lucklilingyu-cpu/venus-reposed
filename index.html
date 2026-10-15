@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=bust-20261024">
+<link rel="stylesheet" href="style.css?v=perf-20261025">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -420,6 +420,7 @@
   })();
 </script>
 <script src="i18n-en.js?v=en-20261023"></script>
+<script src="perf-patches.js?v=perf-20261025"></script>
 <script src="config.js"></script>
 <script>
   // If start-up fails, show the reason in the loading note
@@ -433,7 +434,7 @@
   })();
 </script>
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
-<script type="module" src="lobby-bust.js?v=bust-20261024"></script>
+<script type="module" src="lobby-bust.js?v=perf-20261025"></script>
 <script type="module">
   // The page code lives in the js/ folder and is joined in the order below into one module (no build step).
   // When adding a new js file, add its name to this list.
@@ -463,7 +464,7 @@
         const hash = Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
         if (hash !== SCAN_MODULE_SHA256) throw new Error('Scan loader version check failed');
       }
-      return '/* ===== js/' + p + ' ===== */\n' + window.__EN.js(debug ? s : s.split('/* DEBUG */')[0]);
+      return '/* ===== js/' + p + ' ===== */\n' + (window.__PERF ? window.__PERF.js : function (x) { return x; })(window.__EN.js(debug ? s : s.split('/* DEBUG */')[0]), p);
     }));
     const url = URL.createObjectURL(new Blob([texts.join('\n') + '\n//# sourceURL=venus-app.js\n'], { type: 'text/javascript' }));
     await import(url);
