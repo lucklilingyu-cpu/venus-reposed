@@ -68,6 +68,33 @@
         if (avg > 27 && pr > 0.7 && now > cool) { apply(Math.max(0.7, Math.round(pr * 82) / 100)); cool = now + 3000; avg = 16.7; }
       };
       requestAnimationFrame(tick);
+
+      /* 3. idle lights: nine spotlights (accent, arrival and focus beams) stay at zero brightness until a sculpture rises or is
+            focused, yet every pixel of every surface still pays for them. They are hidden while all of them are dark and shown
+            again the moment one lights up. The shader for the other light count is compiled in parallel ahead of time (and again
+            once the hall scan has loaded), so switching does not stall. */
+      var pool = [], poolOn = true, lightsReady = false, darkFrames = 0, frameN = 0, scanWarmed = false;
+      var collect = function () { var found = []; scene.traverse(function (o) { if (o.isSpotLight && o.name !== 'portico-light') found.push(o); }); pool = found; };
+      var setPool = function (on) { for (var i = 0; i < pool.length; i++) pool[i].visible = on; poolOn = on; };
+      var anyLit = function () { for (var i = 0; i < pool.length; i++) if (pool[i].intensity > 0.002) return true; return false; };
+      var warmOther = function () {
+        if (pool.length < 4) return Promise.resolve();
+        var cur = poolOn; setPool(!cur);
+        var p = renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve();
+        setPool(cur);
+        return Promise.race([Promise.resolve(p).catch(function () { /* the shader is built when first needed */ }), new Promise(function (ok) { setTimeout(ok, 5000); })]);
+      };
+      setTimeout(function () { collect(); warmOther().then(function () { lightsReady = true; }); }, 4000);
+      var watchLights = function () {
+        requestAnimationFrame(watchLights);
+        if (anyLit()) { darkFrames = 0; if (!poolOn) setPool(true); }   // a lit light is never left hidden
+        if (!lightsReady) return;
+        frameN++;
+        if (frameN % 180 === 0) { var n = pool.length; collect(); if (pool.length !== n) setPool(poolOn); }
+        if (!scanWarmed && canvas.dataset.vaHallScan === 'ready') { scanWarmed = true; setTimeout(function () { lightsReady = false; warmOther().then(function () { lightsReady = true; }); }, 1500); }
+        if (!anyLit() && poolOn && ++darkFrames > 45) setPool(false);
+      };
+      requestAnimationFrame(watchLights);
     } catch (e) { console.warn('perf layer:', e); }
   }
 
