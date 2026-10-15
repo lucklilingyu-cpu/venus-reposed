@@ -365,7 +365,7 @@ function retractSurface() {
   setView = function (v) {
     if (!v) return; // the Cast Court button lives in the same tab row but is not a view
     const prev = S.view;
-    if (v !== prev && (v === 'surface' || prev === 'surface')) SURF.court = v !== 'surface'; // the Surface view starts on its own; Cast Court brings the hall back
+    // the hall and floor only change when Cast Court is clicked: switching views never hides them
     _setView(v);
     if (v === 'surface') { clearSculptureFocus(); if (SURF.dirty || !SURF.mesh) buildSurface(true); else growSurface(); surfUI(); }
   };
