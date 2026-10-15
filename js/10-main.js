@@ -11,6 +11,10 @@ $$('#modeTabs button').forEach(b => b.addEventListener('click', () => {
 }));
 $('#journal').value = SAMPLE_DAYS.group;
 $('#parseBtn').addEventListener('click', runText);
+document.querySelectorAll('[data-diary-display]').forEach(button => button.addEventListener('click', () => setDiaryDisplay(button.dataset.diaryDisplay)));
+let savedDiaryDisplay = 'deluxe';
+try { savedDiaryDisplay = localStorage.getItem('venus.diaryDisplay') || 'deluxe'; } catch (_) { /* storage may be disabled */ }
+setDiaryDisplay(savedDiaryDisplay);
 $('#samples').addEventListener('change', (e) => { const k = e.target.value; if (k) { $('#journal').value = SAMPLE_DAYS[k]; e.target.value = ''; $('#textStatus').textContent = '示例已填入，点“生成姿势序列”。'; } });
 $('#mergeChk').addEventListener('change', (e) => { S.merge = e.target.checked; });
 $('#camStart').addEventListener('click', () => { if (Cam.stream) { stopCamera(); camStatus(''); } else startCamera(); });
@@ -115,7 +119,7 @@ function pickSculpture(e) {
   if (Walk.active) { if (!Walk.locked) return -1; ndc.set(0, 0); } // walking: pick what the crosshair points at
   else { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); }
   ray.setFromCamera(ndc, camera);
-  const targets = []; V.forEach(vp => { if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.rib && vp.rib.visible) targets.push(...vp.rib.children); });
+  const targets = []; V.forEach(vp => { if (!vp.g.visible) return; if (vp.fig && vp.fig.visible) targets.push(vp.fig); if (vp.rib && vp.rib.visible) targets.push(...vp.rib.children); });
   if (skinMesh && skinMesh.visible) targets.push(skinMesh);
   const hit = ray.intersectObjects(targets, false)[0];
   if (!hit) return -1;

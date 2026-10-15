@@ -241,6 +241,9 @@ ceramic.customProgramCacheKey = () => 'cast-plaster-v1';
 // three.js clones do not copy onBeforeCompile; animation materials need it too.
 const clonePlaster = ceramic.clone.bind(ceramic);
 ceramic.clone = () => { const material = clonePlaster(); material.onBeforeCompile = plasterShader; material.customProgramCacheKey = ceramic.customProgramCacheKey; return material; };
+// Shared only by background sculptures in the hall; specimen materials stay opaque.
+const contextPlaster = ceramic.clone();
+contextPlaster.transparent = true; contextPlaster.opacity = 0.4; contextPlaster.depthWrite = false;
 const boneMat = new THREE.MeshBasicMaterial({ color: 0x2b2a2c, depthTest: false, transparent: true, opacity: 0.88 });
 const jointMat = new THREE.MeshBasicMaterial({ color: 0xc5a86c, depthTest: false, transparent: true, opacity: 0.95 });
 function skeletonObject(skel, rad = 0.0075) {
@@ -271,7 +274,7 @@ function skeletonObject(skel, rad = 0.0075) {
 
 /* state */
 const S = {
-  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'drape', own: true, bones: false, merge: true, layout: 'skeleton',
+  day: [], pos: [], sel: 0, view: 'sculpture', skinStyle: 'drape', own: true, bones: false, merge: true, layout: 'skeleton', diaryDisplay: 'deluxe',
   palettes: JSON.parse(JSON.stringify(DEFAULT_PALETTES)), posPal: {}, barsMode: 'day', source: '', override: {},
 };
 
@@ -375,7 +378,7 @@ function clearSculptureFocus() {
   canvas.dataset.focusWork = '';
 }
 function focusSculpture(i) {
-  const vp = V[i]; if (!vp || !vp.fig) return;
+  const vp = V[i]; if (!vp || !vp.fig || !vp.g.visible) return;
   clearSculptureFocus(); select(i); flyToPosition(i, true); focusedSculpture = vp;
   focusBeam.position.set(vp.x, PT + focusBeamHeight / 2, vp.z);
   focusLight.position.set(vp.x, PT + focusBeamHeight, vp.z);
@@ -597,8 +600,9 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
   V.forEach(vp => {
     const i = next.indexOf(vp);
     if (vp.fig && (i < 0 || seq[i].work !== vp.work || dissolve.has(vp))) {
-      if (animate) shatterCount++;
-      disposeFigure(vp, animate); vp.work = null;
+      const visibleEffect = animate && (S.diaryDisplay !== 'basic' || !!seq[i]?.act);
+      if (visibleEffect) shatterCount++;
+      disposeFigure(vp, visibleEffect); vp.work = null;
     }
   });
   canvas.dataset.shatterCount = String(shatterCount);
@@ -680,9 +684,10 @@ function disposeFigure(vp, animate) {
     old.updateWorldMatrix(true, false);
     const box = new THREE.Box3().setFromObject(old);
     burst(box, 36);
-    const mat = ceramic.clone(); mat.transparent = true; old.material = mat;
+    const startOpacity = old.material.opacity;
+    const mat = ceramic.clone(); mat.transparent = true; mat.opacity = startOpacity; old.material = mat;
     const y0 = old.position.y;
-    tween(0.9, (e) => { mat.opacity = 1 - e; old.position.y = y0 - e * 0.35; }, () => { old.parent && old.parent.remove(old); mat.dispose(); release(); });
+    tween(0.9, (e) => { mat.opacity = startOpacity * (1 - e); old.position.y = y0 - e * 0.35; }, () => { old.parent && old.parent.remove(old); mat.dispose(); release(); });
   } else { old.parent && old.parent.remove(old); release(); }
 }
 function groundWhitePosition(vp) {
@@ -733,7 +738,7 @@ async function setFigure(i, p, animate) {
       vp.g.updateWorldMatrix(true, false);
       mat.clippingPlanes[0].constant = -(vp.g.position.y + PT);
       mat.clippingPlanes[0].normal.set(0, 1, 0);
-    }, () => { m.material = ceramic; mat.dispose(); vp.riseTween = null; vp.riseMaterial = null; pulseRing(vp); });
+    }, () => { mat.dispose(); vp.riseTween = null; vp.riseMaterial = null; applyViewTo(vp); pulseRing(vp); });
   } else { m.position.set(0, PT, 0); }
   applyViewTo(vp);
 }
@@ -810,6 +815,7 @@ async function applyDay(day, opts = {}) {
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq) return;
   const arrive = arrangeBoard(seq, animate, animate ? 350 : 0, previous.length > 0 && S.day.length > 0), t0 = performance.now();
+  applyView();
   canvas.dataset.sequenceWorks = JSON.stringify(seq.map(p => ({ work: p.work, cls: p.act ? p.act.cls : null, background: !p.act, manual: p.status === 'manual' })));
   renderStrip(); renderData(); renderBars();
   const late = performance.now() - t0;
@@ -833,6 +839,18 @@ let skinMesh = null, skinJob = 0, skinTimer = null, skinGrow = null;
    雕塑与丝带 'ribbons' = every sculpture with its own pose ribbons (replaced the former 色彩与声音 view). */
 function applyViewTo(vp) {
   const v = S.view;
+  const participant = !!S.pos[V.indexOf(vp)]?.act;
+  const visible = S.diaryDisplay !== 'basic' || participant;
+  vp.g.visible = visible;
+  if (vp.fig) {
+    const material = participant ? ceramic : contextPlaster;
+    if (vp.riseMaterial) {
+      vp.riseMaterial.opacity = material.opacity; vp.riseMaterial.transparent = material.transparent;
+      vp.riseMaterial.depthWrite = material.depthWrite; vp.riseMaterial.needsUpdate = true;
+    } else vp.fig.material = material;
+    vp.fig.castShadow = participant;
+  }
+  if (!visible) { vp.tag.classList.add('hidden'); if (vp.poseTag) vp.poseTag.classList.add('hidden'); }
   if (vp.fig) vp.fig.visible = true;
   if (vp.riseBeam) vp.riseBeam.visible = !!vp.beamTween;
   if (vp.rib) { // in 叠加 the sequence ribbon takes over from the pose ribbons of the day's sculptures
@@ -840,6 +858,16 @@ function applyViewTo(vp) {
     vp.rib.visible = v === 'ribbons' || (S.own && v === 'both' && !wrapped);
   }
   if (vp.bones) vp.bones.visible = S.bones;
+}
+function setDiaryDisplay(mode) {
+  S.diaryDisplay = mode === 'basic' ? 'basic' : 'deluxe';
+  if (focusedSculpture && S.diaryDisplay === 'basic' && !S.pos[V.indexOf(focusedSculpture)]?.act) clearSculptureFocus();
+  document.querySelectorAll('[data-diary-display]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.diaryDisplay === S.diaryDisplay)));
+  const hint = document.getElementById('diaryDisplayHint');
+  if (hint) hint.textContent = S.diaryDisplay === 'basic' ? 'Only sculptures in your diary are shown.' : 'All sculptures move; sculptures outside your diary are 60% transparent.';
+  canvas.dataset.diaryDisplay = S.diaryDisplay;
+  try { localStorage.setItem('venus.diaryDisplay', S.diaryDisplay); } catch (_) { /* use session state */ }
+  applyView(); renderer.shadowMap.needsUpdate = true;
 }
 function applyView() {
   V.forEach(applyViewTo);

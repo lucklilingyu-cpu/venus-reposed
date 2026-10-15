@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=perf-20261025">
+<link rel="stylesheet" href="style.css?v=diary-modes-20261015">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -98,6 +98,11 @@
       <section id="mode-text" class="dcard">
         <div class="eyebrow">A day in my life</div>
         <h2 class="ph">Write your day and generate a string of poses</h2>
+        <div class="diary-display-modes" role="group" aria-label="Diary exhibition mode" id="diaryDisplayModes">
+          <button type="button" data-diary-display="basic" aria-pressed="false">基础版 Basic</button>
+          <button type="button" data-diary-display="deluxe" aria-pressed="true">豪华版 Deluxe</button>
+        </div>
+        <p class="diary-display-hint" id="diaryDisplayHint" aria-live="polite">All sculptures move; sculptures outside your diary are 60% transparent.</p>
         <textarea id="journal" aria-label="Diary"></textarea>
         <div class="row">
           <button class="btn primary" id="parseBtn">Generate pose sequence</button>

@@ -39,6 +39,7 @@ const NightLighting = (() => {
     M.tier.color.copy(baseline.tier).lerp(nightColors.tier, v);
     if (portico) { portico.intensity = mix(640, 180, v); portico.color.set(0xfff0dc).lerp(nightColors.fill, v); }
     ceramic.envMapIntensity = mix(0.85, 0.22, v);
+    contextPlaster.envMapIntensity = ceramic.envMapIntensity;
     lights.forEach((light, i) => { light.intensity = 1000 * clamp((accent - i * 0.06) / 0.8); });
     renderer.toneMappingExposure = mix(baseline.exposure, 0.86, v);
     bloom.enabled = v > 0.01; bloom.strength = 0.32 * v; bloom.threshold = 0.95;
