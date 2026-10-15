@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;family=Inter:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
-<link rel="stylesheet" href="style.css?v=lobby-20261022">
+<link rel="stylesheet" href="style.css?v=bust-20261024">
 <style>html,body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -17,6 +17,7 @@
   <!-- ===== Lobby: a layer over the hall; the hall keeps loading behind it. ===== -->
   <section class="intro" id="intro" aria-label="Lobby">
     <div class="intro-sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <canvas class="lobby-bust" id="lobbyBust" aria-hidden="true"></canvas>
     <div class="intro-plate"><span>VENUS, RE-POSED</span></div>
     <div class="intro-main">
       <h1 class="intro-title"><span>Venus,</span><span class="rose">Re-posed</span></h1>
@@ -26,6 +27,7 @@
         <button class="intro-choice" id="introGallery" type="button"><span class="ic-t">Gallery<em>The atlas</em></span><span class="ic-d">Browse the 3D atlas of goddess sculptures</span><i aria-hidden="true">›</i></button>
       </div>
     </div>
+    <div class="lobby-credit" id="lobbyCredit"></div>
     <div class="intro-foot">
       <span>Bartlett B-Pro Architectural Design · Workshop 7</span>
       <span class="intro-hint">In the exhibition: drag to look around · scroll to zoom · W A S D to walk</span>
@@ -431,6 +433,7 @@
   })();
 </script>
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module" src="lobby-bust.js?v=bust-20261024"></script>
 <script type="module">
   // The page code lives in the js/ folder and is joined in the order below into one module (no build step).
   // When adding a new js file, add its name to this list.

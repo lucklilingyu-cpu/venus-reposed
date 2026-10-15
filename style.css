@@ -624,3 +624,16 @@ hr.soft{border:0;height:1px;background:linear-gradient(90deg,transparent,rgba(18
 .gallery-bar button{background:var(--grad-ink);color:var(--gold-hi)}
 .gallery-bar a:hover{background:rgba(183,154,98,.16)}
 body.intro-on .topbar,body.gallery-on .topbar{visibility:hidden}
+
+/* ===== lobby background: plaster busts (lobby-bust.js) ===== */
+.lobby-bust{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;opacity:0;transition:opacity .7s ease;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 58%,rgba(0,0,0,.55) 78%,transparent 96%);mask-image:linear-gradient(180deg,#000 0%,#000 58%,rgba(0,0,0,.55) 78%,transparent 96%)}
+.lobby-bust.on{opacity:1}
+.intro.bust-narrow .lobby-bust.on{opacity:.5}
+.lobby-credit{position:absolute;left:50%;bottom:calc(46px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(92vw,640px);text-align:center;font-family:var(--font-display);font-style:italic;font-size:13px;letter-spacing:.1em;color:var(--ink-soft);opacity:0;transition:opacity .7s ease;pointer-events:none}
+.lobby-credit.on{opacity:.85}
+.intro-main,.intro-plate,.intro-foot{z-index:2}
+@media (prefers-reduced-motion:reduce){.lobby-bust,.lobby-credit{transition:none}}
+.intro.bust-narrow .intro-title,.intro.bust-narrow .intro-lede,.intro.bust-narrow .intro-plate span{text-shadow:0 0 26px rgba(250,245,236,.95),0 0 8px rgba(250,245,236,.9)}
+.intro.bust-narrow .lobby-bust.on{opacity:.42}
+.intro.bust-narrow .lobby-credit{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
