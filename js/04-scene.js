@@ -1,16 +1,16 @@
 
 /* ---------------------------------------------------------------
    Renderer, camera and model illumination. Visible geometry comes from
-   the independent VA_Hall_Scan, perimeter enclosure and sequence groups.
+   the independent VA_Hall_Scan and interactive sequence groups only.
    Former procedural architecture, pool and cast meshes are not created.
 ---------------------------------------------------------------- */
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
 const isSmall = () => window.innerWidth < 760;
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSmall() ? 1.5 : 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSmall() ? 1.5 : 1.75));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.7;
+renderer.toneMappingExposure = 0.92;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false; // see frame() in 10-main.js
@@ -40,42 +40,9 @@ renderer.setClearColor(0xffffff, 0);
 
 /* hall dimensions (metres). The long walls run along x at z = ±HALL.z. */
 const HALL = { x0: -24, x1: 24, z: 9, wallH: 18, galleryY: 8.4, vaultR: 9, vaultRise: 6.4 };
-/* An independent glass roof above the scan; perimeter walls have been removed.
-   It does not reintroduce or alter the removed procedural museum or scan geometry. */
-const ExhibitionEnvelope = (() => {
-  const bounds = { x0: HALL.x0 - 2, x1: HALL.x1 + 2, z0: -13, z1: 13, height: HALL.wallH + HALL.vaultRise };
-  const group = new THREE.Group(); group.name = 'venus-exhibition-envelope';
-  group.userData.bounds = bounds;
-  const glassMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb8cbd0, roughness: 0.25, metalness: 0,
-    transparent: true, opacity: 0.28, transmission: 0.35, thickness: 0.14, ior: 1.45,
-    side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 0.18 });
-  function box(name, width, height, depth, x, y, z, material, shadow = true) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
-    mesh.name = name; mesh.position.set(x, y, z); mesh.castShadow = shadow; mesh.receiveShadow = shadow;
-    group.add(mesh); return mesh;
-  }
-  const width = bounds.x1 - bounds.x0, depth = bounds.z1 - bounds.z0, height = bounds.height;
-  box('glass-roof', width, 0.14, depth, 0, height + 0.07, 0, glassMaterial, false);
-  // Fixed white surroundings, including after compositor tone mapping.
-  const background = new THREE.Color().setRGB(8, 8, 8);
-  function setNight() { /* Surroundings stay white in both lighting modes. */ }
-  scene.add(group); scene.background = background; renderer.setClearColor(background, 1);
-  canvas.dataset.enclosureHeight = String(height);
-  let fitted = false;
-  function fitScan(scan) {
-    if (fitted) return;
-    const box = new THREE.Box3().setFromObject(scan);
-    if (box.isEmpty()) return;
-    const x0 = Math.min(bounds.x0, box.min.x - 1), x1 = Math.max(bounds.x1, box.max.x + 1);
-    const z0 = Math.min(bounds.z0, box.min.z - 1), z1 = Math.max(bounds.z1, box.max.z + 1);
-    group.scale.set((x1 - x0) / width, 1, (z1 - z0) / depth);
-    group.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
-    Object.assign(bounds, { x0, x1, z0, z1 }); fitted = true;
-    group.updateMatrixWorld(true);
-    canvas.dataset.enclosureBounds = JSON.stringify({ x0, x1, z0, z1 });
-  }
-  return { group, bounds, background, setNight, fitScan };
-})();
+
+// Compatibility for later lifecycle callers; candidate A has no added enclosure.
+const ExhibitionEnvelope = { setNight() {}, fitScan() {} };
 
 /* ---------- Venus mosaic: a quiet, hand-laid floor for the sculpture court ----------
    Warm limestone, faded terracotta and sage inlay echo the hall's existing palette.
@@ -125,10 +92,10 @@ function makeVenusMosaic() {
 const venusMosaicFloor = makeVenusMosaic();
 
 /* ---------- light: sky, a low red bounce from the floor, and the sun through the vault ---------- */
-const hemi = new THREE.HemisphereLight(0xf6f3ee, 0x9a6a5e, 0.45);
+const hemi = new THREE.HemisphereLight(0xf6f3ee, 0x9a6a5e, 0.75);
 scene.add(hemi);
 const SUN_DIR = new THREE.Vector3(-0.32, 0.86, 0.4).normalize(); // points towards the sun: high (about 60°), from the south-west, so the light falls on the north wall and the water axis
-const sun = new THREE.DirectionalLight(0xffefd6, 1.8);
+const sun = new THREE.DirectionalLight(0xffefd6, 4.4);
 sun.target.position.set(0, 4, 0);
 sun.position.copy(sun.target.position).addScaledVector(SUN_DIR, 60);
 scene.add(sun.target);
@@ -142,15 +109,15 @@ sun.shadow.normalBias = 0.03;
   cam.position.copy(sun.position); cam.lookAt(sun.target.position); cam.updateMatrixWorld();
   const inv = cam.matrixWorld.clone().invert();
   const lo = new THREE.Vector3(Infinity, Infinity, Infinity), hi = new THREE.Vector3(-Infinity, -Infinity, -Infinity), p = new THREE.Vector3();
-  for (const x of [ExhibitionEnvelope.bounds.x0 - 1, ExhibitionEnvelope.bounds.x1 + 1]) for (const y of [-0.8, ExhibitionEnvelope.bounds.height + 0.6]) for (const z of [ExhibitionEnvelope.bounds.z0 - 1, ExhibitionEnvelope.bounds.z1 + 1]) {
+  for (const x of [HALL.x0 - 1, HALL.x1 + 1]) for (const y of [-0.8, HALL.wallH + HALL.vaultRise + 0.6]) for (const z of [-HALL.z - 1, HALL.z + 1]) {
     p.set(x, y, z).applyMatrix4(inv); lo.min(p); hi.max(p);
   }
   Object.assign(cam, { left: lo.x, right: hi.x, bottom: lo.y, top: hi.y, near: Math.max(0.5, -hi.z - 1), far: -lo.z + 1 });
   cam.updateProjectionMatrix();
 })();
 scene.add(sun);
-const fillL = new THREE.DirectionalLight(0xe9eef6, 0.22); fillL.position.set(10, 8, 12); scene.add(fillL);
-const bounce = new THREE.DirectionalLight(0xffe6d8, 0.2); bounce.position.set(-4, 5, -12); scene.add(bounce); // gentle reflected floor light
+const fillL = new THREE.DirectionalLight(0xe9eef6, 0.35); fillL.position.set(10, 8, 12); scene.add(fillL);
+const bounce = new THREE.DirectionalLight(0xffe6d8, 0.55); bounce.position.set(-4, 5, -12); scene.add(bounce); // sunlit north side bouncing onto the shaded south wall
 
 
 /* composer */

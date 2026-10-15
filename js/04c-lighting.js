@@ -28,21 +28,21 @@ const NightLighting = (() => {
   }
   function apply(v) {
     const accent = clamp((v - 0.16) / 0.84);
-    sun.intensity = mix(baseline.sunIntensity, 0.035, v);
-    hemi.intensity = mix(baseline.hemiIntensity, 0.12, v);
-    fillL.intensity = mix(baseline.fillIntensity, 0.28, v);
-    bounce.intensity = mix(baseline.bounceIntensity, 0.24, v);
+    sun.intensity = mix(baseline.sunIntensity, 0.055, v);
+    hemi.intensity = mix(baseline.hemiIntensity, 0.16, v);
+    fillL.intensity = mix(baseline.fillIntensity, 0.62, v);
+    bounce.intensity = mix(baseline.bounceIntensity, 0.55, v);
     hemi.color.copy(baseline.sky).lerp(nightColors.sky, v);
     hemi.groundColor.copy(baseline.ground).lerp(nightColors.ground, v);
     fillL.color.copy(baseline.fill).lerp(nightColors.fill, v);
     bounce.color.copy(baseline.bounce).lerp(nightColors.bounce, v);
     M.tier.color.copy(baseline.tier).lerp(nightColors.tier, v);
-    if (portico) { portico.intensity = mix(280, 110, v); portico.color.set(0xfff0dc).lerp(nightColors.fill, v); }
-    ceramic.envMapIntensity = mix(0.32, 0.16, v);
-    lights.forEach((light, i) => { light.intensity = 450 * clamp((accent - i * 0.06) / 0.8); });
-    renderer.toneMappingExposure = mix(baseline.exposure, 0.68, v);
-    bloom.enabled = v > 0.01; bloom.strength = 0.12 * v; bloom.threshold = 1.15;
-    ExhibitionEnvelope.setNight(v); scene.fog = null;
+    if (portico) { portico.intensity = mix(640, 180, v); portico.color.set(0xfff0dc).lerp(nightColors.fill, v); }
+    ceramic.envMapIntensity = mix(0.85, 0.22, v);
+    lights.forEach((light, i) => { light.intensity = 1000 * clamp((accent - i * 0.06) / 0.8); });
+    renderer.toneMappingExposure = mix(baseline.exposure, 0.86, v);
+    bloom.enabled = v > 0.01; bloom.strength = 0.32 * v; bloom.threshold = 0.95;
+    scene.background = null; scene.fog = null;
     canvas.dataset.nightProgress = v.toFixed(3);
     Architecture.apply(); // keep the enclosure background and scan material policy in sync
     renderer.shadowMap.needsUpdate = true;

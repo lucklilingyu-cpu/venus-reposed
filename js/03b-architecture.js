@@ -4,25 +4,10 @@
 function createArchitectureDisplay(parent, renderer) {
   function apply() {
     parent.removeFromParent();
-    scene.background = ExhibitionEnvelope.background;
+    scene.background = null;
     scene.fog = null;
-    renderer.setClearColor(ExhibitionEnvelope.background, 1);
-    if (canvas.dataset.vaHallScan === 'ready') {
-      VAHallScan.applyMaterials(); // restore role baselines before each adjustment
-      const materials = new Set();
-      VAHallScan.group.traverse(object => {
-        if (!object.isMesh) return;
-        for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-          if (material?.userData.scanRole) materials.add(material);
-        }
-      });
-      for (const material of materials) {
-        material.opacity = 1;
-        if (material.transparent) { material.transparent = false; material.needsUpdate = true; }
-        material.depthWrite = true; material.depthTest = true;
-      }
-      canvas.dataset.scanOpacity = '1';
-    }
+    renderer.setClearColor(0xffffff, 0);
+    if (canvas.dataset.vaHallScan === 'ready') VAHallScan.applyMaterials();
     renderer.shadowMap.needsUpdate = true;
   }
   return { apply, refreshShadows: apply, removed: true, source: 'website-procedural-space' };

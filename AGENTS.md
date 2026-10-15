@@ -1,5 +1,7 @@
 # AGENTS.md — Venus, Re-posed website
 
+Candidate A restoration (2026-10-15): default hall visuals follow db2da56: transparent white surroundings, the actual Venus mosaic plane, original scan alignment and central cleaning. Only verified scan walls use opacity=1, verified sculpture fragments 0.6, unresolved mixed faces 0.7; white sequence sculptures remain opaque. Architecture.apply must reapply these semantic baselines and must not force every scan material opaque or multiply all opacities. No added roof/enclosure or generated glass platforms. Keep the latest matte plaster/detail loading, diary SequenceGuide, input, Atlas, sound, ribbons and performance features. The historic A scene/day-night light values are restored; later feature modules are retained. Model/config/material policy retain their existing content-addressed filenames and SHA256 guards.
+
 Guidance for coding agents (Codex, etc.) working in this repository. The site's UI is in Chinese; keep user-facing text in Chinese unless asked otherwise.
 
 Diary guidance: `SequenceGuide` in `05-seq.js` connects only `p.act` participants after their movement/rise ends. Pose captions in `06-ui.js` persist; ordinal badges expire after exactly 2000 ms. Clear obsolete guides on regeneration/reset and rebuild on relayout. Route endpoints use actual figure world coordinates. Run `node tools/check_sequence_guide.mjs` and `node tools/check_movement.mjs` for changes here. See `docs/日记动作指引.md`.

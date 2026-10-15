@@ -445,12 +445,13 @@
     '09c-walk.js', '10-main.js',
   ];
   const SCAN_MODULE = "04d-va-hall-scan-2eaee907ac7abeaa.js", SCAN_MODULE_SHA256 = "2eaee907ac7abeaa010f5bf156b5dee14a62848c8a562338c0c89d802e9f47fd";
+  const SCENE_VERSIONS = {"03b-architecture.js":"845f648bb12d3884","04-scene.js":"6b048d78a87ef21a","04c-lighting.js":"c0999242a8d90e02"};
   const debug = /[?&]debug\b/.test(location.search); // Adding ?debug to the address keeps the test hook window.__vr
   const t = document.getElementById('loadingText');
   try {
     const get = async (p) => { // retry a few times: right after an update the server can answer 503 for a moment
       for (let i = 0; ; i++) {
-        const r = await fetch('js/' + p, { cache: 'no-cache' }).catch(() => null);
+        const r = await fetch('js/' + p + (SCENE_VERSIONS[p] ? '?v=' + SCENE_VERSIONS[p] : ''), { cache: 'no-cache' }).catch(() => null);
         if (r && r.ok) return r;
         if (i >= 4 || (r && r.status === 404)) throw new Error('Cannot find js/' + p + ' (' + (r ? r.status : 'network error') + ')');
         await new Promise((ok) => setTimeout(ok, 600 * 2 ** i));
