@@ -288,9 +288,10 @@ const surfStatic = (() => { // saved parts stay fully grown, whatever the growth
 })();
 function saveSurface() {
   const cur = SURF.cur; if (!cur) return;
-  const { geo, lines } = cur.make(false), m = new THREE.Mesh(geo, surfStatic.mat), l = new THREE.LineSegments(lines, surfStatic.line);
+  const { geo, lines } = cur.make(true), // each saved structure is complete on its own, with both tails
+    m = new THREE.Mesh(geo, surfStatic.mat), l = new THREE.LineSegments(lines, surfStatic.line);
   m.castShadow = true; m.receiveShadow = true; m.customDepthMaterial = surfStatic.depth; m.frustumCulled = false; l.frustumCulled = false;
-  SURF.group.add(m, l); SURF.saved.push({ mesh: m, lines: l }); SURF.link = cur.last; SURF.doneSig = cur.sig;
+  SURF.group.add(m, l); SURF.saved.push({ mesh: m, lines: l }); SURF.doneSig = cur.sig; // no link: the next structure starts on its own
   surfDropCurrent(); renderer.shadowMap.needsUpdate = true; applyView();
 }
 function discardSurface() { const cur = SURF.cur; if (!cur) return; SURF.doneSig = cur.sig; surfDropCurrent(); renderer.shadowMap.needsUpdate = true; applyView(); }
@@ -358,7 +359,7 @@ function retractSurface() {
   surfUI = function () {
     const has = !!SURF.cur, n = SURF.saved.length;
     sBtn.disabled = dBtn.disabled = !has; cBtn.hidden = !n;
-    note.textContent = has ? 'Save keeps this structure; the next entry will grow from it. Delete throws it away.' : n ? n + ' saved. Write another entry and generate to extend the structure.' : 'Generate a sequence, then save its Surface structure.';
+    note.textContent = has ? 'Save keeps this structure as it is; the next entry makes a separate one. Delete throws it away.' : n ? n + ' saved. Write another entry and generate to make another separate structure.' : 'Generate a sequence, then save its Surface structure.';
   };
   sBtn.addEventListener('click', saveSurface); dBtn.addEventListener('click', discardSurface); cBtn.addEventListener('click', clearSavedSurface);
   surfUI();
