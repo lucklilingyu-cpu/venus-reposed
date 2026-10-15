@@ -237,10 +237,10 @@ function mpDetect(source) {
 }
 
 /* ---------- camera mode ---------- */
-const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, returnTimer: 0, presentationToken: 0 };
+const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, presentationPhase: '', returnTimer: 0, presentationToken: 0 };
 function camStatus(t) { $('#camStatus').innerHTML = t; }
 function startSession() {
-  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationToken++;
+  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; stopPoseSlideshow();
   if (S.source !== '摄像头') { S.posPal = {}; applyDay([], { source: '摄像头', fresh: true }); }
   Cam.hist = []; Cam.holdCls = null; Cam.lastAdded = null;
 }
@@ -273,7 +273,7 @@ async function startCamera() {
   loop();
 }
 function stopCamera() {
-  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationToken++;
+  clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; stopPoseSlideshow();
   cancelAnimationFrame(Cam.raf); Cam.raf = 0;
   if (Cam.stream) { Cam.stream.getTracks().forEach(t => t.stop()); Cam.stream = null; }
   Cam.demo = false;
@@ -342,17 +342,31 @@ function addCamPose(r) {
   const day = S.day.concat([entry]);
   S.sel = day.length - 1;
   Cam.presentationBusy = true;
+  Cam.presentationPhase = 'arranging';
   const token = ++Cam.presentationToken;
+  const poseImagesReady = loadPoseGallery();
   applyDay(day, { source: '摄像头', onVisualComplete: () => {
     if (token !== Cam.presentationToken) return;
-    camStatus('动作展示结束，正在返回展厅全景…');
-    flyHome();
+    Cam.presentationPhase = 'closeup';
+    focusSculpture(day.length - 1);
+    camStatus('场景变化完成，正在近景展示与实时姿势对应的雕像…');
+    poseImagesReady.then(items => {
+      if (token !== Cam.presentationToken || Cam.presentationPhase !== 'closeup') return;
+      const related = items.filter(item => (galleryAnnotations[item.id]?.cls || galleryPoseHint(item).top) === r.top);
+      if (related.length) startPoseSlideshow(related[0], r.top);
+    }).catch(() => {});
     Cam.returnTimer = setTimeout(() => {
       if (token !== Cam.presentationToken) return;
-      Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.holdCls = null; Cam.holdT0 = performance.now();
-      $('#holdBar').style.width = '0';
-      camStatus('已返回展厅全景。准备好下一个动作后，保持 2 秒即可加入序列。');
-    }, 1700);
+      Cam.returnTimer = 0; Cam.presentationPhase = 'returning'; stopPoseSlideshow();
+      camStatus('雕像近景展示结束，正在返回展厅全景…');
+      flyHome();
+      Cam.returnTimer = setTimeout(() => {
+        if (token !== Cam.presentationToken) return;
+        Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.holdCls = null; Cam.holdT0 = performance.now();
+        $('#holdBar').style.width = '0';
+        camStatus('已返回展厅全景。准备好下一个动作后，保持 2 秒即可加入序列。');
+      }, 1700);
+    }, 5000);
   } });
   toast(`加入序列：${pad2(day.length)} ${CLASS[r.top].zh}`);
 }
