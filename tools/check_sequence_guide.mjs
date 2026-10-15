@@ -19,12 +19,22 @@ timer(); figures[0].riseTween = {}; guide.update(1000); assert.equal(guide.activ
 figures[0].riseTween = null; guide.update(2000);
 assert.equal(guide.active, true); assert.equal(group.children.length, 2, 'Only link the two diary participants');
 assert.equal(canvas.dataset.sequenceGuideCount, '2');
-assert.equal(guide.showOrder(3999), true); guide.update(4000);
+guide.update(3999); assert.equal(guide.showOrder(3999), true); assert.equal(group.visible, true);
+guide.update(4000);
 assert.equal(guide.showOrder(4000), false, 'Ordinal badges expire after exactly 2000 ms');
-assert.equal(canvas.dataset.sequenceOrder, 'hidden'); assert.equal(guide.active, true, 'Pose labels and route remain');
+assert.equal(canvas.dataset.sequenceOrder, 'hidden'); assert.equal(guide.active, true, 'Pose names remain after the transient guide');
+assert.equal(canvas.dataset.sequenceGuide, 'hidden'); assert.equal(group.visible, false); assert.equal(group.children.length, 0, 'Ground line and arrows are removed after 2 seconds');
 guide.clear(); assert.equal(disposed, 2); assert.equal(group.children.length, 0);
 guide.schedule(seq, 100); const obsolete = timer; const newer = [{ work: '4', act: { cls: 'standing' } }];
 S.pos = newer; obsolete(); guide.update(5000); assert.equal(guide.active, false, 'Obsolete sequences cannot display');
 guide.schedule(newer, 0); figures[0].work = '4'; timer(); guide.update(6000); assert.equal(group.children.length, 0, 'Single pose has no connecting segment');
 guide.schedule([], 0); assert.equal(guide.active, false); assert.equal(canvas.dataset.sequenceGuide, 'hidden');
-console.log('✓ Diary guide: waits for arrival/rise, excludes background sculptures, exact 2s ordinals, persistent route, replacement/reset and single-pose cleanup');
+S.pos = seq; figures[0].work = '1';
+for (const mode of ['basic', 'deluxe']) for (const view of ['sculpture', 'skin', 'both', 'ribbons', 'surface']) {
+  S.diaryDisplay = mode; S.view = view; guide.schedule(seq, 0); timer(); guide.update(10000);
+  assert.equal(group.visible, true); assert.equal(group.children.length, 2);
+  guide.update(11999); assert.equal(group.visible, true);
+  guide.update(12000); assert.equal(group.visible, false); assert.equal(group.children.length, 0);
+  assert.equal(guide.active, true, 'Pose names remain in every mode/view');
+}
+console.log('✓ Diary guide: arrival/rise wait, story-only links, exact 2s ground route/arrows/ordinals in all modes/views, persistent pose names and cleanup');

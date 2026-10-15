@@ -408,14 +408,14 @@ function makePosition() {
   return vp;
 }
 /* Diary guidance appears after the collective move and rise have finished.
-   The route and pose names remain; only ordinal badges last two seconds. */
+   The ground route and ordinal badges last two seconds; pose names remain. */
 const SequenceGuide = (() => {
-  const group = new THREE.Group(); group.name = 'diary-sequence-guide'; scene.add(group);
+  const group = new THREE.Group(); group.name = 'diary-sequence-guide'; group.visible = false; scene.add(group);
   const material = new THREE.MeshBasicMaterial({ color: 0x246d75, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false });
   let job = 0, sequence = null, pending = false, active = false, orderUntil = 0;
   function clear() {
     clearTimeout(job); job = 0; sequence = null; pending = false; active = false; orderUntil = 0;
-    group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear();
+    group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear(); group.visible = false;
     V.forEach(vp => { if (vp.poseTag) vp.poseTag.classList.add('hidden'); });
     canvas.dataset.sequenceGuide = 'hidden'; canvas.dataset.sequenceOrder = 'hidden';
   }
@@ -446,7 +446,13 @@ const SequenceGuide = (() => {
       canvas.dataset.sequenceGuide = 'visible';
       canvas.dataset.sequenceGuideCount = String(entries.length);
     }
-    canvas.dataset.sequenceOrder = active && now < orderUntil ? 'visible' : 'hidden';
+    const transientVisible = active && now < orderUntil;
+    group.visible = transientVisible;
+    if (active && !transientVisible && group.children.length) {
+      group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear();
+    }
+    if (active) canvas.dataset.sequenceGuide = transientVisible ? 'visible' : 'hidden';
+    canvas.dataset.sequenceOrder = transientVisible ? 'visible' : 'hidden';
   }
   return { clear, schedule, update, get active() { return active; }, showOrder: now => active && now < orderUntil };
 })();
