@@ -397,9 +397,56 @@ function makePosition() {
   const tag = document.createElement('div'); tag.className = 'sculpture-caption hidden';
   tag.innerHTML = '<span class="sculpture-name"></span><span class="sculpture-year"></span>';
   labelsEl.appendChild(tag);
-  const vp = { g, ring, moveHalo, tag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
+  const poseTag = document.createElement('div'); poseTag.className = 'diary-pose-caption hidden';
+  const order = document.createElement('span'); order.className = 'diary-order'; order.hidden = true;
+  const name = document.createElement('span'); name.className = 'diary-pose-name';
+  poseTag.append(order, name); labelsEl.appendChild(poseTag);
+  const vp = { g, ring, moveHalo, tag, poseTag, fig: null, bones: null, work: null, x: 0, z: 0, scaleX: 1, scaleZ: 1, bounds: null, moveTimer: 0, moveTween: null, fresh: false };
   return vp;
 }
+/* Diary guidance appears after the collective move and rise have finished.
+   The route and pose names remain; only ordinal badges last two seconds. */
+const SequenceGuide = (() => {
+  const group = new THREE.Group(); group.name = 'diary-sequence-guide'; scene.add(group);
+  const material = new THREE.MeshBasicMaterial({ color: 0x246d75, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false });
+  let job = 0, sequence = null, pending = false, active = false, orderUntil = 0;
+  function clear() {
+    clearTimeout(job); job = 0; sequence = null; pending = false; active = false; orderUntil = 0;
+    group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear();
+    V.forEach(vp => { if (vp.poseTag) vp.poseTag.classList.add('hidden'); });
+    canvas.dataset.sequenceGuide = 'hidden'; canvas.dataset.sequenceOrder = 'hidden';
+  }
+  function schedule(seq, delay) {
+    clear();
+    if (!seq.some(p => p.act)) return;
+    sequence = seq; canvas.dataset.sequenceGuide = 'waiting';
+    job = setTimeout(() => { pending = true; }, Math.max(0, delay));
+  }
+  function update(now) {
+    if (pending && S.pos === sequence) {
+      const entries = sequence.map((p, i) => ({ p, vp: V[i], i })).filter(e => e.p.act);
+      if (entries.some(({ p, vp }) => !vp || !vp.fig || vp.work !== p.work || vp.moveTween || vp.riseTween)) return;
+      pending = false; active = true; orderUntil = now + 2000;
+      const anchor = vp => {
+        const b = vp.bounds;
+        return b ? vp.fig.localToWorld(new THREE.Vector3((b.min.x + b.max.x) / 2, b.min.y + 0.06, (b.min.z + b.max.z) / 2)) : new THREE.Vector3(vp.x, 0.06, vp.z);
+      };
+      for (let k = 1; k < entries.length; k++) {
+        const a = anchor(entries[k - 1].vp), b = anchor(entries[k].vp);
+        const curve = new THREE.QuadraticBezierCurve3(a, new THREE.Vector3((a.x + b.x) / 2, Math.max(a.y, b.y) + 0.16, (a.z + b.z) / 2), b);
+        const line = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.025, 6, false), material);
+        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.32, 12), material);
+        arrow.position.copy(curve.getPoint(0.62));
+        arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), curve.getTangent(0.62).normalize());
+        group.add(line, arrow);
+      }
+      canvas.dataset.sequenceGuide = 'visible';
+      canvas.dataset.sequenceGuideCount = String(entries.length);
+    }
+    canvas.dataset.sequenceOrder = active && now < orderUntil ? 'visible' : 'hidden';
+  }
+  return { clear, schedule, update, get active() { return active; }, showOrder: now => active && now < orderUntil };
+})();
 /* ---------- the board: plinths stand on a staggered chessboard over the water ----------
    13 files × 5 ranks; only the "dark squares" are used, so neighbours are always offset.
    The full sculpture footprint stays inside the green perimeter. The sequence follows a track over the
@@ -556,7 +603,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
   });
   canvas.dataset.shatterCount = String(shatterCount);
   for (const vp of V) if (!taken.has(vp)) { // no square left: sink into the water
-    disposeFigure(vp, animate); vp.tag.remove();
+    disposeFigure(vp, animate); vp.tag.remove(); if (vp.poseTag) vp.poseTag.remove();
     if (vp.riseBeam) vp.riseBeam.material.dispose();
     if (animate) { const g = vp.g, s0 = g.scale.x, y0 = g.position.y; tween(0.9, (e) => { g.scale.setScalar(0.001 + s0 * (1 - e)); g.position.y = y0 - e * 0.7; }, () => scene.remove(g)); }
     else scene.remove(vp.g);
@@ -608,9 +655,11 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
 /* re-arrange the board without changing the sculptures (e.g. another track) */
 function relayout() {
   clearSculptureFocus();
+  SequenceGuide.clear();
   if (!S.pos.length) return;
   const arrive = arrangeBoard(S.pos, !reduceMotion);
   scheduleSkin(Math.max(0, ...arrive) + 300);
+  SequenceGuide.schedule(S.pos, Math.max(0, ...arrive));
 }
 function disposeFigure(vp, animate) {
   stopRiseBeam(vp);
@@ -747,6 +796,7 @@ let applySeq = 0;
 async function applyDay(day, opts = {}) {
   Architecture.apply(); // diary, saved works and "展厅原状" share the same shell policy
   clearSculptureFocus();
+  SequenceGuide.clear();
   const animate = opts.animate !== false && !reduceMotion;
   const my = ++applySeq;
   S.day = day.map(d => ({ ...d }));
@@ -765,6 +815,7 @@ async function applyDay(day, opts = {}) {
   const late = performance.now() - t0;
   seq.forEach((p, i) => setTimeout(() => setFigure(i, p, animate), animate ? Math.max(0, arrive[i] + 120 - late) : 0));
   scheduleSkin(animate ? Math.max(0, ...arrive) + 1300 - late : 0);
+  SequenceGuide.schedule(seq, animate ? Math.max(0, ...arrive) + 1720 - late : 0);
   if (typeof opts.onVisualComplete === 'function') {
     const finishDelay = animate ? Math.max(0, ...arrive) + 120 + 1600 : 0;
     setTimeout(() => { if (my === applySeq) opts.onVisualComplete(seq); }, finishDelay);

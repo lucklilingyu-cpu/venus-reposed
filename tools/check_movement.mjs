@@ -16,7 +16,7 @@ const context = {
   canvas: { dataset: {} }, tweens: [], reduceMotion: false,
   THREE: { MathUtils: { clamp: (x, a, b) => Math.max(a, Math.min(b, x)) } },
   clearTimeout: () => {}, setTimeout: () => 1, scene: { remove: () => {} },
-  tween: () => ({}), pulseRing: () => {}, disposeFigure: vp => { vp.fig = null; },
+  tween: () => ({}), pulseRing: () => {}, groundWhitePosition: () => {}, disposeFigure: vp => { vp.fig = null; },
   makePosition: () => ({ g: { position: position(), scale: { x: 1, setScalar(v) { this.x = v; } } }, tag: { remove() {} }, moveHalo: { material: { opacity: 0 }, scale: { set() {} } }, work: null, fig: null, fresh: false }),
 };
 const code = source.slice(source.indexOf('const TARGET'), source.indexOf('const meshCache')) + source.slice(source.indexOf('const GREEN_BOUNDS'), source.indexOf('function relayout')) +

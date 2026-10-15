@@ -203,8 +203,34 @@ let paletteTarget = null, soundTarget = null;
 function refreshPalettes(cls) { renderData(); scheduleSkin(50, { own: true }); } // palettes tint the ribbons
 function updateLabels() {
   const w = window.innerWidth, h = window.innerHeight;
+  const now = performance.now();
+  SequenceGuide.update(now);
+  let diaryOrder = 0;
   V.forEach((vp, i) => {
     const p = S.pos[i]; if (!p) return;
+    const ordinal = p.act ? ++diaryOrder : 0;
+    const poseTag = vp.poseTag;
+    if (poseTag) {
+      const showPose = SequenceGuide.active && !!p.act && !!vp.fig && vp.fig.visible && !!vp.bounds && vp.work === p.work;
+      let visible = false;
+      if (showPose) {
+        const b = vp.bounds;
+        _v.set((b.min.x + b.max.x) / 2, b.max.y + 0.18, (b.min.z + b.max.z) / 2);
+        vp.fig.localToWorld(_v); _v.project(camera);
+        visible = _v.z > -1 && _v.z < 1 && Math.abs(_v.x) < 1 && Math.abs(_v.y) < 1;
+        if (visible) {
+          const label = (CLASS[p.act.cls] || CLASS[clsOf(p.work)]).zh + (p.act.g && GESTURES[p.act.g] ? ' · ' + GESTURES[p.act.g].zh : '');
+          if (poseTag.dataset.pose !== label) { poseTag.querySelector('.diary-pose-name').textContent = label; poseTag.dataset.pose = label; }
+          const order = poseTag.querySelector('.diary-order');
+          const number = String(ordinal);
+          if (order.textContent !== number) order.textContent = number;
+          order.hidden = !SequenceGuide.showOrder(now);
+          poseTag.style.left = ((_v.x + 1) / 2 * w) + 'px';
+          poseTag.style.top = ((1 - _v.y) / 2 * h - (vp === focusedSculpture ? 64 : 0)) + 'px';
+        }
+      }
+      poseTag.classList.toggle('hidden', !visible);
+    }
     const tag = vp.tag;
     if (vp !== focusedSculpture || !vp.fig || !vp.fig.visible || !vp.bounds) { tag.classList.add('hidden'); return; }
     // Anchor just above this model's highest point, including its current rise and world transform.
