@@ -408,14 +408,22 @@ function makePosition() {
   return vp;
 }
 /* Diary guidance appears after the collective move and rise have finished.
-   The ground route and ordinal badges last two seconds; pose names remain. */
+   Ground guidance animates/fades over two seconds; pose names hold five seconds, then fade. */
 const SequenceGuide = (() => {
   const group = new THREE.Group(); group.name = 'diary-sequence-guide'; group.visible = false; scene.add(group);
   const material = new THREE.MeshBasicMaterial({ color: 0x246d75, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false });
   let job = 0, sequence = null, pending = false, active = false, orderUntil = 0;
+  let segments = [], traveler = null, totalLength = 0;
+  const up = new THREE.Vector3(0, 1, 0), tangent = new THREE.Vector3();
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+  const elapsed = now => now - (orderUntil - 2000);
+  const routeOpacity = now => active ? smooth(elapsed(now) / 220) * (1 - smooth((elapsed(now) - 1400) / 600)) : 0;
+  const captionOpacity = now => active ? smooth(elapsed(now) / 220) * (1 - smooth((elapsed(now) - 5000) / 1000)) : 0;
   function clear() {
     clearTimeout(job); job = 0; sequence = null; pending = false; active = false; orderUntil = 0;
     group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear(); group.visible = false;
+    segments = []; traveler = null; totalLength = 0; material.opacity = 0;
     V.forEach(vp => { if (vp.poseTag) vp.poseTag.classList.add('hidden'); });
     canvas.dataset.sequenceGuide = 'hidden'; canvas.dataset.sequenceOrder = 'hidden';
   }
@@ -437,24 +445,41 @@ const SequenceGuide = (() => {
       for (let k = 1; k < entries.length; k++) {
         const a = anchor(entries[k - 1].vp), b = anchor(entries[k].vp);
         const curve = new THREE.QuadraticBezierCurve3(a, new THREE.Vector3((a.x + b.x) / 2, Math.max(a.y, b.y) + 0.16, (a.z + b.z) / 2), b);
-        const line = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.025, 6, false), material);
-        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.32, 12), material);
-        arrow.position.copy(curve.getPoint(0.62));
-        arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), curve.getTangent(0.62).normalize());
-        group.add(line, arrow);
+        const line = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.025, 6, false), material);
+        const length = Math.max(0.0001, curve.getLength());
+        segments.push({ curve, line, length, start: totalLength, deltaA: new THREE.Vector3().subVectors(curve.v1, curve.v0), deltaB: new THREE.Vector3().subVectors(curve.v2, curve.v1) });
+        totalLength += length; group.add(line);
       }
+      if (segments.length) { traveler = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.32, 12), material); group.add(traveler); }
       canvas.dataset.sequenceGuide = 'visible';
       canvas.dataset.sequenceGuideCount = String(entries.length);
     }
     const transientVisible = active && now < orderUntil;
     group.visible = transientVisible;
+    material.opacity = 0.9 * routeOpacity(now);
+    if (transientVisible && segments.length) {
+      const progress = reduceMotion ? 1 : clamp(elapsed(now) / 1500);
+      const distance = totalLength * progress;
+      const arrowDistance = totalLength * (reduceMotion ? 0.62 : progress);
+      let current = segments[segments.length - 1];
+      for (const segment of segments) {
+        const local = clamp((distance - segment.start) / segment.length);
+        segment.line.geometry.setDrawRange(0, Math.floor(local * 64) * 36);
+        if (arrowDistance <= segment.start + segment.length && arrowDistance >= segment.start) current = segment;
+      }
+      const local = clamp((arrowDistance - current.start) / current.length);
+      current.curve.getPoint(local, traveler.position);
+      tangent.copy(current.deltaA).multiplyScalar(1 - local).addScaledVector(current.deltaB, local).normalize();
+      traveler.quaternion.setFromUnitVectors(up, tangent);
+    }
     if (active && !transientVisible && group.children.length) {
       group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); group.clear();
+      segments = []; traveler = null;
     }
     if (active) canvas.dataset.sequenceGuide = transientVisible ? 'visible' : 'hidden';
     canvas.dataset.sequenceOrder = transientVisible ? 'visible' : 'hidden';
   }
-  return { clear, schedule, update, get active() { return active; }, showOrder: now => active && now < orderUntil };
+  return { clear, schedule, update, routeOpacity, captionOpacity, get active() { return active; }, showOrder: now => active && now < orderUntil };
 })();
 /* ---------- the board: plinths stand on a staggered chessboard over the water ----------
    13 files × 5 ranks; only the "dark squares" are used, so neighbours are always offset.

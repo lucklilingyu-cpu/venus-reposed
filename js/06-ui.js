@@ -205,13 +205,14 @@ function updateLabels() {
   const w = window.innerWidth, h = window.innerHeight;
   const now = performance.now();
   SequenceGuide.update(now);
+  const poseOpacity = SequenceGuide.captionOpacity(now);
   let diaryOrder = 0;
   V.forEach((vp, i) => {
     const p = S.pos[i]; if (!p) return;
     const ordinal = p.act ? ++diaryOrder : 0;
     const poseTag = vp.poseTag;
     if (poseTag) {
-      const showPose = SequenceGuide.active && !!p.act && !!vp.fig && vp.fig.visible && !!vp.bounds && vp.work === p.work;
+      const showPose = poseOpacity > 0 && !!p.act && !!vp.fig && vp.fig.visible && !!vp.bounds && vp.work === p.work;
       let visible = false;
       if (showPose) {
         const b = vp.bounds;
@@ -225,6 +226,8 @@ function updateLabels() {
           const number = String(ordinal);
           if (order.textContent !== number) order.textContent = number;
           order.hidden = !SequenceGuide.showOrder(now);
+          order.style.opacity = String(SequenceGuide.routeOpacity(now));
+          poseTag.style.opacity = String(poseOpacity);
           poseTag.style.left = ((_v.x + 1) / 2 * w) + 'px';
           poseTag.style.top = ((1 - _v.y) / 2 * h - (vp === focusedSculpture ? 64 : 0)) + 'px';
         }
