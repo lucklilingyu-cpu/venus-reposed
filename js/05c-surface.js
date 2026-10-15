@@ -14,7 +14,7 @@
    the plane of the facet before it, so no facet is warped. Plates are a centimetre thick, hatched with fine lines,
    and outlined like a drawing. Panels are ordered along the chain, so the structure unfolds from start to end.
 ---------------------------------------------------------------- */
-const SURF = { group: new THREE.Group(), mesh: null, lines: null, job: 0, dirty: true, grow: null, panels: 0, cur: null, saved: [], link: null, doneSig: '', only: false };
+const SURF = { group: new THREE.Group(), mesh: null, lines: null, job: 0, dirty: true, grow: null, panels: 0, cur: null, saved: [], link: null, doneSig: '', only: false, court: true };
 SURF.group.name = 'surface-structure'; SURF.group.visible = false; scene.add(SURF.group);
 const surfU = { uGrow: { value: 1 } };
 const surfTex = (() => { // fine hatch lines: one line per tile, the tile is 3.4 cm wide on the plate
@@ -309,12 +309,27 @@ function retractSurface() {
   applyViewTo = function (vp) { _applyViewTo(vp); if (only()) { if (vp.fig) vp.fig.visible = false; if (vp.bones) vp.bones.visible = false; } };
   applyView = function () {
     _applyView(); SURF.group.visible = S.view === 'surface' && (!!SURF.mesh || SURF.saved.length > 0); surfUI();
-    surfBtn.hidden = S.view !== 'surface'; surfBtn.setAttribute('aria-pressed', String(!!SURF.only)); renderer.shadowMap.needsUpdate = true;
+    surfBtn.hidden = S.view !== 'surface'; surfBtn.setAttribute('aria-pressed', String(!!SURF.only)); surfPlace();
+    courtBtn.setAttribute('aria-selected', String(SURF.court)); courtBtn.setAttribute('aria-pressed', String(SURF.court));
+    const scan = scene.getObjectByName('VA_Hall_Scan'); if (scan) scan.visible = SURF.court;
+    renderer.shadowMap.needsUpdate = true;
   };
+  // "Surface only" sits right under the Surface tab
+  const surfPlace = () => {
+    const tab = document.querySelector('#views [data-view="surface"]'), nav = document.getElementById('views'); if (!tab || !nav) return;
+    const a = tab.getBoundingClientRect(), n = nav.getBoundingClientRect(); if (!a.width) return;
+    surfBtn.style.left = Math.max(8, Math.round(a.left + a.width / 2 - surfBtn.offsetWidth / 2)) + 'px'; surfBtn.style.top = Math.round(n.bottom + 8) + 'px';
+  };
+  window.addEventListener('resize', surfPlace); if (document.fonts && document.fonts.ready) document.fonts.ready.then(surfPlace);
+  // "Cast Court" next to Surface: shows or hides the scanned V&A hall around the sculptures and floor
+  const courtBtn = document.createElement('button');
+  courtBtn.type = 'button'; courtBtn.id = 'courtBtn'; courtBtn.textContent = 'Cast Court'; courtBtn.setAttribute('role', 'tab');
+  { const st0 = document.querySelector('#views [data-view="surface"]'); if (st0) { courtBtn.className = st0.className; st0.after(courtBtn); } }
+  courtBtn.addEventListener('click', () => { SURF.court = !SURF.court; applyView(); });
   const surfBtn = document.createElement('button');
   surfBtn.id = 'surfOnly'; surfBtn.type = 'button'; surfBtn.hidden = true; surfBtn.textContent = 'Surface only'; surfBtn.setAttribute('aria-pressed', 'false');
   const st = document.createElement('style');
-  st.textContent = '#surfOnly{position:fixed;left:22px;top:146px;z-index:20;border:0;border-radius:999px;padding:7px 16px;font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.06em;color:#4a3a45;background:linear-gradient(135deg,rgba(255,250,243,.92),rgba(246,226,222,.88));box-shadow:0 4px 18px rgba(80,50,60,.14);cursor:pointer}#surfOnly[hidden]{display:none}#surfOnly[aria-pressed=true]{color:#fff6e6;background:linear-gradient(135deg,#3a2832,#5a3a48)}';
+  st.textContent = '#surfOnly{position:fixed;left:22px;top:150px;z-index:20;border:0;border-radius:999px;padding:7px 16px;font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.06em;color:#4a3a45;background:linear-gradient(135deg,rgba(255,250,243,.92),rgba(246,226,222,.88));box-shadow:0 4px 18px rgba(80,50,60,.14);cursor:pointer}#surfOnly[hidden]{display:none}#surfOnly[aria-pressed=true]{color:#fff6e6;background:linear-gradient(135deg,#3a2832,#5a3a48)}';
   document.head.appendChild(st); document.body.appendChild(surfBtn);
   surfBtn.addEventListener('click', () => { SURF.only = !SURF.only; applyView(); });
   // buttons under the diary text: keep or delete the structure of the current entry; the next entry joins what was kept
@@ -333,6 +348,9 @@ function retractSurface() {
   sBtn.addEventListener('click', saveSurface); dBtn.addEventListener('click', discardSurface); cBtn.addEventListener('click', clearSavedSurface);
   surfUI();
   setView = function (v) {
+    if (!v) return; // the Cast Court button lives in the same tab row but is not a view
+    const prev = S.view;
+    if (v !== prev && (v === 'surface' || prev === 'surface')) SURF.court = v !== 'surface'; // the Surface view starts on its own; Cast Court brings the hall back
     _setView(v);
     if (v === 'surface') { clearSculptureFocus(); if (SURF.dirty || !SURF.mesh) buildSurface(true); else growSurface(); surfUI(); }
   };
