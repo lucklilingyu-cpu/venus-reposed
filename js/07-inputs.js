@@ -337,14 +337,14 @@ function camFrame(K, P2, mirror) {
   if (c.width !== Math.round(box.width * 2)) { c.width = Math.round(box.width * 2); c.height = Math.round(box.height * 2); }
   const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
   if (Cam.demo) { ctx.fillStyle = '#2c2226'; ctx.fillRect(0, 0, c.width, c.height); }
-  if (!K) { renderBars(null); $('#holdBar').style.width = '0'; Cam.holdCls = null; return; }
+  if (!K) { renderBars(null); $('#holdBar').style.width = '0'; Cam.holdCls = null; Cam.last = null; return; }
   if (P2 && mirror) for (const k in P2) if (P2[k]) P2[k] = [1 - P2[k][0], P2[k][1]];
   drawStick(ctx, P2, c.width, c.height);
   const d = sub3(K.lank, K.rank), ha = sub3(K.lhip, K.rhip);
   const fl = Math.hypot(ha.z, ha.x) || 1;
   Cam.hist.push((d.x * ha.z - d.z * ha.x) / fl); if (Cam.hist.length > 90) Cam.hist.shift();
   const r = classifyPose(K, Cam.hist);
-  Cam.last = r;
+  Cam.last = { ...r, skeleton: K };
   renderBars(r.P);
   ctx.fillStyle = 'rgba(251,247,245,.92)'; ctx.font = `${Math.round(c.width * 0.045)}px "Noto Sans SC", sans-serif`;
   ctx.fillText(`${CLASS[r.top].zh} ${Math.round(r.P[r.top] * 100)}%${r.g ? ' · ' + GESTURES[r.g].zh : ''}`, c.width * 0.04, c.height * 0.09);
@@ -366,18 +366,94 @@ function camFrame(K, P2, mirror) {
     const p = Math.min(1, (now - Cam.holdT0) / 2000);
     $('#holdBar').style.width = (p * 100) + '%';
     if (p >= 1 && Cam.lastAdded !== r.top) { addCamPose(r); Cam.lastAdded = r.top; }
-  } else { Cam.holdCls = r.top; Cam.holdT0 = now; $('#holdBar').style.width = '0'; }
+  } else { Cam.holdCls = r.top; Cam.holdT0 = now; const CAMERA_BONE_MATCH_MAX = 0.28;
+const CAMERA_BONE_MATCH_MARGIN = 0.05;
+function poseSkeletonProfile(points, edges) {
+  if (!points || points.length < 8 || !edges || edges.length < 7) return null;
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  for (const p of points) { minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);minZ=Math.min(minZ,p[2]);maxZ=Math.max(maxZ,p[2]); }
+  const height=maxY-minY;
+  if (!(height > 1e-4)) return null;
+  const lengths=[], vertical=[], dirs=[];
+  for (const [a,b] of edges) {
+    const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],len=Math.hypot(dx,dy,dz);
+    if (!(len > height*0.015)) continue;
+    lengths.push(len/height); vertical.push(Math.abs(dy)/len); dirs.push([dx/len,dy/len,dz/len]);
+  }
+  if (lengths.length < 7) return null;
+  const q=(values,n=8)=>{
+    const sorted=[...values].sort((a,b)=>a-b);
+    return Array.from({length:n},(_,i)=>{
+      const p=(i+0.5)/n*(sorted.length-1),lo=Math.floor(p),hi=Math.ceil(p);
+      return sorted[lo]+(sorted[hi]-sorted[lo])*(p-lo);
+    });
+  };
+  const angles=[];
+  for(let i=0;i<dirs.length;i++)for(let j=i+1;j<dirs.length;j++)
+    angles.push(Math.abs(dirs[i][0]*dirs[j][0]+dirs[i][1]*dirs[j][1]+dirs[i][2]*dirs[j][2]));
+  return {
+    lengths:q(lengths), vertical:q(vertical), angles:q(angles),
+    aspect:Math.max(maxX-minX,maxZ-minZ)/height,
+  };
 }
-function randomCameraSculptureIndex(cls, gesture) {
-  const candidates = V.map((vp, i) => ({ vp, i, rec: vp.work != null ? REC[vp.work] : null }))
-    .filter(({ vp, rec }) => vp.fig && rec?.kind === 'figure' && rec.cls === cls);
-  const gestureMatches = gesture ? candidates.filter(({ rec }) => rec.g === gesture) : [];
-  const pool = gestureMatches.length ? gestureMatches : candidates;
-  const alternatives = pool.filter(({ i }) => i !== Cam.lastCloseupIndex);
-  const choices = alternatives.length ? alternatives : pool;
-  if (!choices.length) return -1;
-  const picked = choices[Math.floor(Math.random() * choices.length)].i;
-  Cam.lastCloseupIndex = picked;
+function cameraSkeletonProfile(K) {
+  const visible=p=>p&&(p.v??1)>0.5;
+  const points=Object.values(K).filter(visible).map(p=>[p.x,p.y,p.z]);
+  const edges=[];
+  for(const [a,b] of K_EDGES)if(visible(K[a])&&visible(K[b]))edges.push([[K[a].x,K[a].y,K[a].z],[K[b].x,K[b].y,K[b].z]]);
+  return poseSkeletonProfile(points,edges);
+}
+function sculptureSkeletonProfiles(rec) {
+  if(!rec?.sk?.figs?.length)return [];
+  const R=rec.rot||[[1,0,0],[0,1,0],[0,0,1]];
+  const rotate=p=>[
+    R[0][0]*p[0]+R[0][1]*p[1]+R[0][2]*p[2],
+    R[1][0]*p[0]+R[1][1]*p[1]+R[1][2]*p[2],
+    R[2][0]*p[0]+R[2][1]*p[1]+R[2][2]*p[2],
+  ];
+  return rec.sk.figs.map(fig=>{
+    const raw=fig.pts||[],points=[];
+    for(let i=0;i+2<raw.length;i+=3)points.push(rotate(raw.slice(i,i+3)));
+    const rawSegs=fig.segs||[],edges=[];
+    for(let i=0;i+5<rawSegs.length;i+=6)edges.push([rotate(rawSegs.slice(i,i+3)),rotate(rawSegs.slice(i+3,i+6))]);
+    return poseSkeletonProfile(points,edges);
+  }).filter(Boolean);
+}
+function boneProfileDistance(a,b) {
+  const meanDiff=(x,y)=>x.reduce((s,v,i)=>s+Math.abs(v-y[i]),0)/x.length;
+  return 0.34*meanDiff(a.lengths,b.lengths)+0.34*meanDiff(a.vertical,b.vertical)+
+    0.24*meanDiff(a.angles,b.angles)+0.08*Math.min(1,Math.abs(a.aspect-b.aspect));
+}
+function randomCameraSculptureIndex(K, cls, gesture) {
+  const eligible=V.map((vp,i)=>({vp,i,rec:vp.work!=null?REC[vp.work]:null}))
+    .filter(({vp,rec})=>vp.fig&&rec?.kind==='figure'&&rec.cls===cls);
+  const cameraProfile=cameraSkeletonProfile(K), scored=[];
+  if(cameraProfile)for(const item of eligible) {
+    const profiles=sculptureSkeletonProfiles(item.rec);
+    if(!profiles.length)continue;
+    const score=Math.min(...profiles.map(profile=>boneProfileDistance(cameraProfile,profile)));
+    scored.push({...item,score});
+  }
+  let pool=[],matched=false;
+  if(scored.length) {
+    const best=Math.min(...scored.map(x=>x.score));
+    if(best<=CAMERA_BONE_MATCH_MAX) {
+      pool=scored.filter(x=>x.score<=Math.min(CAMERA_BONE_MATCH_MAX,best+CAMERA_BONE_MATCH_MARGIN));
+      matched=true;
+    }
+  }
+  if(matched&&gesture) {
+    const gesturePool=pool.filter(x=>x.rec.g===gesture);
+    if(gesturePool.length)pool=gesturePool;
+  }
+  if(!pool.length)pool=eligible;
+  const alternatives=pool.filter(x=>x.i!==Cam.lastCloseupIndex);
+  const choices=alternatives.length?alternatives:pool;
+  if(!choices.length)return {index:-1,matched:false,count:0};
+  const picked=choices[Math.floor(Math.random()*choices.length)];
+  Cam.lastCloseupIndex=picked.i;
+  return {index:picked.i,matched,count:pool.length};
+}eupIndex = picked;
   return picked;
 }
 function addCamPose(r) {
@@ -400,9 +476,11 @@ function addCamPose(r) {
   applyDay(day, { source: '摄像头', musicTicket, onVisualComplete: () => {
     if (token !== Cam.presentationToken) return;
     Cam.presentationPhase = 'closeup';
-    const focusIndex = randomCameraSculptureIndex(r.top, r.g);
-    focusSculpture(focusIndex >= 0 ? focusIndex : day.length - 1);
-    camStatus('场景变化完成，正在近景展示随机选取的姿势对应雕像…');
+    const focus = randomCameraSculptureIndex(r.skeleton, r.top, r.g);
+    focusSculpture(focus.index >= 0 ? focus.index : day.length - 1);
+    camStatus(focus.matched
+      ? `骨骼结构匹配到 ${focus.count} 件雕像，正在随机展示其中一件…`
+      : '没有足够接近的图谱骨骼可比，暂按严格姿势类别展示雕像…');
     poseImagesReady.then(items => {
       if (token !== Cam.presentationToken || Cam.presentationPhase !== 'closeup') return;
       const related = items.filter(item => (galleryAnnotations[item.id]?.cls || galleryPoseHint(item).top) === r.top);
