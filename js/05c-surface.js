@@ -29,9 +29,9 @@ function surfGrowPatch(sh) { // every panel unfolds from its own centre when uGr
   sh.vertexShader = 'attribute vec3 aC; attribute float aO; uniform float uGrow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  float gs = smoothstep(aO, aO + 0.05, uGrow * 1.05); transformed = aC + (transformed - aC) * gs;');
 }
 function surfGlass() {
-  return new THREE.MeshPhysicalMaterial({ map: surfTex, vertexColors: true, roughness: 0.42, metalness: 0, side: THREE.DoubleSide, flatShading: true,
-    transmission: 0.5, thickness: 0.16, ior: 1.38, attenuationColor: new THREE.Color(0xf4e6d8), attenuationDistance: 1.4,
-    clearcoat: 0.35, clearcoatRoughness: 0.3, specularIntensity: 0.9, envMapIntensity: 0.9, iridescence: 0.25, iridescenceIOR: 1.3, iridescenceThicknessRange: [120, 320] });
+  return new THREE.MeshPhysicalMaterial({ map: surfTex, vertexColors: true, roughness: 0.5, metalness: 0, side: THREE.DoubleSide, flatShading: true,
+    transmission: 0.1, thickness: 0.16, ior: 1.38, attenuationColor: new THREE.Color(0xf4e6d8), attenuationDistance: 1.4,
+    clearcoat: 0.35, clearcoatRoughness: 0.3, specularIntensity: 0.9, envMapIntensity: 0.9, iridescence: 0.15, iridescenceIOR: 1.3, iridescenceThicknessRange: [120, 320] });
 }
 const surfMat = surfGlass();
 surfMat.onBeforeCompile = surfGrowPatch;
@@ -414,7 +414,7 @@ function retractSurface() {
   let cheap = false;
   const setCheap = (on) => {
     if (on === cheap) return; cheap = on;
-    for (const m of mats()) { m.transmission = on ? 0 : 0.5; m.transparent = on; m.opacity = on ? 0.82 : 1; m.depthWrite = !on; m.needsUpdate = true; }
+    for (const m of mats()) { m.transmission = on ? 0 : 0.1; m.transparent = on; m.opacity = on ? 0.96 : 1; m.depthWrite = !on; m.needsUpdate = true; }
   };
   setInterval(() => { if (SURF.group.visible && window.__prNow) setCheap(window.__prNow() < 0.95); }, 2500);
 }
