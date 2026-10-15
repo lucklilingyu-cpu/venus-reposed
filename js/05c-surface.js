@@ -326,6 +326,7 @@ function retractSurface() {
     surfBtn.hidden = S.view !== 'surface'; surfBtn.setAttribute('aria-pressed', String(!!SURF.only)); surfPlace();
     courtBtn.setAttribute('aria-selected', String(SURF.court)); courtBtn.setAttribute('aria-pressed', String(SURF.court));
     const scan = scene.getObjectByName('VA_Hall_Scan'); if (scan) scan.visible = SURF.court;
+    const floor = scene.getObjectByName('venus-mosaic-floor'); if (floor) floor.visible = SURF.court; // the floor goes with the hall
     renderer.shadowMap.needsUpdate = true;
   };
   // "Surface only" sits right under the Surface tab
