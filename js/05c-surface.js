@@ -339,3 +339,15 @@ function retractSurface() {
   buildSkin = async function () { await _buildSkin(); SURF.dirty = true; await buildSurface(S.view === 'surface'); };
   arrangeBoard = function (...a) { if (a[1]) retractSurface(); return _arrangeBoard.apply(this, a); };
 }
+
+/* ---------- the skin as gauze: slightly see-through, and a little more sway ---------- */
+{
+  const gauze = (sh) => {
+    silkPatch(sh);
+    sh.vertexShader = sh.vertexShader.replace('vRibU = aU;', `transformed += aB * (sin(6.2831853 * (aS / 3.4 - uTime * 0.11) + aL * 0.9 + 1.3) * (0.05 + 0.07 * abs(aL)) + 0.5 * sin(6.2831853 * (aS / 1.7 + uTime * 0.07) - aL * 1.4) * 0.028 * abs(aL)) * ribK;
+      vRibU = aU;`);
+  };
+  silkMat.onBeforeCompile = gauze; silkDepth.onBeforeCompile = gauze;
+  silkMat.transparent = true; silkMat.opacity = 0.66; silkMat.depthWrite = false; silkMat.sheen = 1; silkMat.roughness = 0.5; silkMat.clearcoat = 0; silkMat.envMapIntensity = 0.9;
+  silkMat.needsUpdate = true; silkDepth.needsUpdate = true;
+}
