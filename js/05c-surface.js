@@ -274,7 +274,20 @@ function retractSurface() {
 /* ---------- hooks into the existing views ---------- */
 {
   const _applyView = applyView, _setView = setView, _buildSkin = buildSkin, _arrangeBoard = arrangeBoard;
-  applyView = function () { _applyView(); SURF.group.visible = S.view === 'surface' && !!SURF.mesh; };
+  const _applyViewTo = applyViewTo;
+  // "Surface only": inside the Surface view the sculptures can be hidden, leaving the folded structure alone on its plinths
+  const only = () => S.view === 'surface' && SURF.only;
+  applyViewTo = function (vp) { _applyViewTo(vp); if (only()) { if (vp.fig) vp.fig.visible = false; if (vp.bones) vp.bones.visible = false; } };
+  applyView = function () {
+    _applyView(); SURF.group.visible = S.view === 'surface' && !!SURF.mesh;
+    surfBtn.hidden = S.view !== 'surface'; surfBtn.setAttribute('aria-pressed', String(!!SURF.only)); renderer.shadowMap.needsUpdate = true;
+  };
+  const surfBtn = document.createElement('button');
+  surfBtn.id = 'surfOnly'; surfBtn.type = 'button'; surfBtn.hidden = true; surfBtn.textContent = 'Surface only'; surfBtn.setAttribute('aria-pressed', 'false');
+  const st = document.createElement('style');
+  st.textContent = '#surfOnly{position:fixed;left:22px;top:146px;z-index:20;border:0;border-radius:999px;padding:7px 16px;font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.06em;color:#4a3a45;background:linear-gradient(135deg,rgba(255,250,243,.92),rgba(246,226,222,.88));box-shadow:0 4px 18px rgba(80,50,60,.14);cursor:pointer}#surfOnly[hidden]{display:none}#surfOnly[aria-pressed=true]{color:#fff6e6;background:linear-gradient(135deg,#3a2832,#5a3a48)}';
+  document.head.appendChild(st); document.body.appendChild(surfBtn);
+  surfBtn.addEventListener('click', () => { SURF.only = !SURF.only; applyView(); });
   setView = function (v) {
     _setView(v);
     if (v === 'surface') { clearSculptureFocus(); if (SURF.dirty || !SURF.mesh) buildSurface(true); else growSurface(); }
