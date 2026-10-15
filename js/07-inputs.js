@@ -366,7 +366,8 @@ function camFrame(K, P2, mirror) {
     const p = Math.min(1, (now - Cam.holdT0) / 2000);
     $('#holdBar').style.width = (p * 100) + '%';
     if (p >= 1 && Cam.lastAdded !== r.top) { addCamPose(r); Cam.lastAdded = r.top; }
-  } else { Cam.holdCls = r.top; Cam.holdT0 = now; const CAMERA_BONE_MATCH_MAX = 0.28;
+  } else { Cam.holdCls = r.top; Cam.holdT0 = now; $('#holdBar').style.width = '0'; }
+const CAMERA_BONE_MATCH_MAX = 0.28;
 const CAMERA_BONE_MATCH_MARGIN = 0.05;
 function poseSkeletonProfile(points, edges) {
   if (!points || points.length < 8 || !edges || edges.length < 7) return null;
