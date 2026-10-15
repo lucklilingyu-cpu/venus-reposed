@@ -19,7 +19,15 @@
       "width": 1280,
       "height": 712,
       "bytes": 51691588,
-      "sha256": "d0827cb5f36a69da3361a8eae5a337c7043e628b4fafbbf98f7729168e74b0da"
+      "sha256": "d0827cb5f36a69da3361a8eae5a337c7043e628b4fafbbf98f7729168e74b0da",
+      "playback": {
+        "file": "video/pose-gallery/stream/01_Venus_Aphrodite_7SENSES_Sandglass.mp4",
+        "duration": 273.9,
+        "width": 854,
+        "height": 476,
+        "bytes": 17958569,
+        "sha256": "5556900d93894f7f5a2a718a4001378b7c01c3c1748e0214fd3f7d7f8a626bd3"
+      }
     },
     {
       "id": "002",
@@ -39,7 +47,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 40528396,
-      "sha256": "423ed85673ae1ba0bb30386cad4b157d56de12ce22be3a1199e6dc98c616f690"
+      "sha256": "423ed85673ae1ba0bb30386cad4b157d56de12ce22be3a1199e6dc98c616f690",
+      "playback": {
+        "file": "video/pose-gallery/stream/02_Venus_Aphrodite_Bananarama_Venus.mp4",
+        "duration": 216.85,
+        "width": 854,
+        "height": 480,
+        "bytes": 14118333,
+        "sha256": "23f35e0562b389278a934fbdfb92566ad5e9bcd4c90b7c0ffcd94508ddd61a75"
+      }
     },
     {
       "id": "003",
@@ -59,7 +75,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 34574855,
-      "sha256": "299f552f78683eb49e9c0bb12954df7adc86f820ed86c38789aa614a5c3075ed"
+      "sha256": "299f552f78683eb49e9c0bb12954df7adc86f820ed86c38789aa614a5c3075ed",
+      "playback": {
+        "file": "video/pose-gallery/stream/03_Venus_Aphrodite_(G)I-DLE_Nxde.mp4",
+        "duration": 190.61,
+        "width": 854,
+        "height": 480,
+        "bytes": 12084227,
+        "sha256": "4d485e2465b9aa7f234716ca9fbbd19f8cb4c2e57a4b64e5c94d67d03b134cd2"
+      }
     },
     {
       "id": "004",
@@ -79,7 +103,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 33819468,
-      "sha256": "295f04ce97a831e9730f8086ec6c9ce712c17354f09a727c7ec98956e4eb899f"
+      "sha256": "295f04ce97a831e9730f8086ec6c9ce712c17354f09a727c7ec98956e4eb899f",
+      "playback": {
+        "file": "video/pose-gallery/stream/04_Venus_Aphrodite_(G)I-DLE_Nxde.mp4",
+        "duration": 183.21,
+        "width": 854,
+        "height": 480,
+        "bytes": 11773919,
+        "sha256": "ae2b1de6f7eb6a6fa204f69be30dee3f2cc208c7ef87a1bd6148066c1d743941"
+      }
     },
     {
       "id": "005",
@@ -99,7 +131,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 54371547,
-      "sha256": "44f8264a0ec3dcb8a79f7d4b75e94ed44b7448f4975c4e6f9c302514f3c81195"
+      "sha256": "44f8264a0ec3dcb8a79f7d4b75e94ed44b7448f4975c4e6f9c302514f3c81195",
+      "playback": {
+        "file": "video/pose-gallery/stream/05_Venus_Aphrodite_7SENSES_Sandglass.mp4",
+        "duration": 296.61,
+        "width": 854,
+        "height": 480,
+        "bytes": 18893924,
+        "sha256": "c1d71ec27cecf1d12fc05de54347cf0d6275e523c8c6ee378efd3e2703750c24"
+      }
     },
     {
       "id": "006",
@@ -119,7 +159,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 42860011,
-      "sha256": "b92c219d20624dbadf97ab99b222ed8ac3f89c7b119350a0397f3845882b12fe"
+      "sha256": "b92c219d20624dbadf97ab99b222ed8ac3f89c7b119350a0397f3845882b12fe",
+      "playback": {
+        "file": "video/pose-gallery/stream/06_Venus_Aphrodite_Red_Velvet_Feel_My_Rhythm.mp4",
+        "duration": 237.28,
+        "width": 854,
+        "height": 480,
+        "bytes": 15068373,
+        "sha256": "e05664dc0196460867914b0609fd3fd6a036c51750c7884b35d9fbc716edc83e"
+      }
     },
     {
       "id": "007",
@@ -139,7 +187,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 40455820,
-      "sha256": "92c19038f7f14ce904be19213654fec2d6b341dcc01340c31c4eec47997ce732"
+      "sha256": "92c19038f7f14ce904be19213654fec2d6b341dcc01340c31c4eec47997ce732",
+      "playback": {
+        "file": "video/pose-gallery/stream/07_Venus_Aphrodite_Red_Velvet_Feel_My_Rhythm.mp4",
+        "duration": 224.28,
+        "width": 854,
+        "height": 480,
+        "bytes": 14136180,
+        "sha256": "a6caa9a5ecfb68c25d3687888b27377a8e3c54e32a873e8c4b398dce880c2991"
+      }
     },
     {
       "id": "008",
@@ -159,7 +215,15 @@
       "width": 1034,
       "height": 720,
       "bytes": 31740899,
-      "sha256": "13fe3703f666b70cc223636078e6f9b40723ca93c3c2fae2316b7cf56cede786"
+      "sha256": "13fe3703f666b70cc223636078e6f9b40723ca93c3c2fae2316b7cf56cede786",
+      "playback": {
+        "file": "video/pose-gallery/stream/08_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+        "duration": 169.44,
+        "width": 690,
+        "height": 480,
+        "bytes": 11014668,
+        "sha256": "b33e2554a4fe77fa68194d65db9ec5e50215b4ccbfa8c78af7ad67b7458b9838"
+      }
     },
     {
       "id": "009",
@@ -179,7 +243,15 @@
       "width": 1034,
       "height": 720,
       "bytes": 31120071,
-      "sha256": "3d60d4fab8d3d6ec0466d615389bd91cb081723e6603fab43d3caedae06d0443"
+      "sha256": "3d60d4fab8d3d6ec0466d615389bd91cb081723e6603fab43d3caedae06d0443",
+      "playback": {
+        "file": "video/pose-gallery/stream/09_Medusa_KISS_OF_LIFE_Midas_Touch.mp4",
+        "duration": 164.98,
+        "width": 690,
+        "height": 480,
+        "bytes": 10811038,
+        "sha256": "16752128cd309fc9c597569f42cd9ab6b2779f54f9dae17b04fa798f4188bfac"
+      }
     },
     {
       "id": "010",
@@ -199,7 +271,15 @@
       "width": 1280,
       "height": 720,
       "bytes": 33913246,
-      "sha256": "7aa8048739ae33c98a2726fa86fea186fa2901fa4be5b61b388d72345e0a2101"
+      "sha256": "7aa8048739ae33c98a2726fa86fea186fa2901fa4be5b61b388d72345e0a2101",
+      "playback": {
+        "file": "video/pose-gallery/stream/10_Venus_Nephthys_Dreamcatcher_OOTD.mp4",
+        "duration": 179.79,
+        "width": 854,
+        "height": 480,
+        "bytes": 11770794,
+        "sha256": "b3dcc2cb096b5ff900a65a0f2ce9a668c2db5b5523e1ab359cdacd06a1cce90c"
+      }
     }
   ]
 }

@@ -1,6 +1,7 @@
 /* The prepared videos use their own CSV joints, then the same applyDay and
    flyHome functions used by the existing text diary. */
-const PoseVideoCollection={items:[],selected:null,loading:null,analysisLoading:null,request:0,busyOwner:0,pending:null};
+const PoseVideoCollection={items:[],selected:null,loading:null,analysisLoading:null,request:0,busyOwner:0,pending:null,
+  quality:'smooth',playbackRequest:0,metadataRestore:null,buffering:false};
 const POSE_VIDEO_JOINTS=['nose','lsh','rsh','lel','rel','lwr','rwr','lhip','rhip','lkn','rkn','lank','rank'];
 function poseVideoTime(seconds){
   const value=Math.max(0,Math.floor(seconds));
@@ -12,6 +13,8 @@ function poseVideoSafeItem(item){
      !/^img\/pose-video-gallery\/\d{3}\.jpg$/.test(item.poster))return false;
   if(!['title','goddess','group','song','relation','note','downloadName'].every(key=>typeof item[key]==='string'))return false;
   if(item.downloadName!==item.title+'.mp4'||!(item.duration>0))return false;
+  if(item.playback&&(!/^video\/pose-gallery\/stream\/[A-Za-z0-9_()\-]+\.mp4$/.test(item.playback.file)||
+     !(item.playback.duration>0)||Math.abs(item.playback.duration-item.duration)>.2))return false;
   try{return [item.sourceUrl,item.evidenceUrl].every(value=>new URL(value).protocol==='https:');}catch(_){return false;}
 }
 function selectPoseVideo(id,autoplay=true){
@@ -21,7 +24,7 @@ function selectPoseVideo(id,autoplay=true){
   const request=++PoseVideoCollection.request;
   poseVideoOverview();
   const player=$('#poseCollectionPlayer'),status=$('#poseVideoStatus');
-  player.pause();PoseVideoCollection.selected=item.id;
+  PoseVideoCollection.selected=item.id;
   $$('#poseVideoGallery [data-pose-video]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.poseVideo===id)));
   $('#poseVideoSelected').hidden=false;
   $('#poseVideoTitle').textContent=item.title;
@@ -29,17 +32,78 @@ function selectPoseVideo(id,autoplay=true){
   $('#poseVideoNote').textContent=item.note;
   const download=$('#poseVideoDownload');download.href=item.file;download.download=item.downloadName;
   $('#poseVideoSource').href=item.sourceUrl;$('#poseVideoEvidence').href=item.evidenceUrl;
-  player.poster=item.poster;player.preload='metadata';player.src=item.file;player.load();
+  player.poster=item.poster;$('#poseVideoQuality').value=PoseVideoCollection.quality;
+  loadPoseVideoPlayback(item,0,autoplay);
   status.textContent='已选择视频，可播放、暂停或拖动进度。';
   $('#poseVideoSequence').textContent='正在读取这条视频的骨骼数据…';
   $('#poseVideoCollection').dataset.analysisState='loading';
   $('#poseVideoCollection').dataset.analysisId=id;
   PoseVideoCollection.pending=analyzePoseCollectionVideo(item,request);
+  return true;
+}
+function poseVideoMedia(item){return PoseVideoCollection.quality==='smooth'&&item.playback?item.playback:item;}
+function loadPoseVideoPlayback(item,time,autoplay){
+  const player=$('#poseCollectionPlayer'),token=++PoseVideoCollection.playbackRequest;
+  player.pause();PoseVideoCollection.buffering=false;
+  if(PoseVideoCollection.metadataRestore)player.removeEventListener('loadedmetadata',PoseVideoCollection.metadataRestore);
+  PoseVideoCollection.metadataRestore=null;
+  if(time>0){
+    const restore=()=>{
+      player.removeEventListener('loadedmetadata',restore);
+      if(token===PoseVideoCollection.playbackRequest){player.currentTime=Math.min(time,Math.max(0,player.duration-.1));PoseVideoCollection.metadataRestore=null;}
+    };
+    PoseVideoCollection.metadataRestore=restore;player.addEventListener('loadedmetadata',restore);
+  }
+  player.preload='auto';player.src=poseVideoMedia(item).file;player.load();
   if(autoplay){
     const play=player.play();
-    if(play?.catch)play.catch(()=>{if(PoseVideoCollection.selected===id)status.textContent='视频已就绪，点击播放器的播放按钮开始。';});
+    if(play?.catch)play.catch(()=>{if(token===PoseVideoCollection.playbackRequest)$('#poseVideoStatus').textContent='Video ready. Press Play to start.';});
   }
-  return true;
+}
+function changePoseVideoQuality(value){
+  if(!['smooth','hd'].includes(value))return;
+  PoseVideoCollection.quality=value;
+  const item=PoseVideoCollection.items.find(entry=>entry.id===PoseVideoCollection.selected);
+  if(!item)return;
+  const player=$('#poseCollectionPlayer');
+  loadPoseVideoPlayback(item,player.currentTime||0,!player.paused);
+}
+function poseVideoBufferedAhead(player=$('#poseCollectionPlayer')){
+  const time=player.currentTime||0;
+  for(let i=0;i<(player.buffered?.length||0);i++){
+    if(player.buffered.start(i)<=time+.05&&player.buffered.end(i)>=time)return Math.max(0,player.buffered.end(i)-time);
+  }
+  return 0;
+}
+function waitForPoseVideoBuffer(request){
+  const player=$('#poseCollectionPlayer');
+  if(player.readyState>=2&&poseVideoBufferedAhead(player)>=3)return Promise.resolve(true);
+  return new Promise(resolve=>{
+    const events=['progress','canplay','loadeddata','error','emptied','pause'];
+    let timer;
+    const finish=value=>{clearTimeout(timer);events.forEach(name=>player.removeEventListener(name,check));resolve(value);};
+    const check=()=>{
+      if(request!==PoseVideoCollection.request)return finish(false);
+      if(player.error||player.readyState>=2&&poseVideoBufferedAhead(player)>=3)finish(true);
+    };
+    events.forEach(name=>player.addEventListener(name,check));
+    // Give the selected video a short download head start before new meshes.
+    // This is a buffer threshold, not a fixed pause, and never waits indefinitely.
+    timer=setTimeout(()=>finish(request===PoseVideoCollection.request),8000);
+    check();
+  });
+}
+function updatePoseVideoBuffering(event){
+  const player=$('#poseCollectionPlayer');
+  if(!PoseVideoCollection.selected)return;
+  if(event.type==='waiting'||event.type==='stalled')PoseVideoCollection.buffering=true;
+  if(event.type==='playing')PoseVideoCollection.buffering=false;
+  if(PoseVideoCollection.buffering&&!player.paused){
+    const seconds=poseVideoBufferedAhead(player).toFixed(1);
+    $('#poseVideoStatus').textContent=`Buffering video · ${seconds}s ready. ${PoseVideoCollection.quality==='hd'?'Choose Smooth for slower connections.':'Downloading the selected video…'}`;
+  }else if(event.type==='playing'){
+    $('#poseVideoStatus').textContent='Video playing. Pose sequence and sculpture animation stay active.';
+  }
 }
 function poseVideoOverview(){
   clearTimeout(galleryOverviewTimer);galleryOverviewTimer=0;
@@ -98,6 +162,7 @@ async function analyzePoseCollectionVideo(item,request){
     const data=await loadPoseVideoAnalysis();if(!current())return;
     const rawDay=poseVideoDay(item,data.videos.find(record=>record.id===item.id));
     const day=S.merge?mergeDay(rawDay):rawDay;
+    if(!await waitForPoseVideoBuffer(request))return;
     if(!current())return;
     PoseVideoCollection.busyOwner=request;Vid.busy=true;$('#videoGo').disabled=true;
     S.posPal={};S.sel=0;
@@ -140,6 +205,8 @@ function initPoseVideoCollection(){
   const gallery=$('#poseVideoGallery');if(!gallery)return;
   gallery.addEventListener('click',event=>{const button=event.target.closest('[data-pose-video]');if(button&&gallery.contains(button))selectPoseVideo(button.dataset.poseVideo);});
   const player=$('#poseCollectionPlayer');
+  $('#poseVideoQuality').addEventListener('change',event=>changePoseVideoQuality(event.target.value));
+  ['waiting','stalled','progress','playing'].forEach(name=>player.addEventListener(name,updatePoseVideoBuffering));
   player.addEventListener('error',()=>{$('#poseVideoStatus').textContent='视频暂时无法播放，请刷新或使用下载链接查看。';});
   $('#modeTabs').addEventListener('click',event=>{const tab=event.target.closest('[data-mode]');if(tab&&tab.dataset.mode!=='video'){player.pause();cancelPoseVideoAnalysis();}});
   document.addEventListener('click',event=>{
