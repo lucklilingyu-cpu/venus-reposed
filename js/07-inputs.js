@@ -147,9 +147,15 @@ function classifyPose(K, hist) {
   const sh = mid3(K.lsh, K.rsh), hp = mid3(K.lhip, K.rhip);
   const tv = sub3(sh, hp);
   const torso = Math.acos(Math.max(-1, Math.min(1, tv.y / (len3(tv) || 1)))) * 180 / Math.PI;
-  const legsVis = vis(K.lkn) && vis(K.rkn) && (vis(K.lank) || vis(K.rank));
+  const bodyJoints = [K.lsh, K.rsh, K.lhip, K.rhip, K.lkn, K.rkn, K.lank, K.rank];
+  const visibleBodyJoints = bodyJoints.filter(vis).length;
+  const bodyReady = visibleBodyJoints >= 7 && vis(K.lsh) && vis(K.rsh) && vis(K.lhip) && vis(K.rhip) &&
+    (vis(K.lkn) || vis(K.rkn)) && (vis(K.lank) || vis(K.rank));
+  const legsVis = vis(K.lhip) && vis(K.rhip) && vis(K.lkn) && vis(K.rkn) && vis(K.lank) && vis(K.rank);
   const kL = angAt(K.lhip, K.lkn, K.lank), kR = angAt(K.rhip, K.rkn, K.rank);
   const kMean = (kL + kR) / 2, kMin = Math.min(kL, kR);
+  const thighAngle = (hip, knee) => Math.atan2(Math.hypot(knee.x - hip.x, knee.z - hip.z), Math.abs(knee.y - hip.y)) * 180 / Math.PI;
+  const thighTilt = (thighAngle(K.lhip, K.lkn) + thighAngle(K.rhip, K.rkn)) / 2;
   const ankLow = Math.min(K.lank.y, K.rank.y);
   const ratio = (hp.y - ankLow) / Math.max(0.05, sh.y - ankLow);
   let walk = 0;
@@ -159,22 +165,27 @@ function classifyPose(K, hist) {
     walk = Math.min(1, flips / 2) * sig((amp - 0.12) / 0.03);
   }
   const P = {};
-  const upright = sig((32 - torso) / 6);
-  P.horizontal = sig((torso - 64) / 6);
-  P.reclining = bump(torso, 26, 64, 5) * (legsVis ? sig((kMean - 100) / 12) * (sig((0.5 - ratio) / 0.12) * 0.6 + 0.4) : 1);
+  const upright = sig((34 - torso) / 7);
+  P.horizontal = sig((68 - torso) / 7);
+  P.reclining = bump(torso, 28, 68, 6) * (legsVis ? sig((kMean - 105) / 13) * (sig((0.54 - ratio) / 0.1) * 0.65 + 0.35) : 1);
   if (!legsVis) {
-    P.seated = upright * 0.8; P.standing = upright * 0.15; P.walking = 0; P.crouching = 0;
+    // An upper-body-only image cannot reliably distinguish sitting from standing.
+    P.seated = 0; P.standing = 0; P.walking = 0; P.crouching = 0;
   } else {
-    P.standing = upright * sig((kMean - 150) / 8) * (1 - walk);
-    P.walking = upright * sig((kMean - 128) / 10) * walk;
-    P.seated = upright * bump(kMean, 62, 138, 9) * sig((ratio - 0.22) / 0.06) * sig((kMin - 58) / 8);
-    P.crouching = sig((52 - torso) / 8) * sig((80 - kMin) / 9) * sig((0.45 - ratio) / 0.07);
+    const seatedLegs = bump(kMean, 68, 146, 12) * bump(thighTilt, 32, 122, 14) * sig((0.68 - ratio) / 0.075);
+    P.standing = upright * sig((kMean - 145) / 10) * sig((43 - thighTilt) / 13) * (1 - walk);
+    P.walking = upright * sig((kMean - 126) / 11) * sig((48 - thighTilt) / 16) * walk;
+    P.seated = upright * seatedLegs;
+    P.crouching = sig((58 - torso) / 9) * sig((102 - kMin) / 12) * sig((0.58 - ratio) / 0.08);
   }
-  // one leg straight, the other foot lifted: still standing (sandal-binder balance)
-  if (legsVis && Math.max(kL, kR) > 155 && Math.abs(K.lank.y - K.rank.y) > 0.2 && torso < 40) { P.standing = Math.max(P.standing, 0.9 * sig((40 - torso) / 6)); P.seated *= 0.15; P.crouching *= 0.15; }
-  let sum = 0; for (const c of CLS) { P[c] = (P[c] || 0) + 0.004; sum += P[c]; }
+  // A raised foot with one straight leg is standing, even when the other knee is bent.
+  if (legsVis && Math.max(kL, kR) > 155 && Math.abs(K.lank.y - K.rank.y) > 0.2 && torso < 42) {
+    P.standing = Math.max(P.standing, 0.92 * sig((42 - torso) / 7)); P.seated *= 0.12; P.crouching *= 0.12;
+  }
+  let sum = 0; for (const c of CLS) { P[c] = (P[c] || 0) + 0.003; sum += P[c]; }
   for (const c of CLS) P[c] /= sum;
   const top = CLS.reduce((a, b) => P[a] >= P[b] ? a : b);
+  const confidence = P[top];
   // gestures
   let g = null;
   const nose = K.nose, shW = len3(sub3(K.lsh, K.rsh)) || 0.3;
@@ -187,7 +198,7 @@ function classifyPose(K, hist) {
     else if (Math.abs(nose.x - sh.x) > shW * 0.55 && torso < 35) g = 'lookback';
   }
   if (g && !GESTURES[g].cls.includes(top)) g = null;
-  return { P, top, g, torso, kMean, ratio };
+  return { P, top, g, torso, kMean, thighTilt, ratio, confidence, bodyReady, visibleBodyJoints };
 }
 /* canonical skeleton -> the 13 joints the classifier reads */
 function poseToK(pose, jitter = 0) {
@@ -267,7 +278,7 @@ async function startCamera() {
   if (session !== Cam.session) return;
   msg.textContent = ''; camStatus('<b>正在加载姿势模型（MediaPipe）…</b>');
   try { await loadMP(); } catch (e) { if (session !== Cam.session) return; camStatus('姿势模型没有加载成功（需要联网）。可以先用“模拟演示”。'); return; }
-  camStatus('站进画面，让全身入镜；坐在电脑前时只拍到上半身也可以。保持一个姿势 2 秒就会加入序列。');
+  camStatus('请让全身入镜，双肩、双髋、膝盖和脚踝清晰可见；保持姿势 2 秒后，系统会在高置信度时加入序列。');
   if (session !== Cam.session) return;
   startSession(); Cam.demo = false; $('#camAdd').disabled = false;
   $('#camStart').textContent = '关闭摄像头';
@@ -339,6 +350,17 @@ function camFrame(K, P2, mirror) {
   ctx.fillText(`${CLASS[r.top].zh} ${Math.round(r.P[r.top] * 100)}%${r.g ? ' · ' + GESTURES[r.g].zh : ''}`, c.width * 0.04, c.height * 0.09);
   // hold to confirm
   if (Cam.presentationBusy) { Cam.holdCls = r.top; Cam.holdT0 = performance.now(); $('#holdBar').style.width = '0'; return; }
+  const minConfidence = Cam.demo ? 0.5 : 0.68;
+  if (!r.bodyReady) {
+    Cam.holdCls = null; $('#holdBar').style.width = '0';
+    camStatus('请让全身入镜，并确保双肩、双髋、膝盖和脚踝清晰可见；上半身画面无法可靠区分站立与坐姿。');
+    return;
+  }
+  if (r.confidence < minConfidence) {
+    Cam.holdCls = null; $('#holdBar').style.width = '0';
+    camStatus('当前姿势类别不够明确，请调整身体角度后保持稳定。');
+    return;
+  }
   const now = performance.now();
   if (r.P[r.top] > 0.5 && r.top === Cam.holdCls) {
     const p = Math.min(1, (now - Cam.holdT0) / 2000);
@@ -348,7 +370,7 @@ function camFrame(K, P2, mirror) {
 }
 function randomCameraSculptureIndex(cls, gesture) {
   const candidates = V.map((vp, i) => ({ vp, i, rec: vp.work != null ? REC[vp.work] : null }))
-    .filter(({ vp, rec }) => vp.fig && fitsCls(rec, cls));
+    .filter(({ vp, rec }) => vp.fig && rec?.kind === 'figure' && rec.cls === cls);
   const gestureMatches = gesture ? candidates.filter(({ rec }) => rec.g === gesture) : [];
   const pool = gestureMatches.length ? gestureMatches : candidates;
   const alternatives = pool.filter(({ i }) => i !== Cam.lastCloseupIndex);
@@ -360,6 +382,10 @@ function randomCameraSculptureIndex(cls, gesture) {
 }
 function addCamPose(r) {
   if (Cam.presentationBusy) return;
+  if (!r?.bodyReady || r.confidence < (Cam.demo ? 0.5 : 0.68)) {
+    camStatus('骨骼画面不完整或姿势判断不够明确，暂未加入；请让全身清晰入镜后重试。');
+    return;
+  }
   if (S.day.length >= 10) { toast('序列已有 10 个位置'); return; }
   // This is the accepted-action boundary, after the existing busy/capacity guards.
   const musicTicket = Cam.musicTicket = HallMusic.beginInput('camera-action', musicGesture());
