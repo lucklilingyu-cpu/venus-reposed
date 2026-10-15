@@ -28,7 +28,12 @@ function surfGrowPatch(sh) { // every panel unfolds from its own centre when uGr
   sh.uniforms.uGrow = surfU.uGrow;
   sh.vertexShader = 'attribute vec3 aC; attribute float aO; uniform float uGrow;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  float gs = smoothstep(aO, aO + 0.05, uGrow * 1.05); transformed = aC + (transformed - aC) * gs;');
 }
-const surfMat = new THREE.MeshStandardMaterial({ map: surfTex, vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, flatShading: true, envMapIntensity: 0.5 });
+function surfGlass() {
+  return new THREE.MeshPhysicalMaterial({ map: surfTex, vertexColors: true, roughness: 0.42, metalness: 0, side: THREE.DoubleSide, flatShading: true,
+    transmission: 0.5, thickness: 0.16, ior: 1.38, attenuationColor: new THREE.Color(0xf4e6d8), attenuationDistance: 1.4,
+    clearcoat: 0.35, clearcoatRoughness: 0.3, specularIntensity: 0.9, envMapIntensity: 0.9, iridescence: 0.25, iridescenceIOR: 1.3, iridescenceThicknessRange: [120, 320] });
+}
+const surfMat = surfGlass();
 surfMat.onBeforeCompile = surfGrowPatch;
 const surfDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }); surfDepth.onBeforeCompile = surfGrowPatch;
 const surfLineMat = new THREE.LineBasicMaterial({ color: 0x38342f, transparent: true, opacity: 0.85 }); surfLineMat.onBeforeCompile = surfGrowPatch;
@@ -281,7 +286,7 @@ function surfDropCurrent() {
 const surfOne = { value: 1 };
 const surfStatic = (() => { // saved parts stay fully grown, whatever the growth animation of the current structure is doing
   const patch = (sh) => { surfGrowPatch(sh); sh.uniforms.uGrow = surfOne; };
-  const mat = new THREE.MeshStandardMaterial({ map: surfTex, vertexColors: true, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, flatShading: true, envMapIntensity: 0.5 }); mat.onBeforeCompile = patch;
+  const mat = surfGlass(); mat.onBeforeCompile = patch;
   const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking }); depth.onBeforeCompile = patch;
   const line = new THREE.LineBasicMaterial({ color: 0x38342f, transparent: true, opacity: 0.85 }); line.onBeforeCompile = patch;
   return { mat, depth, line };
@@ -401,4 +406,15 @@ function retractSurface() {
     SAMPLE_DAYS[k] = text;
     if (sel && !sel.querySelector('option[value="' + k + '"]')) { const o = document.createElement('option'); o.value = k; o.textContent = label; sel.appendChild(o); }
   }
+}
+
+/* ---------- the surface material: see-through with a little refraction, and a cheaper see-through look when frames get slow ---------- */
+{
+  const mats = () => [surfMat, surfStatic.mat];
+  let cheap = false;
+  const setCheap = (on) => {
+    if (on === cheap) return; cheap = on;
+    for (const m of mats()) { m.transmission = on ? 0 : 0.5; m.transparent = on; m.opacity = on ? 0.82 : 1; m.depthWrite = !on; m.needsUpdate = true; }
+  };
+  setInterval(() => { if (SURF.group.visible && window.__prNow) setCheap(window.__prNow() < 0.95); }, 2500);
 }
