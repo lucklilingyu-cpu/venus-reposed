@@ -39,12 +39,12 @@ function surfBuilder() {
   const TH = 0.012, UVS = 1 / 0.034;
   const f3 = (p) => [p.x, p.y, p.z];
   function tri(a, b, c, n, e1, e2, color) { for (const p of [a, b, c]) { P.push(p.x, p.y, p.z); N.push(n.x, n.y, n.z); UV.push(p.dot(e1) * UVS, p.dot(e2) * UVS); C.push(color.r, color.g, color.b); } }
-  function plate(pts, color) { // 3 or 4 corners, planar (or nearly): a thin slab with outlined face
+  function plate(pts, color, nrms) { // 3 or 4 corners, planar (or nearly): a thin slab with outlined face
     const n = pts.length, p0 = pts[0], p1 = pts[1], p2 = pts[2];
     const nm = (n === 4 ? new THREE.Vector3().subVectors(pts[2], pts[0]).cross(new THREE.Vector3().subVectors(pts[3], pts[1])) : new THREE.Vector3().subVectors(p1, p0).cross(new THREE.Vector3().subVectors(p2, p0)));
     if (nm.lengthSq() < 1e-10) return false; nm.normalize();
     const e1 = new THREE.Vector3().subVectors(p1, p0).normalize(), e2 = new THREE.Vector3().crossVectors(nm, e1);
-    const fr = pts.map(p => p.clone().addScaledVector(nm, TH / 2)), bk = pts.map(p => p.clone().addScaledVector(nm, -TH / 2));
+    const fr = pts.map((p, k) => p.clone().addScaledVector(nrms ? nrms[k] : nm, TH / 2)), bk = pts.map((p, k) => p.clone().addScaledVector(nrms ? nrms[k] : nm, -TH / 2));
     const nb = nm.clone().negate();
     tri(fr[0], fr[1], fr[2], nm, e1, e2, color); if (n === 4) tri(fr[0], fr[2], fr[3], nm, e1, e2, color);
     tri(bk[0], bk[2], bk[1], nb, e1, e2, color); if (n === 4) tri(bk[0], bk[3], bk[2], nb, e1, e2, color);
@@ -77,9 +77,14 @@ function surfBuilder() {
 }
 /* a strip of facets between two polylines; each corner of B is projected onto the plane of the facet before it, so every facet is flat */
 function surfStrip(bd, A, B, colorAt, softLast = false) {
-  const n = A.length - 1;
+  const n = A.length - 1, N = [];
+  for (let i = 0; i <= n; i++) { // one normal per corner row, shared by the two facets that meet there
+    const t = A[Math.min(n, i + 1)].clone().sub(A[Math.max(0, i - 1)]), w = B[i].clone().sub(A[i]), nm = t.cross(w);
+    N.push(nm.lengthSq() > 1e-12 ? nm.normalize() : (N[i - 1] || null));
+  }
   for (let i = 0; i < n; i++) {
-    bd.plate([A[i], A[i + 1], B[i + 1], B[i]], colorAt(i / Math.max(1, n - 1)));
+    const ok = N[i] && N[i + 1];
+    bd.plate([A[i], A[i + 1], B[i + 1], B[i]], colorAt(i / Math.max(1, n - 1)), ok ? [N[i], N[i + 1], N[i + 1], N[i]] : undefined);
   }
 }
 
@@ -100,12 +105,12 @@ function surfSilhouette(vp, foot) { // how high the body stands in each directio
 }
 /* what each pose class asks of its pavilion */
 const SURF_CLASS = {
-  standing:   { hMul: 0.95, minH: 1.55, tilt: -0.10, fold: 0.07, wPan: 0.50, canopy: 3, cLen: 0.85, slope: 0 },
-  walking:    { hMul: 0.92, minH: 1.55, tilt: -0.05, fold: 0.09, wPan: 0.58, canopy: 2, cLen: 0.75, slope: 0.5 },
-  seated:     { hMul: 1.10, minH: 1.40, tilt: -0.17, fold: 0.07, wPan: 0.62, canopy: 3, cLen: 1.05, slope: 0 },
-  crouching:  { hMul: 1.50, minH: 1.25, tilt: -0.30, fold: 0.06, wPan: 0.48, canopy: 4, cLen: 0.95, slope: 0 },
-  reclining:  { hMul: 1.90, minH: 1.05, tilt: -0.22, fold: 0.08, wPan: 0.68, canopy: 4, cLen: 1.05, slope: 0 },
-  horizontal: { hMul: 2.30, minH: 0.95, tilt: -0.26, fold: 0.08, wPan: 0.74, canopy: 4, cLen: 1.15, slope: 0 },
+  standing:   { hMul: 0.8, minH: 1.3, tilt: -0.10, fold: 0.07, wPan: 0.50, canopy: 3, cLen: 0.85, slope: 0 },
+  walking:    { hMul: 0.78, minH: 1.3, tilt: -0.05, fold: 0.09, wPan: 0.58, canopy: 2, cLen: 0.75, slope: 0.5 },
+  seated:     { hMul: 0.95, minH: 1.15, tilt: -0.17, fold: 0.07, wPan: 0.62, canopy: 3, cLen: 1.05, slope: 0 },
+  crouching:  { hMul: 1.25, minH: 1.05, tilt: -0.30, fold: 0.06, wPan: 0.48, canopy: 4, cLen: 0.95, slope: 0 },
+  reclining:  { hMul: 1.5, minH: 0.9, tilt: -0.22, fold: 0.08, wPan: 0.68, canopy: 4, cLen: 1.05, slope: 0 },
+  horizontal: { hMul: 1.7, minH: 0.8, tilt: -0.26, fold: 0.08, wPan: 0.74, canopy: 4, cLen: 1.15, slope: 0 },
 };
 const surfMod = (a, m = 2 * Math.PI) => ((a % m) + m) % m;
 const surfSm = (u) => u * u * (3 - 2 * u);
@@ -120,7 +125,7 @@ function surfWall(bd, c) {
   const ccw = surfMod(c.thOut - c.thIn), cwA = 2 * Math.PI - ccw;
   let dir, sweep;
   if (Math.abs(ccw - Math.PI) < 0.4) { dir = k % 2 ? -1 : 1; sweep = Math.PI; } else if (ccw > cwA) { dir = 1; sweep = ccw; } else { dir = -1; sweep = cwA; }
-  sweep = THREE.MathUtils.clamp(sweep, 0.9 * Math.PI, 1.25 * Math.PI);
+  sweep = THREE.MathUtils.clamp(sweep, 0.55 * Math.PI, 0.95 * Math.PI) * (0.88 + 0.24 * ((seedOf(vp.work) * 5) % 1)); // a partial wall: the rest of the circle stays open
   let rMean = 0; for (let q = 0; q < 8; q++) rMean += foot(c.thIn + dir * sweep * q / 7) + 0.2; rMean /= 8;
   const NP = THREE.MathUtils.clamp(Math.round(sweep * rMean / (Pc.wPan * 0.5)), 12, 30), ph0 = seed * 6.283;
   const Bg = [], Tp = [], th = [], hs = [];
@@ -129,10 +134,12 @@ function surfWall(bd, c) {
     const wave = Math.sin(6.283 * 1.4 * u + ph0), env0 = Math.sin(Math.PI * u);
     let r = ft + 0.3 + Pc.fold * (1.5 * wave * Math.pow(env0, 0.6) + 0.18 * (i % 2 ? 1 : -1));
     r = Math.max(ft + 0.1, Math.min(r, rooms(t)));
-    const env = 0.5 + 0.5 * Math.pow(Math.sin(Math.PI * (0.06 + 0.88 * u)), 0.8), ramp = 1 + Pc.slope * (0.5 - u);
-    const h = Math.max(base * env * ramp, sil(t) + 0.18);
+    // a low wall with one or two peaks, and a mid-height edge at both ends where the bands attach
+    const gs = (x, m, w) => Math.exp(-(((x - m) / w) ** 2)), p1 = 0.22 + 0.2 * ((seed * 3) % 1), p2 = 0.62 + 0.22 * ((seed * 11) % 1), ramp = 1 + Pc.slope * (0.5 - u);
+    const env = Math.max(0.2 + 0.8 * Math.max(gs(u, p1, 0.14), 0.7 * gs(u, p2, 0.12)), 0.55 * (gs(u, 0, 0.1) + gs(u, 1, 0.1)));
+    const h = Math.max(base * env * ramp, 0.32);
     const out = sv3(Math.cos(t), 0, Math.sin(t)), b = sv3(c.x, 0.002, c.z).addScaledVector(out, r);
-    const rTop = Math.max(r + Pc.tilt * h + Pc.fold * 2.2 * Math.sin(6.283 * 1.1 * u + ph0 + 1.6) * env0, ft + 0.12);
+    const rTop = Math.max(Math.min(r + Pc.tilt * h + Pc.fold * 2.2 * Math.sin(6.283 * 1.1 * u + ph0 + 1.6) * env0, rooms(t)), ft + 0.12);
     const lean = 0.5 * env0 * Math.sin(6.283 * 1.25 * u + ph0) / Math.max(1, rTop), oT = sv3(Math.cos(t + dir * lean), 0, Math.sin(t + dir * lean));
     const tp = sv3(c.x + oT.x * rTop, h, c.z + oT.z * rTop);
     Bg.push(b); Tp.push(tp); th.push(t); hs.push(h);
@@ -141,11 +148,11 @@ function surfWall(bd, c) {
   const wallFirst = bd.count;
   surfStrip(bd, Bg, Tp, () => color);
   // canopy plates: parallelograms hinged on the top edge, leaning in over the head
-  const nC = Pc.canopy;
+  const nC = Math.min(2, Pc.canopy);
   for (let q = 0; q < nC; q++) {
     const j = Math.min(NP - 3, Math.max(0, Math.round(NP * (0.22 + 0.56 * (q + 0.5) / nC)))), j2 = j + 3, A = Tp[j], B = Tp[j2];
-    if (Math.min(A.y, B.y) < H + 0.1) continue;
-    const mid = (th[j] + th[j2]) / 2, u = j / NP, Lc = Pc.cLen * (0.65 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * (0.8 + 0.4 * ((seed * 7 + q * 0.37) % 1));
+    if (Math.min(A.y, B.y) < H * 1.05 + 0.15) continue;
+    const mid = (th[j] + th[j2]) / 2, u = j / NP, Lc = 0.7 * Pc.cLen * (0.65 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.1))) * (0.8 + 0.4 * ((seed * 7 + q * 0.37) % 1));
     const inward = sv3(-Math.cos(mid), 0, -Math.sin(mid)), D = inward.multiplyScalar(Lc).add(sv3(0, 0.18 + 0.22 * ((seed * 3 + q * 0.41) % 1) , 0).multiplyScalar(Lc));
     bd.plate([A.clone(), B.clone(), B.clone().add(D), A.clone().add(D)], color);
   }
@@ -178,11 +185,11 @@ function surfBridge(bd, M0, t0, hl0, u0, M1, t1, hl1, u1, c0, c1, clearAt, hardE
     const d00 = 6 * t2 - 6 * t, d10 = 3 * t2 - 4 * t + 1, d01 = -6 * t2 + 6 * t, d11 = 3 * t2 - 2 * t;
     Tn.push(sv3().addScaledVector(M0, d00).addScaledVector(m0, d10).addScaledVector(M1, d01).addScaledVector(m1, d11).normalize());
   }
-  { const side = sv3().crossVectors(sv3(0, 1, 0), sv3().subVectors(M1, M0)).normalize(), sg = ((M0.x * 7.3 + M0.z * 3.1) % 2) > 1 ? 1 : -1;
-    for (let i = 1; i < n; i++) { const t = i / n; C[i].addScaledVector(side, sg * 0.09 * Ld * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * t)); } }
+  { const calm = THREE.MathUtils.clamp((Ld - 1.5) / 3, 0, 1), side = sv3().crossVectors(sv3(0, 1, 0), sv3().subVectors(M1, M0)).normalize(), sg = ((M0.x * 7.3 + M0.z * 3.1) % 2) > 1 ? 1 : -1;
+    for (let i = 1; i < n; i++) { const t = i / n; C[i].addScaledVector(side, sg * 0.09 * Ld * calm * Math.sin(2 * Math.PI * t) * Math.sin(Math.PI * t)); } }
   // heights: ease between the two ends, rise over what is in the way, keep the whole band off the floor
   const hlAt = (t) => { const hmid = 0.62, e = hl0 * (1 - t) + hl1 * t; return hmid + (e - hmid) * Math.pow(1 - Math.sin(Math.PI * t), 1.4); };
-  const phiAt = (t) => 0.75 * surfSm(THREE.MathUtils.clamp((t - 0.1) / 0.28, 0, 1)) * (1 - surfSm(THREE.MathUtils.clamp((t - 0.62) / 0.28, 0, 1)));
+  const phiAt = (t) => (0.3 + 0.45 * THREE.MathUtils.clamp((Ld - 1.5) / 3, 0, 1)) * surfSm(THREE.MathUtils.clamp((t - 0.1) / 0.28, 0, 1)) * (1 - surfSm(THREE.MathUtils.clamp((t - 0.62) / 0.28, 0, 1)));
   const clr = C.map((p, i) => (clearAt && i > 0 && i < n ? clearAt(p.x, p.z) + 0.2 : 0));
   const lift = 0.55 + 0.07 * Ld;
   const y = C.map((p, i) => { const t = i / n; return Math.max(M0.y + (M1.y - M0.y) * surfSm(t) + lift * Math.sin(Math.PI * t), clr[i], hlAt(t) * Math.abs(Math.cos(phiAt(t))) + 0.08); });
