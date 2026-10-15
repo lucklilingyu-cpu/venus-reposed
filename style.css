@@ -281,6 +281,12 @@ hr.soft{border:0;border-top:1px dashed var(--line-strong);margin:4px 0}
 #atlasMedia h3{font-family:var(--font-display);font-size:26px;font-weight:600;line-height:1.2;margin:0}
 #atlasMedia .atlas-media-info p{margin:0;line-height:1.7}
 #atlasMedia .meta dd{overflow-wrap:anywhere}
+#atlasMedia .atlas-image-section{margin-top:38px;padding-top:28px;border-top:1px solid var(--line)}
+#atlasMedia .atlas-image-thumb{display:block;aspect-ratio:4/5;margin-bottom:7px;overflow:hidden;border-radius:18px;background:rgba(255,251,245,.65)}
+#atlasMedia .atlas-image-thumb img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:normal}
+#atlasMedia .atlas-image-large{display:flex;align-items:flex-start;justify-content:center;min-width:0;border-radius:14px;overflow:hidden}
+#atlasMedia .atlas-image-large img{display:block;width:100%;height:auto;max-height:75vh;object-fit:contain}
+#atlasMedia .atlas-image-card[aria-pressed="true"]{border-color:var(--gold)}
 @media(max-width:760px){#atlasMedia .atlas-media-detail{grid-template-columns:1fr;padding:12px;gap:16px}#atlasMedia .atlas-media-cards{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}#atlasMedia video{max-height:50vh}}
 
 .toast{position:absolute;left:50%;top:calc(76px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:9px 20px;border-radius:var(--pill);font-size:12.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s;max-width:min(92vw,560px);text-align:center;z-index:60}
