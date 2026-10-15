@@ -562,7 +562,9 @@ function boardMotion(position, from, to, xFirst, straight, raw, y0 = 0) {
    - All plinths start together and land together after 4.5 s, including a lift for unchanged positions.
    Returns, for each position, the time (ms from now) when its plinth has landed. */
 let lastMoves = [], boardFinishTimer = 0; // latest plan and completion marker
-function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
+function arrangeBoard(seq, animate, delay = 0, shuffleRest = false, onMotionStart = null) {
+  let motionNotified = false;
+  const notifyMotion = () => { if (motionNotified) return; motionNotified = true; onMotionStart?.(); };
   clearTimeout(boardFinishTimer);
   canvas.dataset.movementState = 'complete';
   const n = seq.length, plan = planLayout(n), m = plan.day.length;
@@ -632,7 +634,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
     const { vp } = mv, g = vp.g, { x: x0, z: z0 } = mv.from, { x: x1, z: z1 } = mv.to, y0 = g.position.y, s0 = g.scale.x;
     if (mv.fresh) { // a new plinth rises out of the water on its square
       vp.fresh = false;
-      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { groundWhitePosition(vp); vp.moveTween = null; }); }, s);
+      vp.moveTimer = setTimeout(() => { vp.moveTween = tween(mv.dur, (e) => { if (e > 0) notifyMotion(); g.position.y = -0.7 * (1 - e); g.scale.setScalar(0.001 + 0.999 * e); }, () => { groundWhitePosition(vp); vp.moveTween = null; }); }, s);
       continue;
     }
     // Rook-like path along the longer line first; all pieces are moving together.
@@ -640,6 +642,7 @@ function arrangeBoard(seq, animate, delay = 0, shuffleRest = false) {
     const straight = Math.abs(x1 - x0) < 0.01 || Math.abs(z1 - z0) < 0.01;
     vp.moveTimer = setTimeout(() => {
       vp.moveTween = tween(mv.dur, (e, raw) => {
+        if (raw > 0) notifyMotion();
         boardMotion(g.position, mv.from, mv.to, xFirst, straight, raw, y0);
         vp.moveHalo.material.opacity = Math.sin(raw * Math.PI) * 0.65;
         const halo = 1.32 + Math.sin(raw * Math.PI) * 0.16;
@@ -799,6 +802,8 @@ function computeSequence(day, prev = [], varied = false, focusIndex = null, vari
 }
 let applySeq = 0;
 async function applyDay(day, opts = {}) {
+  if (opts.musicTicket && !HallMusic.isCurrent(opts.musicTicket)) return;
+  if (!opts.musicTicket) HallMusic.stop('sequence-reset');
   Architecture.apply(); // diary, saved works and "展厅原状" share the same shell policy
   clearSculptureFocus();
   SequenceGuide.clear();
@@ -813,8 +818,10 @@ async function applyDay(day, opts = {}) {
   if (S.sel >= seq.length) S.sel = 0;
   // sculptures that leave shatter first; then the plinths move like chess pieces; then the new sculptures grow on them
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
-  if (my !== applySeq) return;
-  const arrive = arrangeBoard(seq, animate, animate ? 350 : 0, previous.length > 0 && S.day.length > 0), t0 = performance.now();
+  if (my !== applySeq || (opts.musicTicket && !HallMusic.isCurrent(opts.musicTicket))) return;
+  const arrive = arrangeBoard(seq, animate, animate ? 350 : 0, previous.length > 0 && S.day.length > 0, () => {
+    if (my === applySeq) HallMusic.boardStarted(opts.musicTicket);
+  }), t0 = performance.now();
   applyView();
   canvas.dataset.sequenceWorks = JSON.stringify(seq.map(p => ({ work: p.work, cls: p.act ? p.act.cls : null, background: !p.act, manual: p.status === 'manual' })));
   renderStrip(); renderData(); renderBars();

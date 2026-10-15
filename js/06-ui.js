@@ -50,10 +50,10 @@ function renderStrip(selOnly) {
     if (sel) sel.addEventListener('change', () => {
       const d = S.day.slice(); d[i] = { ...d[i], cls: sel.value };
       if (d[i].g && !GESTURES[d[i].g].cls.includes(sel.value)) d[i].g = null;
-      S.sel = i; applyDay(d, { source: S.source + ' · 已手动修改' });
+      S.sel = i; applyDay(d, { source: S.source + ' · 已手动修改', musicTicket: HallMusic.beginInput('action-edit', musicGesture()) });
     });
     const del = card.querySelector('.del');
-    if (del) del.addEventListener('click', () => { const d = S.day.slice(); d.splice(i, 1); applyDay(d); });
+    if (del) del.addEventListener('click', () => { const d = S.day.slice(); d.splice(i, 1); applyDay(d, { musicTicket: HallMusic.beginInput('action-delete', musicGesture()) }); });
     card.addEventListener('dragstart', (e) => { dragFrom = i; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch (_) {} });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
     card.addEventListener('dragover', (e) => { if (dragFrom >= 0 && i < S.day.length) e.preventDefault(); });
@@ -61,7 +61,7 @@ function renderStrip(selOnly) {
       e.preventDefault();
       if (dragFrom < 0 || dragFrom === i || i >= S.day.length) return;
       const d = S.day.slice(); const [m] = d.splice(dragFrom, 1); d.splice(i, 0, m); dragFrom = -1;
-      S.sel = i; applyDay(d, { source: S.source + ' · 已手动修改' });
+      S.sel = i; applyDay(d, { source: S.source + ' · 已手动修改', musicTicket: HallMusic.beginInput('action-reorder', musicGesture()) });
     });
     box.appendChild(card);
   });
@@ -89,7 +89,7 @@ function openAddMenu(anchor) {
     const c = b.dataset.c;
     const d = S.day.concat([{ cls: c, g: null, label: '手动添加 · ' + CLASS[c].zh, time: null, hours: CLASS[c].dur }]);
     S.sel = d.length - 1; closeAddMenu();
-    applyDay(d, { source: S.source || '手动编排' });
+    applyDay(d, { source: S.source || '手动编排', musicTicket: HallMusic.beginInput('action-add', musicGesture()) });
   });
   setTimeout(() => document.addEventListener('pointerdown', outsideAdd), 0);
 }
@@ -134,7 +134,7 @@ function renderGestures() {
     b.addEventListener('click', () => {
       const d = S.day.slice(); const cur = d[S.sel];
       d[S.sel] = { ...cur, g: cur.g === k ? null : k };
-      applyDay(d, { source: S.source + ' · 复杂姿势' });
+      applyDay(d, { source: S.source + ' · 复杂姿势', musicTicket: HallMusic.beginInput('action-gesture', musicGesture()) });
     });
     box.appendChild(b);
   }

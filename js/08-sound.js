@@ -73,9 +73,9 @@ const Sound = (() => {
     const t = ctx.currentTime; v.gain.gain.cancelScheduledValues(t); v.gain.gain.setValueAtTime(v.gain.gain.value, t); v.gain.gain.linearRampToValueAtTime(0, t + fade);
     setTimeout(() => { v.nodes.forEach(n => { try { n.stop(); } catch (_) {} }); v.gain.disconnect(); }, fade * 1000 + 100);
   }
-  api.enable = async () => { init(); if (ctx.state === 'suspended') await ctx.resume(); api.on = true; };
+  api.enable = async () => { HallMusic.stop('manual-sound'); init(); bus.gain.setValueAtTime(0.9, ctx.currentTime); if (ctx.state === 'suspended') await ctx.resume(); api.on = true; };
   api.play = (cls) => {
-    if (!ctx || !api.on || !cls) return;
+    if (!ctx || !api.on || !cls || HallMusic.ownsBackground()) return;
     if (voice && voice.cls === cls) return;
     stopVoice();
     const gain = ctx.createGain(); gain.gain.value = 0; gain.connect(bus);
@@ -90,6 +90,7 @@ const Sound = (() => {
     }
     voice = v; api.cls = cls;
   };
+  api.suspendForMusic = () => { if (bus && ctx) { bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setValueAtTime(0, ctx.currentTime); } stopVoice(0); api.on = false; api.cls = null; };
   api.stop = () => { stopVoice(); api.cls = null; };
   api.disable = () => { stopVoice(); api.on = false; api.cls = null; };
   api.level = () => {

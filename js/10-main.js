@@ -15,6 +15,10 @@ document.querySelectorAll('[data-diary-display]').forEach(button => button.addEv
 let savedDiaryDisplay = 'deluxe';
 try { savedDiaryDisplay = localStorage.getItem('venus.diaryDisplay') || 'deluxe'; } catch (_) { /* storage may be disabled */ }
 setDiaryDisplay(savedDiaryDisplay);
+$('#journal').addEventListener('input', () => HallMusic.beginInput('journal-edit'));
+$('#samples').addEventListener('change', () => HallMusic.beginInput('sample-select'));
+$('#mergeChk').addEventListener('change', () => HallMusic.beginInput('action-edit'));
+for (const id of ['poseClassSelect', 'poseGestureSelect']) document.getElementById(id)?.addEventListener('change', () => HallMusic.beginInput('annotation-edit'));
 $('#samples').addEventListener('change', (e) => { const k = e.target.value; if (k) { $('#journal').value = SAMPLE_DAYS[k]; e.target.value = ''; $('#textStatus').textContent = '示例已填入，点“生成姿势序列”。'; } });
 $('#mergeChk').addEventListener('change', (e) => { S.merge = e.target.checked; });
 $('#camStart').addEventListener('click', () => { if (Cam.stream) { stopCamera(); camStatus(''); } else startCamera(); });
@@ -234,14 +238,15 @@ function frame() {
     const button = e.target.closest('[data-pose-gallery]'); if (!button) return;
     const id = button.dataset.poseGallery; gallerySelectedId = id; $('#poseAnnotateBtn').disabled = false;
     const saved = galleryAnnotations[id]; if (!saved) return;
-    e.stopImmediatePropagation(); if (Vid.busy) return; Vid.busy = true;
+    e.stopImmediatePropagation(); if (Vid.busy) return;
+    const musicTicket = HallMusic.beginInput('image-annotation', musicGesture()); Vid.busy = true;
     const status = $('#poseGalleryStatus'), box = $('#frames');
     $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
     try {
       const item = poseGalleryItems.find(x => x.id === id), img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
       const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; canvas.getContext('2d').drawImage(img, 0, 0); drawGalleryPoints(canvas, saved.points || {});
       box.replaceChildren(); const fig = document.createElement('figure'), cap = document.createElement('figcaption'); cap.textContent = item.title; fig.append(canvas, cap); box.appendChild(fig);
-      await updateHallFromGalleryAnnotation(item, saved); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
+      await updateHallFromGalleryAnnotation(item, saved, musicTicket); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
     } catch (_) { status.textContent = '图片载入失败，请稍后再试。'; }
     finally { Vid.busy = false; $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; }); }
   }, true);
@@ -305,14 +310,15 @@ $('#poseAnnotatorClose').addEventListener('click', () => { $('#poseAnnotator').h
     const button = e.target.closest('[data-pose-gallery]'); if (!button) return;
     const id = button.dataset.poseGallery; gallerySelectedId = id; $('#poseAnnotateBtn').disabled = false;
     const saved = galleryAnnotations[id]; if (!saved) return;
-    e.stopImmediatePropagation(); if (Vid.busy) return; Vid.busy = true;
+    e.stopImmediatePropagation(); if (Vid.busy) return;
+    const musicTicket = HallMusic.beginInput('image-annotation', musicGesture()); Vid.busy = true;
     const status = $('#poseGalleryStatus'), box = $('#frames');
     $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
     try {
       const item = poseGalleryItems.find(x => x.id === id), img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
       const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; canvas.getContext('2d').drawImage(img, 0, 0); drawGalleryPoints(canvas, saved.points || {});
       box.replaceChildren(); const fig = document.createElement('figure'), cap = document.createElement('figcaption'); cap.textContent = item.title; fig.append(canvas, cap); box.appendChild(fig);
-      await updateHallFromGalleryAnnotation(item, saved); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
+      await updateHallFromGalleryAnnotation(item, saved, musicTicket); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
     } catch (_) { status.textContent = '图片载入失败，请稍后再试。'; }
     finally { Vid.busy = false; $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; }); }
   }, true);
@@ -361,14 +367,15 @@ $('#poseAnnotatorClose').addEventListener('click', () => { $('#poseAnnotator').h
     const button = e.target.closest('[data-pose-gallery]'); if (!button) return;
     const id = button.dataset.poseGallery; gallerySelectedId = id; $('#poseAnnotateBtn').disabled = false;
     const saved = galleryAnnotations[id]; if (!saved) return;
-    e.stopImmediatePropagation(); if (Vid.busy) return; Vid.busy = true;
+    e.stopImmediatePropagation(); if (Vid.busy) return;
+    const musicTicket = HallMusic.beginInput('image-annotation', musicGesture()); Vid.busy = true;
     const status = $('#poseGalleryStatus'), box = $('#frames');
     $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
     try {
       const item = poseGalleryItems.find(x => x.id === id), img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
       const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; canvas.getContext('2d').drawImage(img, 0, 0); drawGalleryPoints(canvas, saved.points || {});
       box.replaceChildren(); const fig = document.createElement('figure'), cap = document.createElement('figcaption'); cap.textContent = item.title; fig.append(canvas, cap); box.appendChild(fig);
-      await updateHallFromGalleryAnnotation(item, saved); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
+      await updateHallFromGalleryAnnotation(item, saved, musicTicket); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
     } catch (_) { status.textContent = '图片载入失败，请稍后再试。'; }
     finally { Vid.busy = false; $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; }); }
   }, true);
@@ -413,14 +420,15 @@ $('#poseGallery').addEventListener('click', async (e) => {
   const button = e.target.closest('[data-pose-gallery]'); if (!button) return;
   const id = button.dataset.poseGallery; gallerySelectedId = id; $('#poseAnnotateBtn').disabled = false;
   const saved = galleryAnnotations[id]; if (!saved) return;
-  e.stopImmediatePropagation(); if (Vid.busy) return; Vid.busy = true;
+  e.stopImmediatePropagation(); if (Vid.busy) return;
+    const musicTicket = HallMusic.beginInput('image-annotation', musicGesture()); Vid.busy = true;
   const status = $('#poseGalleryStatus'), box = $('#frames');
   $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
   try {
     const item = poseGalleryItems.find(x => x.id === id), img = await new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = item.file; });
     const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; canvas.getContext('2d').drawImage(img, 0, 0); drawGalleryPoints(canvas, saved.points || {});
     box.replaceChildren(); const fig = document.createElement('figure'), cap = document.createElement('figcaption'); cap.textContent = item.title; fig.append(canvas, cap); box.appendChild(fig);
-    await updateHallFromGalleryAnnotation(item, saved); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
+    await updateHallFromGalleryAnnotation(item, saved, musicTicket); status.textContent = '已使用人工校正：' + CLASS[saved.cls].zh + '；展厅已更新。';
   } catch (_) { status.textContent = '图片载入失败，请稍后再试。'; }
   finally { Vid.busy = false; $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = false; }); }
 }, true);
@@ -436,3 +444,6 @@ $('#poseGallery').addEventListener('click', async (e) => {
 window.__vr.Architecture = Architecture; window.__vr.NightLighting = NightLighting;
 
 window.__vr.VAHallScan = VAHallScan;
+
+/* DEBUG */
+window.__vr.HallMusic = HallMusic;

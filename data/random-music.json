@@ -1,0 +1,1016 @@
+{
+  "version": 1,
+  "source": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/",
+  "categories": 6,
+  "entriesBeforeDedup": 84,
+  "tracks": [
+    {
+      "id": "goddess-001",
+      "title": "Venus",
+      "artist": "Shocking Blue",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/01_Shocking%20Blue_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "ed327ca37105880718e390a7ef714040b596b1bbad3ead9fcfcebbb75bf741ad",
+      "bytes": 2183457,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-002",
+      "title": "Venus",
+      "artist": "Frankie Avalon",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/02_Frankie%20Avalon_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "21278b2f6fefcbcc48940df61bec5a01e14fc23de46bcd992b7eba94e6cbde38",
+      "bytes": 1722970,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-003",
+      "title": "Venus",
+      "artist": "Lady Gaga",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/03_Lady%20Gaga_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "cb6fbd8a643cbaaafa5da622fa03de1ccae697c52d678e249f430ba73ffbdda1",
+      "bytes": 1874688,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-004",
+      "title": "Venus as a Boy",
+      "artist": "Bjork",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/04_Bjork_Venus%20as%20a%20Boy.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "8f0c29ff072cf26a76973b2557fede2ac8843cc3f5748420ede545f82192a3a5",
+      "bytes": 2276347,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-005",
+      "title": "Aphrodite",
+      "artist": "Kylie Minogue",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/05_Kylie%20Minogue_Aphrodite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "5f3a83d78fc0272a2df87c851a45dcd26707f3b56ba76db4dd2331ef36a5e972",
+      "bytes": 2648645,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-006",
+      "title": "Venus",
+      "artist": "Zara Larsson",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/06_Zara%20Larsson_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "033044075f23a1e930192669854f305b21768f7f2b0298a8a5bf69c1c8fd6486",
+      "bytes": 2498180,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-007",
+      "title": "Aphrodite",
+      "artist": "RINI",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/07_RINI_Aphrodite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "eb961af6af00125fc84e097dec676546e0fd5097c44358cb89a81ba8c72382b2",
+      "bytes": 2036230,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-008",
+      "title": "Aphrodite",
+      "artist": "Honey Gentry",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/08_Honey%20Gentry_Aphrodite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "9d4c95da2ee47ecc31149b9cb7007aa9abb46e0f8876b01d6d1f36dd86ab999b",
+      "bytes": 2265272,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-009",
+      "title": "Venus the Goddess of Love",
+      "artist": "Dee D. Jackson",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/09_Dee%20D.%20Jackson_Venus%20the%20Goddess%20of%20Love.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "33a08144652810657a3c77211f6a951877d8037bb831a77f429383a0325276d6",
+      "bytes": 2695039,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-010",
+      "title": "Alrighty Aphrodite",
+      "artist": "Peach Pit",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/10_Peach%20Pit_Alrighty%20Aphrodite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "321d1c6ff55cefc7d686e79ef55467d2d2590cc2617edae6fdeb430525df1674",
+      "bytes": 2616672,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-011",
+      "title": "Exist for Love",
+      "artist": "AURORA",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/11_AURORA_Exist%20for%20Love.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "3284241f12325e55200bae3999293f65a85a33f8ddf689d3f4839595342acb56",
+      "bytes": 2073428,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-012",
+      "title": "Venus de Milo",
+      "artist": "Prince",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/12_Prince_Venus%20de%20Milo.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "540b6edf2bba7c54959c14956385f939a84276fa955ecc0b7b625a9725a27c1a",
+      "bytes": 1386304,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-013",
+      "title": "Venus",
+      "artist": "Television",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/13_Television_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "56fe73232cc0cde92b2807b26f8e59411fdbe96ddf24e25935eca52a689eea42",
+      "bytes": 2749269,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-014",
+      "title": "Venus in Blue Jeans",
+      "artist": "Jimmy Clanton",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/14_Jimmy%20Clanton_Venus%20in%20Blue%20Jeans.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "f20d9c4237686d15a51732977dda495fb5eff69f87cf20ba72bdef3bf570fe7f",
+      "bytes": 1727045,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-015",
+      "title": "Venus",
+      "artist": "Billy Idol",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/15_Billy%20Idol_Venus.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-pop.html",
+      "sha256": "8d3bc63ad072ab48d150784990b290b0d55195ca84eee9ffdeb33723e096c706",
+      "bytes": 2771838,
+      "categories": [
+        "venus-pop"
+      ]
+    },
+    {
+      "id": "goddess-016",
+      "title": "Venus: The Bringer of Peace",
+      "artist": "Gustav Holst",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/01_Gustav%20Holst_Venus%20-%20The%20Bringer%20of%20Peace.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "83b50863647e7baf7405ebc8142f4b0e13397926fbfa8152d699e48293e4b7e4",
+      "bytes": 4340230,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-017",
+      "title": "Tannhauser: Overture and Venusberg Music",
+      "artist": "Richard Wagner",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/02_Richard%20Wagner_Tannhauser%20-%20Overture%20and%20Venusberg%20Music.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "2dc6de325a7524cf13955cfdc8f6fb0ce1c1010d6c49f953f9cb7d3a0faf89f4",
+      "bytes": 10555701,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-018",
+      "title": "Venus: Overture",
+      "artist": "Othmar Schoeck",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/03_Othmar%20Schoeck_Venus%20Op.32%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "448556cd30ac7ab5c7f4d987f57b686df9b024fb3a970e0a7f8f73f22cdd882a",
+      "bytes": 759052,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-019",
+      "title": "Venus and Adonis: Overture",
+      "artist": "John Blow",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/04_John%20Blow_Venus%20and%20Adonis%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "2dd00cf9e5e1bbfeb43ee3774a7fe3d995f5bb1bad62d9c7b63cfa002a7e913c",
+      "bytes": 1640528,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-020",
+      "title": "Psyche: Overture",
+      "artist": "Matthew Locke",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/05_Matthew%20Locke_Psyche%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "51fbd0978d2b95dffddc5fc843256d62a80eb5cd614c8ed7e1844f3dd0337ae7",
+      "bytes": 1871555,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-021",
+      "title": "Ascanio in Alba: Overture",
+      "artist": "Wolfgang Amadeus Mozart",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/06_Wolfgang%20Amadeus%20Mozart_Ascanio%20in%20Alba%20K.111%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "f77feb7d5ab3d95c2c78750067e1eb243fccc90b24646c8c562fc884e92ff7e8",
+      "bytes": 2614791,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-022",
+      "title": "La belle Helene: Overture",
+      "artist": "Jacques Offenbach",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/07_Jacques%20Offenbach_La%20belle%20Helene%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "4c9c5b25be1b0a17d8d8cc450094a6c4991011d708e1e29d59659bad3046ec67",
+      "bytes": 4490695,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-023",
+      "title": "Orpheus in the Underworld: Overture",
+      "artist": "Jacques Offenbach",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/08_Jacques%20Offenbach_Orpheus%20in%20the%20Underworld%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "3ff5c4ce8f539d03de626cf159fba04f591c5b171087e25b07395aa8bb674271",
+      "bytes": 4734156,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-024",
+      "title": "Psyche: Overture",
+      "artist": "Jean-Baptiste Lully",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/09_Jean-Baptiste%20Lully_Psyche%20LWV56%20-%20Ouverture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "075431008670ac34ac6b1dc216958ebfe4ac2bdae43b3a191c343b03542b247f",
+      "bytes": 2006347,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-025",
+      "title": "Dardanus: Overture",
+      "artist": "Jean-Philippe Rameau",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/10_Jean-Philippe%20Rameau_Dardanus%20-%20Overture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "5360762c23f48fbeeea62f75b0aa356e2bd74aa4c7bfe85ec1692f81cb3b9438",
+      "bytes": 2017839,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-026",
+      "title": "Les surprises de l'amour: Orchestral Suite",
+      "artist": "Jean-Philippe Rameau",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/11_Jean-Philippe%20Rameau_Les%20surprises%20de%20l%20amour%20-%20Suite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "049c0b6caf66101764ead84ee917d83da6ac87dc8782e6e50bbf9219855a9a88",
+      "bytes": 5671430,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-027",
+      "title": "Pygmalion: Overture",
+      "artist": "Jean-Philippe Rameau",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/12_Jean-Philippe%20Rameau_Pygmalion%20-%20Ouverture.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "e0ec39eaa393852eddebeafe7ab5b13d417fa8693e6a6299629f29e0647e77c5",
+      "bytes": 2111462,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-028",
+      "title": "Trionfo di Afrodite",
+      "artist": "Carl Orff",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/13_Carl%20Orff_Trionfo%20di%20Afrodite.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "f074d01bb2cced4ae2a7b3d7dbba8cf6aee6ce469fd05d6288eed43f238d80b0",
+      "bytes": 20032925,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-029",
+      "title": "Psyche et Eros",
+      "artist": "Cesar Franck",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/14_Cesar%20Franck_Psyche%20et%20Eros.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "8eda186a2b0d47132bbcb9c350048dece1ad6a8893bcfac11f190431a36d095b",
+      "bytes": 4636145,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-030",
+      "title": "Ascanio: Venus, Junon et Pallas",
+      "artist": "Camille Saint-Saens",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/classic%20music/15_Camille%20Saint-Saens_Ascanio%20-%20Venus%2C%20Junon%20et%20Pallas.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-venus-classical.html",
+      "sha256": "5a819c9cd87c116da5ee02f10d2112d303ab736dcb3c128552e648bf22e4205d",
+      "bytes": 814536,
+      "categories": [
+        "venus-classical"
+      ]
+    },
+    {
+      "id": "goddess-031",
+      "title": "Undine",
+      "artist": "Laura Marling",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/01_Laura%20Marling_Undine.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "f8fcffebf7dc930a4d786dc2c766eca17e7b3abd6de177c28eaed1a26f2373d9",
+      "bytes": 2321697,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-032",
+      "title": "Rusalka, Rusalka - Wild Rushes",
+      "artist": "The Decemberists",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/02_The%20Decemberists_Rusalka%2C%20Rusalka%20-%20Wild%20Rushes.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "b2b0fb3979f4591c8e67aa0b5df415be8c2322b9fe452f4490f6af511fcc6b45",
+      "bytes": 3965320,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-033",
+      "title": "Rusalochki",
+      "artist": "Go_A",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/03_Go_A_Rusalochki.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "cff0660f2341147259e3c2dc7446edf709ab93cd0732d86cd556d76d93d84e1a",
+      "bytes": 2412603,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-034",
+      "title": "Naiad",
+      "artist": "Tarja",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/04_Tarja_Naiad.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "f8a75a481a65d5cc818088ea49e625444b0936b064a53b6c05fe7263440ceb20",
+      "bytes": 3435348,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-035",
+      "title": "The Archive of Lost Dreams",
+      "artist": "Tarja",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/05_Tarja_The%20Archive%20of%20Lost%20Dreams.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "6c1c13d7b4d65771bd1695fde96636218e846f5a50525e0b4b076bf414ae87f7",
+      "bytes": 2341549,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-036",
+      "title": "Undine",
+      "artist": "The WAEVE",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/06_The%20WAEVE_Undine.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "ec40b87fb0a17c9017cc4d1ec8ac27f4998d4184be1a7fbdb39d1218933d9e87",
+      "bytes": 3736279,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-037",
+      "title": "Naiad Dreams",
+      "artist": "Wobbler",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/07_Wobbler_Naiad%20Dreams.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "c4d174694c7d6fa11b7c5f4ce27f9c9ca5450fc4bd95d9c0b65850d510477f28",
+      "bytes": 2112925,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-038",
+      "title": "Loreley",
+      "artist": "Blackmore&#x27;s Night",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/08_Blackmore's%20Night_Loreley.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "7a0f4197005ecd7dd29cb25925c0edaba9c2009bddb8fccbeff126b81447ab73",
+      "bytes": 2596296,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-039",
+      "title": "Rusalka",
+      "artist": "Rastaban feat. Daemonia Nymphe",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/09_Rastaban%20feat.%20Daemonia%20Nymphe_Rusalka.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "bbcadc9baee63227e528f4a3429cc1c27737c3878208a892e7fb10685bf56177",
+      "bytes": 2673617,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-040",
+      "title": "Naiads (Water Nymphs)",
+      "artist": "Michael Levy",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/10_Michael%20Levy_Naiads%20(Water%20Nymphs).mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "ae8aa1ad0db265919d66743d1aa8388acbd2df41d5d635c7d4d4e5f2f0fea120",
+      "bytes": 2626703,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-041",
+      "title": "Pool of the Undines",
+      "artist": "Derek Fiechter",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/11_Derek%20Fiechter_Pool%20of%20the%20Undines.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "482002815c3fd9e8174e9ef83d9fb586c4dc416cb184a32f22d3237660d17896",
+      "bytes": 2684381,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-042",
+      "title": "Water Nymph",
+      "artist": "Derek Fiechter",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/12_Derek%20Fiechter_Water%20Nymph.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "884d8c4b6f8a19dad086a949cab1713ee5e1a2f1734b0f61ef37978e19212c17",
+      "bytes": 1965177,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-043",
+      "title": "River Nymphs",
+      "artist": "Derek Fiechter",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/13_Derek%20Fiechter_River%20Nymphs.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "6dc615ceb8599e923dd45e00dc1cb0821bd98fb6c3fbc85609e0995dcfd478cd",
+      "bytes": 2518869,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-044",
+      "title": "Naiad Island",
+      "artist": "Derek Fiechter",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/14_Derek%20Fiechter_Naiad%20Island.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "f5f31ddd5a549f2c2ac323b6681bc077ffd1c3bda8ae1fa9862b7f93d8cf7ff7",
+      "bytes": 2403826,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-045",
+      "title": "River of Healing Nymphs",
+      "artist": "Derek Fiechter & Brandon Fiechter",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/water/15_Derek%20Fiechter_River%20of%20Healing%20Nymphs.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-water-nymphs.html",
+      "sha256": "d66b75e562d9f8d3028e76b191a62c69eac0974bff767b677fe7bae72be5c940",
+      "bytes": 2656169,
+      "categories": [
+        "water-nymphs"
+      ]
+    },
+    {
+      "id": "goddess-046",
+      "title": "Artemis",
+      "artist": "AURORA",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_01_AURORA_Artemis.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "e57783e31614cbed7c1c568c7bcd8995cba2911d6d324ce8b99e44954ed789b8",
+      "bytes": 1905409,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-047",
+      "title": "Artemis",
+      "artist": "Lindsey Stirling",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_02_Lindsey%20Stirling_Artemis.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "271710c96a5b02f784dd190bcc03122a9c6b8caf935a39f5f4a47607e5752286",
+      "bytes": 1941562,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-048",
+      "title": "Underground",
+      "artist": "Lindsey Stirling",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_03_Lindsey%20Stirling_Underground.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "3dca0f4e26186df7859eaa7038eb1a6e63353dc6b98521fd03e533b6fb45dc4b",
+      "bytes": 2121284,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-049",
+      "title": "The Upside",
+      "artist": "Lindsey Stirling feat. Elle King",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_04_Lindsey%20Stirling%20feat.%20Elle%20King_The%20Upside.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "8b095bdbad39dc59673f9aec3f4c4763a23360b0044458d6d8ea0d59c3a8f797",
+      "bytes": 1934666,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-050",
+      "title": "Artemis",
+      "artist": "Wendy Rule",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_05_Wendy%20Rule_Artemis.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "cc5e5dfb753cc62f91e5ceeda3202b50aa9f958e60e3c9f6a2c4183e54a9fbba",
+      "bytes": 1909588,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-051",
+      "title": "Aradia",
+      "artist": "Inkubus Sukkubus",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_06_Inkubus%20Sukkubus_Aradia.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "de14c34443741f90379d1deac2a8837e42f08143c52c0e199a6c01aa75b064ab",
+      "bytes": 1988791,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-052",
+      "title": "Trinity",
+      "artist": "Inkubus Sukkubus",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_07_Inkubus%20Sukkubus_Trinity.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "f5f22e321f907fd80b78fdffb291ab81b1fe5cd43a5ce3ba65d2128509391a1d",
+      "bytes": 2600685,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-053",
+      "title": "Wytches Chant 98",
+      "artist": "Inkubus Sukkubus",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_08_Inkubus%20Sukkubus_Wytches%20Chant%2098.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "7ceba705b4c146563b2d2d3bb6d7f572ae9c503636c7c5f286128de19508065a",
+      "bytes": 1600717,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-054",
+      "title": "Nemoralia",
+      "artist": "Ulver",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_09_Ulver_Nemoralia.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "7409bbbaad5822c806f9fec01c426c48e6d62d138dfbe4707ee52a2bf2ed1afd",
+      "bytes": 2025781,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-055",
+      "title": "Diana",
+      "artist": "Comus",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_10_Comus_Diana.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "be3fb64cf0ee6560cf51a5ef3d2659242921d5c199b659a8b738766693b2cfa2",
+      "bytes": 2195472,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-056",
+      "title": "Diana (Goddess of the Moon)",
+      "artist": "The Rowan Amber Mill",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_11_The%20Rowan%20Amber%20Mill_Diana%20(Goddess%20of%20the%20Moon).mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "b80e339b7cc5c387def9481d30644f572eddb2389059d75e10c827c0ccf0d1d6",
+      "bytes": 2114179,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-057",
+      "title": "Diana",
+      "artist": "Steve Cartwright and The Last Days",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_12_Steve%20Cartwright%20and%20The%20Last%20Days_Diana.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "29a452345136f0b0857f56ee47c93965fe27f83dfcd833ef1b9e9ebcb7775dc8",
+      "bytes": 2414170,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-058",
+      "title": "Artemis",
+      "artist": "Olympus",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_13_Olympus_Artemis.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "4d83cca1ca2c2ccc20c5b115a0e32a1c57e60e761ada45aeb36014acf20980c1",
+      "bytes": 2079488,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-059",
+      "title": "Artemis",
+      "artist": "Greek Mythologist",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_14_Greek%20Mythologist_Artemis.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "b64be4b4afb2b16c107059cae2a96d47974b5c1817fbf3ccb7247ece706d4fc6",
+      "bytes": 1983358,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-060",
+      "title": "The Wild Goddess - The Ancient Devotion II",
+      "artist": "Elenion",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/Diana_15_Elenion_The%20Wild%20Goddess%20-%20The%20Ancient%20Devotion%20II.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-diana.html",
+      "sha256": "58d5da6a1408b32d0fb36e69eeaa39fa992df087170fed3f403d3a080d318090",
+      "bytes": 2559097,
+      "categories": [
+        "diana"
+      ]
+    },
+    {
+      "id": "goddess-061",
+      "title": "Romeo and Juliet: Fantasy Overture",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/01_%E7%BB%B4%E7%BA%B3%E6%96%AF_%E7%88%B1%E4%B8%8E%E7%BE%8E/Batch3_BE2A3642939B3A31.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "52a6cbc90287629488ea6251df170d76857fffaa6dc00836f4b782e4ae9c02e3",
+      "bytes": 8899052,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-062",
+      "title": "Holst- venus",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/01_%E7%BB%B4%E7%BA%B3%E6%96%AF_%E7%88%B1%E4%B8%8E%E7%BE%8E/Holst_Venus_USAF.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "311c20e9cfa61cc235e99c6d96c6d9adcc20ff16611e08e1ae73c9064095c41d",
+      "bytes": 4005345,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-063",
+      "title": "Piano Sonata No. 14, Moonlight, Op. 27 No. 2 (movement unspecified by source)",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/02_%E7%8B%84%E5%AE%89%E5%A8%9C_%E6%9C%88%E4%BA%AE%E4%B8%8E%E6%A3%AE%E6%9E%97/Beethoven_Moonlight_SchwarzerStern.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "77c60fb3831da32e1d9216c79273e595086c56f4f8313971699dd7a198e42095",
+      "bytes": 3980059,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-064",
+      "title": "Divertissement - Pizzicato (from the ballet Sylvia) (ISRC USUAN1100256)",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/02_%E7%8B%84%E5%AE%89%E5%A8%9C_%E6%9C%88%E4%BA%AE%E4%B8%8E%E6%A3%AE%E6%9E%97/Delibes_Sylvia_Pizzicato_KevinMacLeod.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "bad00eca23968ba18dc3e39511b1cb1f1c7f8792ffe9b21f524b16faf90a7245",
+      "bytes": 1150352,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-065",
+      "title": "\"Reflets dans l'eau\"",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/03_%E6%B0%B4%E6%B3%BD%E4%BB%99%E5%A5%B3_%E6%B2%B3%E6%B5%81%E4%B8%8E%E6%B9%96%E6%B3%8A/Debussy_Reflets_GiorgiLatso_2017.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "b9e1428783f214a8415b21205f8f896decb42d7d0b3275bd50a38b40e4b12d5e",
+      "bytes": 2663487,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-066",
+      "title": "Water Games / Jeux d'eau, M.30",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/03_%E6%B0%B4%E6%B3%BD%E4%BB%99%E5%A5%B3_%E6%B2%B3%E6%B5%81%E4%B8%8E%E6%B9%96%E6%B3%8A/Ravel_JeuxDeau_AnnaSutyagina.ogg",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "211e30bd796166444acf90cf219eb0018af90fdc4d3bfbaac5a529b7e636825d",
+      "bytes": 6729830,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-067",
+      "title": "The Swan / Le Cygne",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/05_%E5%8F%A4%E5%85%B8%E9%92%A2%E7%90%B4%E4%B8%8E%E5%AE%A4%E5%86%85%E4%B9%90/SaintSaens_Swan_JohnMichel.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "e1f67415901d6da475659d641580bbf7b09353ce443f6632b653c4b146c4105d",
+      "bytes": 1869888,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-068",
+      "title": "Morning Mood",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/06_%E5%8F%A4%E5%85%B8%E6%AD%8C%E5%89%A7_%E8%8A%AD%E8%95%BE_%E7%AE%A1%E5%BC%A6%E4%B9%90/Grieg_Morning_Musopen.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "6b9ac5db29461f9997591d23050526c7b90f353bb39c5dcf797b6e1ec9f6d004",
+      "bytes": 2751301,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-069",
+      "title": "The Hebrides Overture / Fingal's Cave",
+      "artist": "",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/06_%E5%8F%A4%E5%85%B8%E6%AD%8C%E5%89%A7_%E8%8A%AD%E8%95%BE_%E7%AE%A1%E5%BC%A6%E4%B9%90/Mendelssohn_Hebrides_Musopen.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-classical-gallery.html",
+      "sha256": "ba4fe21119a1dfdba974bfd5be5a69d3662fc5d2d97f3acc9222330f6f673607",
+      "bytes": 5461379,
+      "categories": [
+        "classical-gallery"
+      ]
+    },
+    {
+      "id": "goddess-070",
+      "title": "Venus",
+      "artist": "MusicWord",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/01%20Venus%20-%20MusicWord.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "713add25d52e12c92bb7e2dd9b67055086bd77c510e608fbb0451d2cde225c3b",
+      "bytes": 1536984,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-071",
+      "title": "Aphrodite's Blessing",
+      "artist": "Nightcast",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/02%20Aphrodite's%20Blessing%20-%20Nightcast.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "af540ea2f95ef949afb749269d2d7cc6766b1ac406c62db40480c77b477f7019",
+      "bytes": 3507974,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-072",
+      "title": "Venus Glow",
+      "artist": "u_rs86c3t9eq",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/03%20Venus%20Glow%20-%20u_rs86c3t9eq.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "ebf9dddf1cf9371dc8faa1de163bcac9757ffd307869d8178db47163eee35d50",
+      "bytes": 2735180,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-073",
+      "title": "Venus",
+      "artist": "AlisiaBeats",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/04%20Venus%20-%20AlisiaBeats.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "19fc3cde402eab9e9205ad89c2d1dcfd4d62a79815abc1815ccc681f602f8fca",
+      "bytes": 744236,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-074",
+      "title": "Nature Of Venus",
+      "artist": "Dream-Protocol",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/05%20Nature%20Of%20Venus%20-%20Dream-Protocol.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "ded9e60aee5a2ef730f91abc6de1a1d46ead72fb6f89e7f727ec11df36a6932a",
+      "bytes": 1922028,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-075",
+      "title": "Surfing the Radio Waves of Venus",
+      "artist": "Emand_Edroff",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/06%20Surfing%20the%20Radio%20Waves%20of%20Venus%20-%20Emand_Edroff.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "a1e836c601263a74152cc0fd00f328cd4e7d306bb7d92f45b4e5dd9615c4e5d7",
+      "bytes": 2218220,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-076",
+      "title": "Between Venus and Mars",
+      "artist": "Fayette35",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/07%20Between%20Venus%20and%20Mars%20-%20Fayette35.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "ab001eed9c2b89ec59c7efc324d9250362c558657e48f1bfeb4d510b31623369",
+      "bytes": 2535070,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-077",
+      "title": "Jungle of Venus",
+      "artist": "SlavaMSound",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/08%20Jungle%20of%20Venus%20-%20SlavaMSound.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "324b400e7817d01ec535c237bf5f20fcf2a84bc74034ebbbf9f48316049b8497",
+      "bytes": 1158313,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-078",
+      "title": "Planet Frequencies Venus",
+      "artist": "HoggyArt",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/09%20Planet%20Frequencies%20Venus%20-%20HoggyArt.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "541d66bbcf117544c524532e11c60b96699d1ff5a513db4d8e5340bd217382f3",
+      "bytes": 1440908,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-079",
+      "title": "Venus Lo-Fi",
+      "artist": "LofCosmos",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/10%20Venus%20Lo-Fi%20-%20LofCosmos.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "77b2aade92b6d2627e21bae670340acfff9bd8ab1c5aa876e31af4373395151e",
+      "bytes": 2097467,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-080",
+      "title": "lofi Venus",
+      "artist": "lofi_nemuko",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/11%20lofi%20Venus%20-%20lofi_nemuko.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "7dfa5b60b279ef561e8c667b668218a415e1610549c23ebbfc33b931a9537a56",
+      "bytes": 1765817,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-081",
+      "title": "Goddess",
+      "artist": "Yasuko",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/12%20Goddess%20-%20Yasuko.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "54914c50604a09fcac0008b8e63aa1d26ade19fef595c2f4277771ae77d0ab92",
+      "bytes": 1209408,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-082",
+      "title": "Greek Tales",
+      "artist": "Darren_Hirst",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/13%20Greek%20Tales%20-%20Darren_Hirst.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "f840b53fe688834c512008ad40d8716a6b639f23e7cab9479362a082819835ba",
+      "bytes": 1317555,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-083",
+      "title": "Cinematic Greek and Roman",
+      "artist": "Simoke",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/14%20Cinematic%20Greek%20and%20Roman%20-%20Simoke.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "18e394f7f5ee2c6965aed1bcf1670b83c6b6f2cc0010ee93a081a1b8b2de770a",
+      "bytes": 1659237,
+      "categories": [
+        "background"
+      ]
+    },
+    {
+      "id": "goddess-084",
+      "title": "Divine Feminine Healing",
+      "artist": "changewire",
+      "url": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/music/background%20music/15%20Divine%20Feminine%20Healing%20-%20changewire.mp3",
+      "page": "https://goddess-music-library-jingjing.chicseed257.chatgpt.site/goddess-background.html",
+      "sha256": "84aed8bbfcca4557c88289dff0f91f760c0ffad9904cdb1eaf1a642b996a31c1",
+      "bytes": 2718137,
+      "categories": [
+        "background"
+      ]
+    }
+  ]
+}

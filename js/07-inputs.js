@@ -115,6 +115,7 @@ async function runText() {
   const text = $('#journal').value.trim();
   const st = $('#textStatus');
   if (!text) { st.textContent = '先写几句你的一天。'; return; }
+  const musicTicket = HallMusic.beginInput('text-submit', musicGesture());
   const btn = $('#parseBtn'); btn.disabled = true;
   st.innerHTML = '<b>正在拆分活动…</b>';
   let day = null, source = '';
@@ -130,7 +131,7 @@ async function runText() {
   st.innerHTML = `${source}：<b>${day.map(d => CLASS[d.cls].zh).join(' → ')}</b>`;
   S.posPal = {};
   S.sel = 0;
-  await applyDay(day, { source, fresh: true });
+  await applyDay(day, { source, fresh: true, musicTicket });
   flyHome();
 }
 
@@ -237,7 +238,7 @@ function mpDetect(source) {
 }
 
 /* ---------- camera mode ---------- */
-const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, presentationPhase: '', returnTimer: 0, presentationToken: 0 };
+const Cam = { stream: null, raf: 0, demo: false, hist: [], holdCls: null, holdT0: 0, lastAdded: null, last: null, demoT0: 0, presentationBusy: false, presentationPhase: '', returnTimer: 0, presentationToken: 0, session: 0, musicTicket: null };
 function camStatus(t) { $('#camStatus').innerHTML = t; }
 function startSession() {
   clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; stopPoseSlideshow();
@@ -246,25 +247,32 @@ function startSession() {
 }
 async function startCamera() {
   stopCamera();
+  const session = Cam.session;
   const msg = $('#camMsg');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     msg.textContent = '这个浏览器不能使用摄像头。'; camStatus('请用最新版 Chrome、Edge 或 Safari 通过 https 网址打开；也可以先点“模拟演示”，或在“视频 / 照片”里上传手机拍的片段。');
     return;
   }
   try {
-    Cam.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+    if (session !== Cam.session) { stream.getTracks().forEach(t => t.stop()); return; }
+    Cam.stream = stream;
   } catch (e) {
+    if (session !== Cam.session) return;
     msg.textContent = '摄像头没有打开';
     camStatus('浏览器没有允许使用摄像头：点地址栏左侧的图标，把摄像头改为“允许”后再试；或者先用“模拟演示”和“视频 / 照片”。');
     return;
   }
   const video = $('#camVideo'); video.srcObject = Cam.stream; await video.play().catch(() => {});
+  if (session !== Cam.session) return;
   msg.textContent = ''; camStatus('<b>正在加载姿势模型（MediaPipe）…</b>');
-  try { await loadMP(); } catch (e) { camStatus('姿势模型没有加载成功（需要联网）。可以先用“模拟演示”。'); return; }
+  try { await loadMP(); } catch (e) { if (session !== Cam.session) return; camStatus('姿势模型没有加载成功（需要联网）。可以先用“模拟演示”。'); return; }
   camStatus('站进画面，让全身入镜；坐在电脑前时只拍到上半身也可以。保持一个姿势 2 秒就会加入序列。');
+  if (session !== Cam.session) return;
   startSession(); Cam.demo = false; $('#camAdd').disabled = false;
   $('#camStart').textContent = '关闭摄像头';
   const loop = () => {
+    if (session !== Cam.session) return;
     Cam.raf = requestAnimationFrame(loop);
     if (video.readyState < 2) return;
     let res = null; try { res = mpDetect(video); } catch (e) { return; }
@@ -273,6 +281,10 @@ async function startCamera() {
   loop();
 }
 function stopCamera() {
+  ++Cam.session;
+  // Only dispose this camera task; a newer image/text input owns its own ticket.
+  if (Cam.musicTicket && HallMusic.isCurrent(Cam.musicTicket)) HallMusic.stop('camera-closed');
+  Cam.musicTicket = null; Cam.last = null;
   clearTimeout(Cam.returnTimer); Cam.returnTimer = 0; Cam.presentationBusy = false; Cam.presentationPhase = ''; Cam.presentationToken++; stopPoseSlideshow();
   cancelAnimationFrame(Cam.raf); Cam.raf = 0;
   if (Cam.stream) { Cam.stream.getTracks().forEach(t => t.stop()); Cam.stream = null; }
@@ -337,6 +349,8 @@ function camFrame(K, P2, mirror) {
 function addCamPose(r) {
   if (Cam.presentationBusy) return;
   if (S.day.length >= 10) { toast('序列已有 10 个位置'); return; }
+  // This is the accepted-action boundary, after the existing busy/capacity guards.
+  const musicTicket = Cam.musicTicket = HallMusic.beginInput('camera-action', musicGesture());
   const d = new Date();
   const entry = { cls: r.top, g: r.g, label: '镜头前 · ' + CLASS[r.top].zh + (r.g ? '（' + GESTURES[r.g].zh + '）' : ''), time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`, hours: CLASS[r.top].dur };
   const day = S.day.concat([entry]);
@@ -345,7 +359,7 @@ function addCamPose(r) {
   Cam.presentationPhase = 'arranging';
   const token = ++Cam.presentationToken;
   const poseImagesReady = loadPoseGallery();
-  applyDay(day, { source: '摄像头', onVisualComplete: () => {
+  applyDay(day, { source: '摄像头', musicTicket, onVisualComplete: () => {
     if (token !== Cam.presentationToken) return;
     Cam.presentationPhase = 'closeup';
     focusSculpture(day.length - 1);
@@ -480,6 +494,7 @@ async function loadPoseGallery() {
 }
 async function analyzeGalleryImage(id, button) {
   if (Vid.busy) return;
+  const musicTicket = HallMusic.beginInput('image-gallery', musicGesture());
   Vid.busy = true;
   const status = $('#poseGalleryStatus'), box = $('#frames');
   $$('#poseGallery [data-pose-gallery]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', String(b === button)); });
@@ -503,7 +518,7 @@ async function analyzeGalleryImage(id, button) {
     const result = enough ? classifyPose(found.K, null) : galleryPoseHint(item);
     const label = item.title.slice(0, 28) + ' · ' + CLASS[result.top].zh;
     const slots = Array.from({ length: EXISTING.length }, (_, i) => i).filter(i => i !== lastGalleryFocus); const focusIndex = slots[Math.floor(Math.random() * slots.length)] ?? 0; lastGalleryFocus = focusIndex; S.sel = focusIndex; S.posPal = { [focusIndex]: palette };
-    await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true, focusIndex,
+    await applyDay([{ cls: result.top, g: result.g, label, time: null, hours: CLASS[result.top].dur }], { source: '骨骼图集识别', fresh: true, focusIndex, musicTicket,
       onVisualComplete: seq => {
         const i = seq.findIndex(p => p.act && p.act.cls === result.top && (p.act.g || null) === (result.g || null));
         if (i < 0) return;
@@ -535,6 +550,7 @@ function galleryPoseHint(item) {
 
 
 async function loadMedia(files) {
+  if (files.some(f => /^(image|video)\//.test(f.type))) HallMusic.beginInput('image-select', musicGesture());
   Vid.frames = [];
   const box = $('#frames'); box.innerHTML = '';
   const st = $('#videoStatus');
@@ -572,6 +588,7 @@ function frameFrom(src, w, h, i, t) {
 }
 async function analyzeMedia() {
   if (Vid.busy || !Vid.frames.length) return;
+  const musicTicket = HallMusic.beginInput('image-submit', musicGesture());
   Vid.busy = true; $('#videoGo').disabled = true;
   const st = $('#videoStatus');
   let results = null, engine = '';
@@ -638,7 +655,7 @@ async function analyzeMedia() {
   renderBars(null);
   st.innerHTML = `由 ${engine} 识别：<b>${day.map(d => CLASS[d.cls].zh).join(' → ')}</b>。视频时长按比例换算成一天的时长，每段的主色调已传给对应位置的表皮。`;
   S.sel = 0;
-  await applyDay(day, { source: `由${engine}从${isVideo ? '视频' : '照片'}识别`, fresh: true });
+  await applyDay(day, { source: `由${engine}从${isVideo ? '视频' : '照片'}识别`, fresh: true, musicTicket });
   Vid.busy = false; $('#videoGo').disabled = false;
 }
 
@@ -704,11 +721,11 @@ function openGalleryAnnotator() {
   img.onerror = () => { $('#poseAnnotatorStatus').textContent = '图片载入失败，请稍后再试。'; }; img.src = item.file;
   editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function updateHallFromGalleryAnnotation(item, annotation) {
+function updateHallFromGalleryAnnotation(item, annotation, musicTicket = HallMusic.beginInput('image-annotation', musicGesture())) {
   const cls = CLS.includes(annotation.cls) ? annotation.cls : 'standing';
   const validGesture = annotation.g && GESTURES[annotation.g]?.cls.includes(cls) ? annotation.g : null;
   S.posPal = {}; S.sel = 0;
-  return applyDay([{ cls, g: validGesture, label: item.title.slice(0, 28) + ' · 校正' + CLASS[cls].zh, time: null, hours: CLASS[cls].dur }], { source: '骨骼图集人工校正', fresh: true });
+  return applyDay([{ cls, g: validGesture, label: item.title.slice(0, 28) + ' · 校正' + CLASS[cls].zh, time: null, hours: CLASS[cls].dur }], { source: '骨骼图集人工校正', fresh: true, musicTicket });
 }
 function exportGalleryAnnotations() {
   const blob = new Blob([JSON.stringify({ version: 1, images: galleryAnnotations }, null, 2)], { type: 'application/json' });
@@ -729,12 +746,12 @@ async function importGalleryAnnotations(file) {
 
 
 
-updateHallFromGalleryAnnotation = function (item, annotation) {
+updateHallFromGalleryAnnotation = function (item, annotation, musicTicket = HallMusic.beginInput('image-annotation', musicGesture())) {
   const cls = CLS.includes(annotation.cls) ? annotation.cls : 'standing';
   const validGesture = annotation.g && GESTURES[annotation.g]?.cls.includes(cls) ? annotation.g : null;
   S.posPal = {}; S.sel = 0;
   return applyDay([{ cls, g: validGesture, label: item.title.slice(0, 28) + ' · 校正' + CLASS[cls].zh, time: null, hours: CLASS[cls].dur }], {
-    source: '骨骼图集人工校正', fresh: true,
+    source: '骨骼图集人工校正', fresh: true, musicTicket,
     onVisualComplete: (seq) => {
       const i = seq.findIndex(p => p.act && p.act.cls === cls && (p.act.g || null) === validGesture);
       if (i < 0) return;
