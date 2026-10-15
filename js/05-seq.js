@@ -826,7 +826,7 @@ async function applyDay(day, opts = {}) {
   await Promise.all(seq.map(p => meshOf(p.work).catch(() => null)));
   if (my !== applySeq || (opts.musicTicket && !HallMusic.isCurrent(opts.musicTicket))) return;
   const arrive = arrangeBoard(seq, animate, animate ? 350 : 0, previous.length > 0 && S.day.length > 0, () => {
-    if (my === applySeq) HallMusic.boardStarted(opts.musicTicket);
+    if (my === applySeq) HallMusic.boardStarted(opts.musicTicket, hallMusicOutput(seq, REC));
   }), t0 = performance.now();
   applyView();
   canvas.dataset.sequenceWorks = JSON.stringify(seq.map(p => ({ work: p.work, cls: p.act ? p.act.cls : null, background: !p.act, manual: p.status === 'manual' })));
